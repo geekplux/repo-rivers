@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #1f2a2e;
+  background: #faf7f0;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  margin: 0;
+}
+nav button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid #1f2a2e;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+nav button[aria-pressed='true'] {
+  background: #1f2a2e;
+  color: #faf7f0;
+  text-decoration: underline;
+}
+button:focus-visible {
+  outline: 3px solid #0072b2;
+  outline-offset: 2px;
+}
+.river-label {
+  font: 600 14px ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  fill: #1f2a2e;
+  paint-order: stroke;
+  stroke: #faf7f0;
+  stroke-width: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
