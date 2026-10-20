@@ -6,6 +6,9 @@ import { laneOrder } from './order.ts';
 import { extend, link, ribbonPath, type Point } from './ribbons.ts';
 import { band, clipDomain, linear, sqrt } from './scale.ts';
 
+/** Transfer stroke width on a fixed scale across datasets: 1 file ≈ 1.5 px, 100+ files = 6 px (§3.3). */
+const strokeOf = (files: number): number => 1 + sqrt(100, 5)(Math.min(files, 100));
+
 /** Inputs besides the view. All lengths are CSS px at the real container width (never viewBox-scaled). */
 export interface LayoutOptions {
   /** Container width; on mobile the chart is `max(width, 720, 28·B)` wide inside a scroll region. */
@@ -137,7 +140,6 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
   const laneOf = new Map(lanes.map((r, j) => [r.id, j]));
   const moved = new Map<number, number>();
   view.transfers.forEach((t) => moved.set(t.bucket, (moved.get(t.bucket) ?? 0) + t.files));
-  const strokeOf = sqrt(Math.max(0, ...view.transfers.map((t) => t.files)), 5);
   const transfers = view.transfers.flatMap((t): TransferShape[] => {
     const [s, d] = [laneOf.get(t.from), laneOf.get(t.to)];
     const [a, b] = t.bucket === 0 ? [0, 1] : [t.bucket - 1, t.bucket];
@@ -145,7 +147,7 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
     const start: Point = [x(a), d > s ? bots[s]![a]! : tops[s]![a]!];
     const end: Point = [x(b), d > s ? tops[d]![b]! : bots[d]![b]!];
     const alwaysVisible = t.files >= 3 && t.files >= 0.05 * moved.get(t.bucket)!;
-    return [{ ...t, path: link(start, end), width: 1 + strokeOf(t.files), start, end, alwaysVisible }];
+    return [{ ...t, path: link(start, end), width: strokeOf(t.files), start, end, alwaysVisible }];
   });
 
   const markers = clipped.map((index) => {

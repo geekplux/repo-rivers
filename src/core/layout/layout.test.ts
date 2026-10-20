@@ -106,8 +106,9 @@ describe.each(CASES)('$name $dimension at 1104×440', ({ name, dimension, L }) =
         || t.width < 1 || t.width > 6;
     });
     expect(bad).toEqual([]);
-    const widest = L.transfers.reduce((m, t) => (t.width > m.width ? t : m), { files: 0, width: 0 });
-    expect(widest.files).toBe(Math.max(0, ...L.transfers.map((t) => t.files)));
+    const most = L.transfers.reduce((m, t) => (t.files > m.files ? t : m), { files: 0, width: 0 });
+    expect(most.width).toBe(Math.max(0, ...L.transfers.map((t) => t.width)));
+    expect(L.transfers.every((t) => t.width === 1 + 5 * Math.sqrt(Math.min(t.files, 100) / 100))).toBe(true);
   });
 
   it('L9 labels: 2 px apart, inside labels within their band with 2 px padding, placed ∪ dropped = rivers', () => {

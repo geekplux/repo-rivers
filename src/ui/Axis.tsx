@@ -17,18 +17,24 @@ export function yearTicks(starts: readonly string[], left: number, w: number): {
 /** Graticule, year labels, the axis line and the dotted "estimated" rule under truncated buckets. */
 export function Axis({ layout: L, starts }: { layout: RiverLayout; starts: readonly string[] }) {
   const { left, right, top, bottom } = L.plot;
-  const { lines, labels } = yearTicks(starts, left, L.bucketWidth);
+  const { lines, labels: ticks } = yearTicks(starts, left, L.bucketWidth);
+  const labels = ticks.map((l) => ({ ...l, x: Math.min(Math.max(l.x, left + 16), right - 16) }));
   const yearY = bottom + 20;
-  const first = L.estimated[0];
-  const roomy = first && labels.every((l) => l.x + 18 < first.x0 || l.x - 18 > first.x0 + 72) && first.x0 + 72 <= right;
+  // "estimated" sits on the dotted rule's line, left-aligned 6 px after the first run, only where it is clear of
+  // the year labels (half-width 7.4·chars/2 + 8), the next run and the plot edge.
+  const [first, next] = L.estimated;
+  const tx = first ? first.x1 + 6 : 0;
+  const tw = 7.4 * 'estimated'.length;
+  const roomy = first && tx + tw <= Math.min(right, next ? next.x0 - 6 : Infinity) &&
+    labels.every((l) => { const half = (7.4 * l.text.length) / 2 + 8; return l.x + half <= tx || l.x - half >= tx + tw; });
   return (
     <g className="rr-axis" aria-hidden="true">
       {lines.map((x) => <line key={x} x1={x} x2={x} y1={top} y2={bottom} className="rr-grid" />)}
       <line x1={left} x2={right} y1={bottom + 2} y2={bottom + 2} className="rr-grid" />
       {L.estimated.map((e) => <line key={e.from} x1={e.x0 + 1} x2={e.x1 - 1} y1={bottom + 5} y2={bottom + 5} className="rr-estimated" data-estimated />)}
-      {roomy && <text x={first.x0 + 2} y={yearY} className="rr-tick">estimated</text>}
+      {roomy && <text x={tx} y={bottom + 5} className="rr-tick rr-estimated-label">estimated</text>}
       {labels.map((l) => (
-        <text key={l.text} x={Math.min(Math.max(l.x, left + 16), right - 16)} y={yearY} textAnchor="middle" className="rr-tick">{l.text}</text>
+        <text key={l.text} x={l.x} y={yearY} textAnchor="middle" className="rr-tick">{l.text}</text>
       ))}
     </g>
   );

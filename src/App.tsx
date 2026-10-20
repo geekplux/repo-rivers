@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { RepoAggregate } from './core/schema.ts';
+import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
 import { RiverChart } from './ui/RiverChart.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
@@ -25,7 +26,9 @@ export function App() {
   }, [sample]);
 
   const agg = loaded && 'aggregate' in loaded ? loaded.aggregate : null;
+  const view = useMemo(() => agg && selectView(agg, { dimension: 'modules' }), [agg]);
   const shown = findSample(loaded?.id ?? '') ?? sample;
+  useEffect(() => void (document.title = `${shown.title} · repo rivers`), [shown.title]);
   return (
     <div className="rr-page">
       <header className="rr-header">
@@ -41,14 +44,14 @@ export function App() {
             <h2 id="rr-title">{shown.title}</h2>
             {agg && (
               <p className="rr-meta">
-                {agg.repo.owner}/{agg.repo.name} · lines changed per {agg.time.unit} · {agg.source.mode}, read {day.format(Date.parse(agg.generatedAt))}
+                {agg.repo.owner}/{agg.repo.name} · {view?.metric} per {agg.time.unit} · {agg.source.mode}, read {day.format(Date.parse(agg.generatedAt))}
               </p>
             )}
           </div>
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
-          {mobile && <p className="rr-muted rr-caption">Scroll for later years →</p>}
+          {mobile && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
           <div ref={frame} className="rr-frame" {...(mobile && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0 })}>
-            {agg && width > 0 && <RiverChart aggregate={agg} width={width} mobile={mobile} />}
+            {agg && view && width > 0 && <RiverChart aggregate={agg} view={view} width={width} mobile={mobile} />}
           </div>
         </section>
       </main>

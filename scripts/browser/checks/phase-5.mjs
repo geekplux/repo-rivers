@@ -36,8 +36,13 @@ async function expectLabels(page, repo) {
 async function expectTransfer(page, key) {
   const t = page.locator(`[data-transfer="${key}"] path.rr-transfer`);
   assert((await t.count()) === 1, `transfer ${key} is drawn`);
-  const style = await t.evaluate((el) => ({ dash: getComputedStyle(el).strokeDasharray, marker: el.getAttribute('marker-end') }));
-  assert(style.dash !== 'none' && style.marker?.startsWith('url('), `transfer ${key} is dashed with an arrowhead`);
+  const style = await t.evaluate((el) => ({
+    dash: getComputedStyle(el).strokeDasharray,
+    width: Number.parseFloat(getComputedStyle(el).strokeWidth),
+    head: Number(el.parentElement.querySelector('path.rr-arrow')?.dataset.arrow ?? 0),
+  }));
+  // Arrowhead length max(7, 2·width + 2) keeps the head visible on wide transfers.
+  assert(style.dash !== 'none' && style.head >= Math.max(7, 2 * style.width + 2) - 0.01, `transfer ${key} is dashed with an arrowhead`);
 }
 
 const lum = (rgb) => rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
