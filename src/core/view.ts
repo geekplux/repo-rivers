@@ -1,4 +1,4 @@
-import { OTHERS_ID } from './aggregate.ts';
+import { OTHER_BOTS_ID, OTHERS_ID } from './aggregate.ts';
 import { bucketLabel } from './buckets.ts';
 import { autoDepth, collapsePrefix } from './paths.ts';
 import type { RepoAggregate } from './schema.ts';
@@ -35,6 +35,8 @@ export interface RiverView {
 
 type Draft = Omit<River, 'total' | 'peak'>;
 const OTHER = 'other';
+/** Stored fold-ins of people beyond the cap; never a top river of their own. */
+const FOLDS = new Set([`p:${OTHERS_ID}`, `p:${OTHER_BOTS_ID}`]);
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0);
 const finish = (d: Draft): River => ({ ...d, total: sum(d.values), peak: Math.max(0, ...d.values) });
 
@@ -89,7 +91,7 @@ export function selectView(agg: RepoAggregate, options: ViewOptions): RiverView 
   const ranked = [...byId.values()]
     .filter((d) => sum(d.values) > 0)
     .toSorted((a, b) => sum(b.values) - sum(a.values) || (a.id < b.id ? -1 : 1));
-  const top = ranked.filter((d) => d.id !== `p:${OTHERS_ID}`).slice(0, topN);
+  const top = ranked.filter((d) => !FOLDS.has(d.id)).slice(0, topN);
   const rest = ranked.filter((d) => !top.includes(d));
   const target = new Map(top.map((d) => [d.id, d.id]));
   const rivers = top.map(finish);

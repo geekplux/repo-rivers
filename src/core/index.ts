@@ -14,7 +14,7 @@ export {
   nextStart,
   startOf,
 } from './buckets.ts';
-export { MAX_PEOPLE, MAX_PREFIXES, OTHERS_ID, buildAggregate, type AggregateMeta } from './aggregate.ts';
+export { MAX_PEOPLE, MAX_PREFIXES, OTHER_BOTS_ID, OTHERS_ID, buildAggregate, type AggregateMeta } from './aggregate.ts';
 export * from './errors.ts';
 export { parseRepoInput, type RepoRef } from './github/repoRef.ts';
 export { createClient, parseLastPage, type ClientOptions, type GitHubClient, type GitHubResponse } from './github/client.ts';

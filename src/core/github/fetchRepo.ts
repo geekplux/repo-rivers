@@ -2,6 +2,7 @@ import { buildAggregate } from '../aggregate.ts';
 import { bucketIndex } from '../buckets.ts';
 import type { BucketObservation, CommitMeta, FileChange } from '../commits.ts';
 import { EmptyRepo, assertEnoughHistory } from '../errors.ts';
+import { isIgnored, prefixOf } from '../paths.ts';
 import type { RepoAggregate } from '../schema.ts';
 import { createClient, type GitHubClient } from './client.ts';
 import { BUDGET, DETAILS_PER_BUCKET, MAX_BUCKETS, PROBE_REQUESTS, planFetch, type FetchPlan } from './plan.ts';
@@ -64,6 +65,8 @@ interface Ctx {
   branch: string;
   plan: FetchPlan;
   step: (label: string) => void;
+  /** Planned steps not yet taken; every request is one step, so this bounds further requests. */
+  left: () => number;
 }
 
 /** Full mode: list every commit, then read each non-merge commit's files. Exact. */
@@ -75,13 +78,20 @@ async function fullMode({ gh, base, branch, plan, step }: Ctx): Promise<[BucketO
   }
   const observations: BucketObservation[] = [];
   const last = plan.starts.length - 1;
+  let inWindow = 0;
   for (const c of listed.slice(0, plan.requests - PROBE_REQUESTS - plan.listPages)) {
-    const bucket = Math.min(last, Math.max(0, bucketIndex(plan.starts, Date.parse(c.commit.author.date))));
+    const index = bucketIndex(plan.starts, Date.parse(c.commit.author.date));
+    if (index < 0 && plan.windowed) {
+      step('Skipping history before the window');
+      continue;
+    }
+    const bucket = Math.min(last, Math.max(0, index));
+    inWindow++;
     const files = c.parents.length > 1 ? [] : (await gh.get<GhCommit>(`${base}/commits/${c.sha}`)).data.files ?? [];
     observations.push({ bucket, commits: [toMeta(c)], files: files.map((f) => toFile(f)), scale: 1 });
     step('Reading commits');
   }
-  return [observations, listed.length];
+  return [observations, inWindow];
 }
 
 /**
@@ -130,6 +140,54 @@ async function sampledMode(ctx: Ctx, first: string, head: string, truncated: num
   return { observations, seen, perBucket };
 }
 
+/** Commit-detail pages read per traced module (300 files each). */
+const MOVE_PAGES = 4;
+
+/**
+ * Move-finder: compares truncated at 300 files can hide a reorganisation (e.g. `src` → `packages/svelte`).
+ * For directories that first appear in a truncated bucket (heaviest first), finds the oldest commit touching
+ * them in that bucket and adds its cross-directory renames (0 lines, so only transfers change). Spends only
+ * `ctx.left()`; about 3–6 requests per directory. Returns how many directories were traced.
+ */
+async function findMoves(ctx: Ctx, observations: BucketObservation[], truncated: readonly number[]): Promise<number> {
+  const { gh, base, branch, plan, step, left } = ctx;
+  const seen = new Set<string>();
+  const fresh: { bucket: number; dir: string; weight: number }[] = [];
+  for (const o of observations) {
+    const here = new Map<string, number>();
+    const dirs = o.files.flatMap((f) => (isIgnored(f.path) || !prefixOf(f.path) ? [] : [[f, prefixOf(f.path).split('/')] as const]));
+    for (const [f, parts] of dirs) {
+      const dir = parts.map((_, i) => parts.slice(0, i + 1).join('/')).find((d) => !seen.has(d));
+      if (dir) here.set(dir, (here.get(dir) ?? 0) + f.changes);
+    }
+    if (o.bucket > 0 && truncated.includes(o.bucket)) fresh.push(...[...here].map(([dir, weight]) => ({ bucket: o.bucket, dir, weight })));
+    for (const [, parts] of dirs) parts.forEach((_, i) => seen.add(parts.slice(0, i + 1).join('/')));
+  }
+  let traced = 0;
+  for (const { bucket, dir } of fresh.toSorted((a, b) => b.weight - a.weight || (a.dir < b.dir ? -1 : 1))) {
+    if (left() < 3) break;
+    const until = isoSeconds(plan.starts[bucket + 1] ?? plan.end);
+    const query = `${base}/commits?sha=${branch}&path=${encodeURIComponent(dir)}&since=${isoSeconds(plan.starts[bucket]!)}&until=${until}&per_page=1`;
+    const newest = await gh.get<GhCommit[]>(query);
+    step('Tracing moved modules');
+    const count = newest.lastPage ?? 1;
+    const oldest = count > 1 ? (await gh.get<GhCommit[]>(`${query}&page=${count}`)).data[0] : newest.data[0];
+    if (count > 1) step('Tracing moved modules');
+    if (!oldest) continue;
+    traced++;
+    const files = observations[bucket]!.files;
+    const known = new Set(files.filter((f) => f.status === 'renamed').map((f) => f.path));
+    for (let page = 1, pages = 1; page <= pages && left() > 0; page++) {
+      const res = await gh.get<GhCommit>(`${base}/commits/${oldest.sha}${page > 1 ? `?page=${page}` : ''}`);
+      step('Tracing moved modules');
+      pages = Math.min(res.lastPage ?? 1, MOVE_PAGES);
+      const renames = (res.data.files ?? []).filter((f) => f.status === 'renamed' && f.previous_filename && !known.has(f.filename));
+      files.push(...renames.map((f) => toFile(f, 0)));
+    }
+  }
+  return traced;
+}
+
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /**
@@ -143,7 +201,11 @@ export async function fetchRepoAggregate(ref: RepoRef, options: FetchOptions = {
   const gh = createClient({ token, fetch: options.fetch, signal });
   const base = `/repos/${encodeURIComponent(ref.owner)}/${encodeURIComponent(ref.name)}`;
   let [done, total] = [0, PROBE_REQUESTS];
-  const step = (label: string): void => onProgress?.({ done: ++done, total, label });
+  const step = (label: string): void => {
+    done++; // counted even without a listener: `left()` bounds the move-finder
+    onProgress?.({ done, total, label });
+  };
+  const left = (): number => total - done;
 
   const repo = (await gh.get<{ default_branch: string; description: string | null }>(base)).data;
   step('Reading the repository');
@@ -166,7 +228,7 @@ export async function fetchRepoAggregate(ref: RepoRef, options: FetchOptions = {
     resetAt: gh.rate.resetAt,
   });
   total = plan.requests;
-  const ctx: Ctx = { gh, base, branch, plan, step };
+  const ctx: Ctx = { gh, base, branch, plan, step, left };
   const truncated: number[] = [];
   const notes = ['Merge commits are not counted; bots are flagged and hidden by default.'];
   let observations: BucketObservation[];
@@ -174,6 +236,7 @@ export async function fetchRepoAggregate(ref: RepoRef, options: FetchOptions = {
   if (plan.mode === 'full') {
     [observations, seen] = await fullMode(ctx);
     notes.unshift(`Every commit was read (${plural(seen, 'commit')}).`);
+    if (plan.windowed) notes.push(`History before ${new Date(plan.starts[0]!).getUTCFullYear()} is not shown.`);
   } else {
     const r = await sampledMode(ctx, (oldest ?? head).sha, head.sha, truncated);
     [observations, seen] = [r.observations, r.seen];
@@ -186,9 +249,11 @@ export async function fetchRepoAggregate(ref: RepoRef, options: FetchOptions = {
     if (truncated.length > 0) {
       const how = r.perBucket > 0 ? `estimated from ${plural(r.perBucket, 'sampled commit')} each` : 'not counted';
       notes.push(`${plural(truncated.length, 'bucket')} changed over 300 files; files after the first 300 by path were ${how}.`);
+      const traced = await findMoves(ctx, observations, truncated);
+      if (traced > 0) notes.push(`Renames into ${plural(traced, 'new folder')} were traced to their first commit.`);
     }
   }
-  for (let left = total - done; left > 0; left--) step('Done');
+  while (left() > 0) step('Done');
   const agg = buildAggregate(observations, {
     repo: {
       owner: ref.owner,

@@ -44,8 +44,10 @@ function toTransfers(moves: Map<string, number>, prefixes: readonly string[], to
 /** Storage caps (PLAN §4.2): at most this many prefixes and people per aggregate. */
 export const MAX_PREFIXES = 60;
 export const MAX_PEOPLE = 30;
-/** Id of the person that absorbs everyone beyond {@link MAX_PEOPLE}; `selectView` folds it into "other". */
+/** Id of the person that absorbs the humans beyond {@link MAX_PEOPLE}; `selectView` folds it into "other". */
 export const OTHERS_ID = '*others';
+/** Like {@link OTHERS_ID} for bots beyond the cap; flagged `bot`, so it is hidden with the other bots. */
+export const OTHER_BOTS_ID = '*others-bots';
 
 const parentOf = (p: string): string => p.split('/').slice(0, -1).join('/');
 
@@ -120,9 +122,16 @@ export function buildAggregate(observations: readonly BucketObservation[], meta:
   const rounded = roundColumns(people.map((p) => commits.get(p.id)!), B);
   let counts = rounded.rows;
   if (people.length > MAX_PEOPLE) {
-    const rest = counts.slice(MAX_PEOPLE - 1);
-    people = [...people.slice(0, MAX_PEOPLE - 1), { id: OTHERS_ID, label: 'others', bot: false }];
-    counts = [...counts.slice(0, MAX_PEOPLE - 1), zeros(B).map((_, b) => sum(rest.map((r) => r[b]!)))];
+    // One fold per kind present in the rest, so bots stay hideable; recheck once if two folds are needed.
+    const kinds = (keep: number): Set<boolean> => new Set(people.slice(keep).map((p) => p.bot));
+    const keep = kinds(MAX_PEOPLE - 1).size > 1 ? MAX_PEOPLE - 2 : MAX_PEOPLE - 1;
+    const folds = [false, true].filter((bot) => kinds(keep).has(bot)).map((bot) => {
+      const rows = counts.slice(keep).filter((_, i) => people[keep + i]!.bot === bot);
+      const person = bot ? { id: OTHER_BOTS_ID, label: 'other bots', bot } : { id: OTHERS_ID, label: 'others', bot };
+      return { person, row: zeros(B).map((_, b) => sum(rows.map((r) => r[b]!))) };
+    });
+    people = [...people.slice(0, keep), ...folds.map((f) => f.person)];
+    counts = [...counts.slice(0, keep), ...folds.map((f) => f.row)];
   }
   return {
     schemaVersion: 1,

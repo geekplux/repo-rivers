@@ -67,13 +67,26 @@ describe('planFetch', () => {
       expect(plan.requests).toBeLessThanOrEqual(55);
     }
     const token = planFetch(long(60, { budget: 600, maxBuckets: 48 }));
-    expect(token).toMatchObject({ windowed: true, requests: 2 * 48 + 3 + 48 * 10 });
+    expect(token).toMatchObject({ windowed: true, moves: 21, requests: 2 * 48 + 3 + 48 * 10 + 21 });
     expect(token.starts).toHaveLength(48);
     expect(token.starts[0]).toBe(Date.UTC(1979, 0, 1));
     expect(() => planFetch(long(30, { remaining: 4 }))).toThrow(RateLimited);
     expect(() => planFetch(long(60, { budget: 600, maxBuckets: 48, remaining: 4 }))).toThrow(RateLimited);
     // The minimal windowed plan: 3 lookups + 3 compares after the probe.
     expect(planFetch(long(30, { remaining: 6 }))).toMatchObject({ requests: 9, starts: { length: 3 } });
+  });
+
+  it('reserves move-finder requests only from budget left after the details', () => {
+    expect(planFetch(input(500, SPANS['3 years']))).toMatchObject({ mode: 'sampled', moves: 0 });
+    const token = planFetch(input(5000, SPANS['3 years'], { budget: 600, maxBuckets: 48 }));
+    expect(token).toMatchObject({ unit: 'month', details: 370, moves: 24, requests: 2 * 37 + 2 + 370 + 24 });
+  });
+
+  it('windows a full plan whose history needs more yearly buckets than the cap', () => {
+    const plan = planFetch(input(30, 40 * 365 * DAY, { maxBuckets: 24 }));
+    expect(plan).toMatchObject({ mode: 'full', unit: 'year', windowed: true, requests: 3 + 1 + 30 });
+    expect(plan.starts).toHaveLength(24);
+    expect(plan.starts[0]).toBe(Date.UTC(2028, 0, 1)); // 2011–2051 → the latest 24 years
   });
 
   it('reports too little history (< 10 commits or < 3 buckets)', () => {

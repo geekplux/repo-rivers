@@ -31,6 +31,7 @@ const at = (id: string, date: string) => ({
   author: { login: 'dev', type: 'User' },
   parents: [{}],
 });
+const renamed = (to: string, from: string) => ({ filename: to, previous_filename: from, status: 'renamed', changes: 0 });
 const OPTIONS = { budget: recorded.budget, maxBuckets: recorded.maxBuckets };
 
 describe('fetchRepoAggregate with recorded responses (sampled mode)', () => {
@@ -123,5 +124,97 @@ describe('fetchRepoAggregate (windowed long history)', () => {
     expect(agg.time.starts).toHaveLength(5);
     expect(agg.source.notes.join(' ')).toMatch(/History before 2021 is not shown/);
     expect(fetch.mock.calls.some(([url]) => String(url).includes('compare/first'))).toBe(false);
+  });
+});
+
+describe('fetchRepoAggregate (truncated compares and the move-finder)', () => {
+  // Four quarters of 2024 with 2000 commits: sampled. Buckets 1 and 2 hit the 300-file compare cap; only
+  // bucket 2 introduces a folder (`packages/`), which the move-finder traces to a two-page commit of renames out of `src/`.
+  const base = '/repos/o/big';
+  const head = at('head', '2024-12-20T00:00:00Z');
+  const first = at('first', '2024-01-05T00:00:00Z');
+  const move = at('move', '2024-08-01T00:00:00Z');
+  const responses: Record<string, Recorded> = {
+    [base]: ok({ default_branch: 'main', description: null }),
+    [`${base}/commits?sha=main&per_page=1`]: ok([head], { link: `<${API}${base}/commits?per_page=1&page=2000>; rel="last"` }),
+    [`${base}/commits?sha=main&per_page=1&page=2000`]: ok([first]),
+  };
+  const bounds = [first.sha];
+  for (const month of ['04', '07', '10']) {
+    const c = at(`b${month}`, `2024-${month}-01T00:00:00Z`);
+    responses[`${base}/commits?sha=main&until=2024-${month}-01T00:00:00Z&per_page=1`] = ok([c]);
+    bounds.push(c.sha);
+  }
+  bounds.push(head.sha);
+  const capped = Array.from({ length: 300 }, (_, i) => ({ filename: `lib/f${String(i).padStart(3, '0')}.ts`, status: 'modified', changes: 1 }));
+  bounds.slice(0, -1).forEach((from, q) => {
+    const commits = Array.from({ length: 20 }, (_, i) => at(`q${q}c${i}`, `2024-${String(3 * q + 2).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}T00:00:00Z`));
+    const truncated = q === 1 || q === 2;
+    const known = ['src/a.ts', 'lib/f000.ts', 'zz/tail.ts'].map((filename) => ({ filename, status: 'modified', changes: 1 }));
+    const files = truncated ? capped : known;
+    responses[`${base}/compare/${from}...${bounds[q + 1]}`] = ok({ total_commits: truncated ? 500 : 20, commits, files });
+    for (const c of commits) {
+      const tail = q === 1 ? 'zz/tail.ts' : 'packages/core/a.ts';
+      const detail = [{ filename: 'lib/f001.ts', status: 'modified', changes: 9 }, { filename: tail, status: 'modified', changes: 1 }];
+      responses[`${base}/commits/${c.sha}`] = ok({ ...c, files: detail });
+    }
+  });
+  const query = `${base}/commits?sha=main&path=packages&since=2024-07-01T00:00:00Z&until=2024-10-01T00:00:00Z&per_page=1`;
+  responses[query] = ok([head], { link: `<${API}${query}&page=3>; rel="last"` });
+  responses[`${query}&page=3`] = ok([move]);
+  responses[`${base}/commits/${move.sha}`] = ok({ ...move, files: [renamed('packages/core/a.ts', 'src/a.ts')] }, {
+    link: `<${API}${base}/commits/${move.sha}?page=2>; rel="last"`,
+  });
+  responses[`${base}/commits/${move.sha}?page=2`] = ok({ ...move, files: [renamed('packages/core/b.ts', 'src/b.ts')] });
+
+  it('estimates files past the cap from sampled commits and traces the new folder to its renames', async () => {
+    const fetch = fakeFetch(responses);
+    const events: FetchProgress[] = [];
+    const agg = await fetchRepoAggregate({ owner: 'o', name: 'big' }, { fetch, budget: 60, maxBuckets: 4, onProgress: (p) => events.push(p) });
+    expect(parseAggregate(agg)).toBe(agg);
+    const planned = events.at(-1)!.total;
+    expect(planned).toBe(2 * 4 + 2 + 40 + 10); // probe, lookups and compares (2B + 2), details, move reserve
+    expect(agg.source).toMatchObject({ mode: 'sampled', truncatedBuckets: [1, 2] });
+    // 3 probe + 3 lookups + 4 compares + 2×10 details + 4 move-finder requests.
+    expect(agg.source.requests).toBe(34);
+    expect(fetch.mock.calls.length).toBe(agg.source.requests);
+    expect(agg.source.requests).toBeLessThanOrEqual(planned);
+    const weight = (p: string) => agg.paths.weights[agg.paths.prefixes.indexOf(p)];
+    // Each sampled commit stands for 500 / 10 = 50 commits: 10 × 1 line × 50; `lib/f001.ts` was already seen.
+    expect(weight('zz')).toEqual([1, 500, 0, 1]);
+    expect(weight('lib')).toEqual([1, 300, 300, 1]);
+    expect(weight('packages/core')).toEqual([0, 0, 500, 0]);
+    const name = (i: number) => agg.paths.prefixes[i];
+    expect(agg.paths.transfers.map((t) => [name(t.from), name(t.to), t.bucket, t.files])).toEqual([['src', 'packages/core', 2, 2]]);
+    expect(agg.source.notes.join(' ')).toMatch(/Renames into 1 new folder were traced/);
+  });
+
+  it('skips the move-finder when the plan has no requests left', async () => {
+    const fetch = fakeFetch(responses);
+    const agg = await fetchRepoAggregate({ owner: 'o', name: 'big' }, { fetch, budget: 30, maxBuckets: 4 });
+    expect(agg.source.requests).toBe(30);
+    expect(agg.paths.transfers).toEqual([]);
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('path='))).toBe(false);
+  });
+});
+
+describe('fetchRepoAggregate (full mode over a long history)', () => {
+  const base = '/repos/o/long';
+  const commits = Array.from({ length: 24 }, (_, i) => at(`l${i}`, new Date(Date.UTC(2021 - Math.floor(i / 2), i % 2 ? 0 : 6, 3)).toISOString()));
+  const responses: Record<string, Recorded> = {
+    [base]: ok({ default_branch: 'main', description: null }),
+    [`${base}/commits?sha=main&per_page=1`]: ok([commits[0]], { link: `<${API}${base}/commits?per_page=1&page=24>; rel="last"` }),
+    [`${base}/commits?sha=main&per_page=1&page=24`]: ok([commits[23]]),
+    [`${base}/commits?sha=main&per_page=100&page=1`]: ok(commits),
+  };
+  for (const c of commits) responses[`${base}/commits/${c.sha}`] = ok({ ...c, files: [{ filename: 'src/a.ts', status: 'modified', changes: 1 }] });
+
+  it('keeps only the latest maxBuckets years and reads no commits before them', async () => {
+    const fetch = fakeFetch(responses);
+    const agg = await fetchRepoAggregate({ owner: 'o', name: 'long' }, { fetch, maxBuckets: 5 });
+    expect(agg.time.starts).toEqual([2017, 2018, 2019, 2020, 2021].map((y) => `${y}-01-01T00:00:00.000Z`));
+    expect(agg.source).toMatchObject({ mode: 'full', commitsSeen: 10, requests: 3 + 1 + 10 });
+    expect(agg.totals.commits).toEqual([2, 2, 2, 2, 2]);
+    expect(agg.source.notes.join(' ')).toMatch(/History before 2017 is not shown/);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_PEOPLE, MAX_PREFIXES, OTHERS_ID, buildAggregate, type AggregateMeta } from './aggregate.ts';
+import { MAX_PEOPLE, MAX_PREFIXES, OTHER_BOTS_ID, OTHERS_ID, buildAggregate, type AggregateMeta } from './aggregate.ts';
 import { TooLittleHistory, assertEnoughHistory } from './errors.ts';
 import { selectView } from './view.ts';
 import type { BucketObservation, CommitMeta, FileChange } from './commits.ts';
@@ -13,6 +13,7 @@ const moved = (path: string, previousPath: string): FileChange => file(path, 0, 
 const obs = (bucket: number, commits: CommitMeta[], files: FileChange[] = [], scale = 1): BucketObservation => {
   return { bucket, commits, files, scale };
 };
+const botOrDev = (i: number): string => (i % 2 ? `ci${i}[bot]` : `dev${String(i).padStart(2, '0')}`);
 const SOURCE = { mode: 'full', authenticated: false, commitsTotal: 9, commitsSeen: 9, requests: 3 } as const;
 const month = (i: number): string => new Date(Date.UTC(2024, i, 1)).toISOString();
 const meta = (buckets: number): AggregateMeta => ({
@@ -112,6 +113,26 @@ describe('buildAggregate', () => {
     const view = selectView(agg, { dimension: 'contributors', topN: 50 });
     expect(view.rivers.map((r) => r.id)).not.toContain(`p:${OTHERS_ID}`);
     expect(view.rivers.at(-1)).toMatchObject({ id: 'other', values: [51] });
+  });
+
+  it(`folds bots beyond the cap into ${OTHER_BOTS_ID}, which is hidden with the other bots`, () => {
+    const commits = Array.from({ length: 34 }, (_, i) => Array.from({ length: 40 - i }, () => commit({ login: botOrDev(i) }))).flat();
+    const agg = buildAggregate([obs(0, commits)], meta(1));
+    const { people, commits: counts } = agg.contributors;
+    expect(people).toHaveLength(MAX_PEOPLE);
+    expect(people.slice(-2)).toEqual([
+      { id: OTHERS_ID, label: 'others', bot: false },
+      { id: OTHER_BOTS_ID, label: 'other bots', bot: true },
+    ]);
+    expect(counts.slice(-2)).toEqual([[12 + 10 + 8], [11 + 9 + 7]]); // dev28/30/32 and ci29/31/33
+    expect(counts.flat().reduce((a, b) => a + b, 0)).toBe(agg.totals.commits[0]);
+    const humans = selectView(agg, { dimension: 'contributors', topN: 50 });
+    expect(humans.rivers.at(-1)).toMatchObject({ id: 'other', values: [30] });
+    const all = selectView(agg, { dimension: 'contributors', topN: 50, includeBots: true });
+    expect(all.rivers.map((r) => r.id)).not.toContain(`p:${OTHER_BOTS_ID}`);
+    expect(all.rivers.at(-1)).toMatchObject({ id: 'other', values: [57] });
+    const onlyBots = buildAggregate([obs(0, commits.map((c) => ({ ...c, login: `${c.login}[bot]` })))], meta(1));
+    expect(onlyBots.contributors.people.at(-1)).toEqual({ id: OTHER_BOTS_ID, label: 'other bots', bot: true });
   });
 });
 

@@ -10,6 +10,8 @@ export const BUDGET = { unauthenticated: 55, token: 600 } as const;
 export const MAX_BUCKETS = { unauthenticated: 24, token: 48 } as const;
 /** At most this many commit details are read per truncated bucket. */
 export const DETAILS_PER_BUCKET = 10;
+/** Requests reserved for the move-finder (≤ 6 per new module) when the budget has room after details. */
+export const MOVE_REQUESTS = 24;
 
 /** What the probe found, plus the limits to plan within. Times are UTC ms. */
 export interface PlanInput {
@@ -28,8 +30,9 @@ export interface PlanInput {
  * `sampled`: B−1 boundary lookups and B compares (2B+2 requests with the probe), then up to `details`
  * commit reads to estimate files beyond the 300-file compare cap. `windowed`: even yearly buckets would
  * exceed the cap, so `starts` keeps only the most recent years and one extra boundary lookup finds the
- * base of bucket 0 (2B+3 requests); earlier history is not shown. `requests` is the planned maximum,
- * probe included.
+ * base of bucket 0 (2B+3 requests); earlier history is not shown. Sampled plans reserve up to `moves`
+ * requests (plus unused detail reads) for the move-finder. A full plan whose history needs more yearly
+ * buckets than the cap is windowed to the latest years too. `requests` is the planned maximum, probe included.
  */
 export interface FetchPlan {
   mode: 'full' | 'sampled';
@@ -38,6 +41,7 @@ export interface FetchPlan {
   end: number;
   listPages: number;
   details: number;
+  moves: number;
   requests: number;
   windowed: boolean;
 }
@@ -60,7 +64,10 @@ export function planFetch(input: PlanInput): FetchPlan {
   const listPages = Math.ceil(commits / 100);
   const full = PROBE_REQUESTS + listPages + commits;
   if (full <= available) {
-    return { mode: 'full', ...buckets(maxBuckets), listPages, details: 0, requests: full, windowed: false };
+    const all = buckets(maxBuckets);
+    const windowed = all.starts.length > maxBuckets;
+    if (windowed) all.starts = all.starts.slice(-maxBuckets);
+    return { mode: 'full', ...all, listPages, details: 0, moves: 0, requests: full, windowed };
   }
   const cap = Math.min(maxBuckets, Math.floor((available - 2) / 2));
   const sampled = buckets(Math.max(cap, 1));
@@ -77,5 +84,6 @@ export function planFetch(input: PlanInput): FetchPlan {
   }
   const base = 2 * B + 2 + (windowed ? 1 : 0);
   const details = Math.max(0, Math.min(available - base, B * DETAILS_PER_BUCKET));
-  return { mode: 'sampled', ...sampled, listPages: 0, details, requests: base + details, windowed };
+  const moves = Math.max(0, Math.min(available - base - details, MOVE_REQUESTS));
+  return { mode: 'sampled', ...sampled, listPages: 0, details, moves, requests: base + details + moves, windowed };
 }
