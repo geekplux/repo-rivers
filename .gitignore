@@ -46,3 +46,6 @@ pnpm-debug.log*
 # claude code local state
 .claude/settings.local.json
 .claude/agent-memory-local/
+
+# local caches (sample-generation raw GitHub responses)
+.cache/
