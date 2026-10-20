@@ -21,6 +21,15 @@ export interface RouteDeps {
 const OWNER = /^[A-Za-z0-9-]{1,39}$/;
 const NAME = /^[A-Za-z0-9._-]{1,100}$/;
 const API = 'https://api.github.com';
+/** GitHub rejects API requests without a User-Agent (403); Workers' `fetch` sends none by default. */
+export const USER_AGENT = 'repo-rivers (+https://github.com/geekplux/repo-rivers)';
+
+/** Wraps `fetch` so every request carries {@link USER_AGENT}. */
+const withUserAgent = (inner: typeof fetch): typeof fetch => (input, init) => {
+  const headers = new Headers(init?.headers);
+  headers.set('User-Agent', USER_AGENT);
+  return inner(input, { ...init, headers });
+};
 
 /** True for names GitHub could host (PLAN §4.5); `.` and `..` are not repositories. */
 export const validRepo = (owner: string, name: string): boolean =>
@@ -42,7 +51,7 @@ export function repoRoute(owner: string, name: string, env: RepoEnv, deps: Route
   }
   const token = env.GITHUB_TOKEN || undefined;
   const now = deps.now ?? Date.now;
-  const doFetch = deps.fetch ?? globalThis.fetch.bind(globalThis);
+  const doFetch = withUserAgent(deps.fetch ?? globalThis.fetch.bind(globalThis));
   const key = cacheKey(owner, name);
   const store = async (entry: CacheEntry): Promise<void> => {
     await writeEntry(env.RIVERS_KV, key, entry).catch(() => console.error('KV write failed'));

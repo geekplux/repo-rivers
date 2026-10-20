@@ -5,7 +5,7 @@ import { parseAggregate, type RepoAggregate } from '../../src/core/schema.ts';
 import type { StreamLine } from '../src/http.ts';
 import { handle, type WorkerEnv } from '../src/index.ts';
 import { FRESH_MS, TTL_SECONDS, cacheKey, type CacheEntry } from '../src/kv.ts';
-import { validRepo, type RouteDeps } from '../src/repoRoute.ts';
+import { USER_AGENT, validRepo, type RouteDeps } from '../src/repoRoute.ts';
 
 type Recorded = { status: number; headers: Record<string, string>; body: unknown };
 const API = 'https://api.github.com';
@@ -43,7 +43,7 @@ function fakeFetch(responses: Record<string, Recorded>) {
 }
 
 const headerOf = (args: Parameters<typeof fetch>, name: string): string | undefined =>
-  (args[1]?.headers as Record<string, string> | undefined)?.[name];
+  new Headers(args[1]?.headers).get(name) ?? undefined;
 
 /** Runs one request through the Worker and waits for the stream and its background work to finish. */
 async function call(path: string, env: Partial<WorkerEnv>, deps: RouteDeps = {}, init?: RequestInit) {
@@ -183,6 +183,7 @@ describe('GET /api/repo/:owner/:name cache paths', () => {
     expect(parseAggregate(agg)).toEqual(agg);
     expect(agg?.source).toMatchObject({ authenticated: false, requests: gh.mock.calls.length });
     expect(gh.mock.calls.every((c) => headerOf(c, 'Authorization') === undefined)).toBe(true);
+    expect(gh.mock.calls.every((c) => headerOf(c, 'User-Agent') === USER_AGENT)).toBe(true);
     expect(kv.puts).toHaveLength(1);
     expect(kv.puts[0]).toMatchObject({ key: KEY, options: { expirationTtl: TTL_SECONDS } });
     const written = JSON.parse(kv.puts[0]!.value) as CacheEntry;
