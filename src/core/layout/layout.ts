@@ -167,7 +167,7 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
       id: r.id, text: r.bot ? `${r.label} · bot` : r.label, total: r.total, other: r.kind === 'other',
       values: r.values, top: extend(tops[j]!), bottom: extend(bots[j]!),
     })),
-    xs, plot, bucketWidth: w, measure, gutter: !mobile, window: mobile ? 360 : Infinity,
+    xs, plot, bucketWidth: w, measure, gutter: !mobile, gutterRoom: gutter, window: mobile ? 360 : Infinity,
     minThickness: o.labelMinThickness ?? 18,
     obstacles: [...markers.map((m) => m.box), ...(partial ? [partial.box] : [])],
   });

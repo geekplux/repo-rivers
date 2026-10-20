@@ -31,6 +31,8 @@ export interface LabelInput {
   measure: (text: string) => number;
   minThickness: number;
   gutter: boolean;
+  /** Width already reserved right of the plot (0 on the first pass, which only measures the request). */
+  gutterRoom: number;
   /** Mobile: inside labels repeat once per window of this many px. */
   window: number;
   obstacles: readonly Box[];
@@ -112,7 +114,7 @@ export function placeLabels(input: LabelInput): { placed: PlacedLabel[]; dropped
     if (ys[0]! >= plot.top + half - 1e-9) {
       sorted.forEach(({ band, cy }, i) => {
         let text = ellipsize(band.text);
-        for (let n = MAX_CHARS - 1; n > 3 && measure(text) > gutterWidth - 12; n--) text = ellipsize(band.text, n);
+        for (let n = MAX_CHARS - 1; n > 3 && measure(text) > (input.gutterRoom || gutterWidth) - 12; n--) text = ellipsize(band.text, n);
         const y = ys[i]!;
         const leader = [plot.right, cy, plot.right + 6, y] as const;
         placed.push({ x: plot.right + 8, y: y - half, width: measure(text), height: LABEL_HEIGHT, id: band.id, text, kind: 'gutter', leader });
