@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { ViewOptions } from '../core/view.ts';
 
 /** What the controls set; feeds `selectView` (no refetch). */
@@ -6,10 +7,15 @@ export type ControlValue = Required<Pick<ViewOptions, 'dimension' | 'depth' | 'i
 const DIMENSIONS = [['modules', 'Modules'], ['contributors', 'Contributors']] as const;
 const DEPTHS = ['auto', 1, 2, 3] as const;
 
-/** Modules | Contributors, Depth auto/1/2/3 (modules only) and Include bots (contributors only), as native inputs. */
+/**
+ * Modules | Contributors, Depth auto/1/2/3 (modules only) and Include bots (contributors only), as native inputs;
+ * a disabled control shows why in a visible hint linked with `aria-describedby`.
+ */
 export function Controls({ value, onChange }: { value: ControlValue; onChange: (v: ControlValue) => void }) {
   const set = (patch: Partial<ControlValue>) => onChange({ ...value, ...patch });
   const modules = value.dimension === 'modules';
+  const id = useId();
+  const [depthHint, botsHint] = [`${id}depth`, `${id}bots`];
   return (
     <div className="rr-controls">
       <fieldset className="rr-seg">
@@ -21,19 +27,26 @@ export function Controls({ value, onChange }: { value: ControlValue; onChange: (
           </label>
         ))}
       </fieldset>
-      <fieldset className="rr-seg" disabled={!modules}>
-        <legend>Depth</legend>
-        {DEPTHS.map((d) => (
-          <label key={d}>
-            <input type="radio" name="rr-depth" checked={value.depth === d} onChange={() => set({ depth: d })} />
-            {d}
-          </label>
-        ))}
-      </fieldset>
-      <label className="rr-check">
-        <input type="checkbox" checked={value.includeBots} disabled={modules} onChange={(e) => set({ includeBots: e.target.checked })} />
-        Include bots
-      </label>
+      <div className="rr-ctl">
+        <fieldset className="rr-seg" disabled={!modules} aria-describedby={modules ? undefined : depthHint}>
+          <legend>Depth</legend>
+          {DEPTHS.map((d) => (
+            <label key={d}>
+              <input type="radio" name="rr-depth" checked={value.depth === d} onChange={() => set({ depth: d })} />
+              {d}
+            </label>
+          ))}
+        </fieldset>
+        {!modules && <span id={depthHint} className="rr-hint">(modules only)</span>}
+      </div>
+      <div className="rr-ctl">
+        <label className="rr-check">
+          <input type="checkbox" checked={value.includeBots} disabled={modules} aria-describedby={modules ? botsHint : undefined}
+            onChange={(e) => set({ includeBots: e.target.checked })} />
+          Include bots
+        </label>
+        {modules && <span id={botsHint} className="rr-hint">(contributors only)</span>}
+      </div>
     </div>
   );
 }

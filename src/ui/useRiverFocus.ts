@@ -22,7 +22,7 @@ export function reconcile(s: FocusState, lanes: readonly string[], buckets: numb
   return { river, bucket, pinned: s.pinned && river === s.river };
 }
 
-/** Keyboard map (A3). Returns the next state, or null when the key is not the chart's. */
+/** Keyboard map (A3); Enter/Space in the empty state pins the start spot. Returns the next state, or null when the key is not the chart's. */
 export function stepFocus(s: FocusState, key: string, lanes: readonly string[], buckets: number, start: Spot): FocusState | null {
   const empty = s.river === null && s.bucket === null;
   const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
@@ -38,7 +38,9 @@ export function stepFocus(s: FocusState, key: string, lanes: readonly string[], 
     case 'Home': return { ...s, bucket: 0 };
     case 'End': return { ...s, bucket: buckets - 1 };
     case 'Enter':
-    case ' ': return empty ? null : { ...s, pinned: !s.pinned };
+    case ' ':
+      if (empty) return start.river === null ? null : { ...start, pinned: true };
+      return { ...s, pinned: !s.pinned };
     case 'Escape': return s.pinned ? { ...s, pinned: false } : empty ? null : EMPTY;
     default: return null;
   }
@@ -79,7 +81,8 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
   const [state, setState] = useState<FocusState>(EMPTY);
   const [hover, setHover] = useState<Spot | null>(null);
   const [key, setKey] = useState(resetKey);
-  if (key !== resetKey) {
+  const stale = key !== resetKey;
+  if (stale) {
     setKey(resetKey);
     setState(EMPTY);
     setHover(null);
@@ -87,8 +90,9 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
   const lanes = L?.rivers.map((r) => r.id) ?? [];
   const B = L?.columns.length ?? 0;
   const start = startSpot(rivers);
-  const kept = reconcile(state, lanes, B, start);
-  const active: FocusState = kept.pinned || !hover ? kept : { ...hover, pinned: false };
+  // On a dataset change, this render already reports the reset state (callers read `active` before the re-render).
+  const kept = reconcile(stale ? EMPTY : state, lanes, B, start);
+  const active: FocusState = kept.pinned || !hover || stale ? kept : { ...hover, pinned: false };
 
   const chart = {
     onFocus: () => active.river === null && active.bucket === null && setState({ ...start, pinned: false }),

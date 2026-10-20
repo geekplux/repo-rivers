@@ -49,9 +49,11 @@ export function App() {
     const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
     return layoutRivers(view, { width, mobile, asOf: agg.generatedAt, truncatedBuckets, previousColors: hues });
   }, [agg, view, width, mobile, hues]);
+  const [acted, setActed] = useState(false); // the live readout stays quiet until the first user action
   const change = (next: ControlValue) => {
     if (layout) setHues(Object.fromEntries(layout.rivers.map((r) => [r.id, r.color])));
     setOptions(next);
+    setActed(true);
   };
   const focus = useRiverFocus(layout, view?.rivers ?? [], loaded?.id ?? '');
   const shown = findSample(loaded?.id ?? '') ?? sample;
@@ -59,6 +61,9 @@ export function App() {
 
   const notes = agg && view && caveats(agg, view, layout?.clipped);
   const { active } = focus;
+  const moved = active.bucket !== null && loaded?.id === sample.id;
+  if (moved && !acted) setActed(true);
+  if (moved && switched) setSwitched(false); // "Showing …" only until the first movement in the new chart
   const idle = agg && view ? `${switched ? `Showing ${shown.title}: ` : ''}${idleLine(agg, view)}` : '';
   const readout = view && notes && active.bucket !== null ? readoutLine(view, notes, active.river, active.bucket) : idle;
   const unit = agg?.time.unit;
@@ -71,7 +76,7 @@ export function App() {
       <main>
         <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
         <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
-        <SampleSwitcher value={sample.id} onSelect={(id) => (setSwitched(true), select(id))} />
+        <SampleSwitcher value={sample.id} onSelect={(id) => (setSwitched(true), setActed(true), select(id))} />
         <section className="rr-card" aria-labelledby="rr-title" aria-busy={loaded?.id !== sample.id}>
           <div className="rr-card-head">
             <h2 id="rr-title">{shown.title}</h2>
@@ -102,7 +107,7 @@ export function App() {
               )}
             </p>
           )}
-          <Readout text={readout} note={active.pinned ? 'Pinned: press Escape or click the background to release.' : ''} />
+          <Readout text={readout} pinned={active.pinned} live={acted} />
           <Controls value={options} onChange={change} />
           {agg && view && notes && (
             <>

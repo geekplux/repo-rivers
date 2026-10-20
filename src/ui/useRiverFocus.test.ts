@@ -48,6 +48,9 @@ describe('stepFocus (A3)', () => {
     expect(step(s, 'Enter', 'Escape')).toEqual(s);
     expect(step(s, 'Escape')).toEqual(EMPTY);
     expect(stepFocus(EMPTY, 'Escape', lanes, B, start)).toBeNull();
+    expect(step(EMPTY, 'Enter')).toEqual({ ...start, pinned: true });
+    expect(step(EMPTY, ' ')).toEqual({ ...start, pinned: true });
+    expect(stepFocus(EMPTY, 'Enter', [], 0, { river: null, bucket: null })).toBeNull();
     expect(stepFocus(s, 'a', lanes, B, start)).toBeNull();
   });
 });
