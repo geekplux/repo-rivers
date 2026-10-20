@@ -1,5 +1,6 @@
 // Shared helpers for headless-browser checks (see docs/PLAN.md §5).
 import { mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
 export const DESKTOP = { width: 1280, height: 800 };
@@ -36,9 +37,9 @@ const CVD = {
 };
 
 /** Writes `<name>-protanopia.png`, `-deuteranopia.png`, `-tritanopia.png` via SVG filters on <html>. */
-export async function shootCvd(page, name, viewport = DESKTOP) {
+export async function shootCvd(page, name, viewport = DESKTOP, kinds = Object.keys(CVD)) {
   const paths = [];
-  for (const [kind, m] of Object.entries(CVD)) {
+  for (const [kind, m] of Object.entries(CVD).filter(([k]) => kinds.includes(k))) {
     const values = [0, 3, 6].map((r) => `${m.slice(r, r + 3).join(' ')} 0 0`).join(' ') + ' 0 0 0 1 0';
     await page.evaluate(
       ({ cvd, matrix }) => {
@@ -71,4 +72,20 @@ export async function tabTo(page, selector, limit = 40) {
     if (await page.evaluate((s) => document.activeElement?.matches(s) ?? false, selector)) return;
   }
   throw new Error(`check failed: could not Tab to ${selector} within ${limit} presses`);
+}
+
+/**
+ * Injects axe-core from node_modules (no network) and runs it on the page. Throws on any serious or critical
+ * violation; returns a summary `{ violations: [{ id, impact, nodes }], passes, incomplete }` for the report.
+ */
+export async function runAxe(page, label = 'page') {
+  const axePath = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+  if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ path: axePath });
+  const result = await page.evaluate(() => window.axe.run(document, { resultTypes: ['violations'] }));
+  const violations = result.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, targets: v.nodes.slice(0, 3).map((n) => n.target.join(' ')) }));
+  const summary = { label, violations, passes: result.passes.length, incomplete: result.incomplete.length };
+  console.log(`  axe ${label}: ${JSON.stringify(summary)}`);
+  const bad = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  assert(bad.length === 0, `axe ${label}: ${bad.length} serious/critical violations ${JSON.stringify(bad)}`);
+  return summary;
 }
