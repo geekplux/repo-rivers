@@ -1,20 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState, type KeyboardEvent } from 'react';
+import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
+import { caveats, describeView, idleLine, readoutLine } from './core/summary.ts';
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
+import { Controls, type ControlValue } from './ui/Controls.tsx';
+import { DataTable } from './ui/DataTable.tsx';
+import { Readout } from './ui/Readout.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
+import { useRiverFocus } from './ui/useRiverFocus.ts';
 import { useMedia, useWidth } from './ui/useSize.ts';
 import { Wordmark } from './ui/Wordmark.tsx';
 
 type Loaded = { id: string; aggregate: RepoAggregate } | { id: string; error: string };
 const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
+/** Home/End scroll the mobile chart region to its ends (when the region itself has focus). */
+function scrollEnds(e: KeyboardEvent<HTMLDivElement>) {
+  if (e.target !== e.currentTarget || (e.key !== 'Home' && e.key !== 'End')) return;
+  e.preventDefault();
+  e.currentTarget.scrollLeft = e.key === 'Home' ? 0 : e.currentTarget.scrollWidth;
+}
+
 export function App() {
   const [sample, select] = useSampleParam();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [options, setOptions] = useState<ControlValue>({ dimension: 'modules', depth: 'auto', includeBots: false });
+  const [switched, setSwitched] = useState(false);
   const [frame, width] = useWidth<HTMLDivElement>();
   const mobile = useMedia('(max-width: 640px)');
+  const summaryId = useId();
 
   useEffect(() => {
     let live = true;
@@ -26,9 +42,26 @@ export function App() {
   }, [sample]);
 
   const agg = loaded && 'aggregate' in loaded ? loaded.aggregate : null;
-  const view = useMemo(() => agg && selectView(agg, { dimension: 'modules' }), [agg]);
+  const view = useMemo(() => agg && selectView(agg, options), [agg, options]);
+  const [hues, setHues] = useState<Record<string, number>>({}); // sticky hues across control changes
+  const layout = useMemo(() => {
+    if (!agg || !view || width <= 0) return null;
+    const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
+    return layoutRivers(view, { width, mobile, asOf: agg.generatedAt, truncatedBuckets, previousColors: hues });
+  }, [agg, view, width, mobile, hues]);
+  const change = (next: ControlValue) => {
+    if (layout) setHues(Object.fromEntries(layout.rivers.map((r) => [r.id, r.color])));
+    setOptions(next);
+  };
+  const focus = useRiverFocus(layout, view?.rivers ?? [], loaded?.id ?? '');
   const shown = findSample(loaded?.id ?? '') ?? sample;
   useEffect(() => void (document.title = `${shown.title} · repo rivers`), [shown.title]);
+
+  const notes = agg && view && caveats(agg, view, layout?.clipped);
+  const { active } = focus;
+  const idle = agg && view ? `${switched ? `Showing ${shown.title}: ` : ''}${idleLine(agg, view)}` : '';
+  const readout = view && notes && active.bucket !== null ? readoutLine(view, notes, active.river, active.bucket) : idle;
+  const unit = agg?.time.unit;
   return (
     <div className="rr-page">
       <header className="rr-header">
@@ -38,21 +71,45 @@ export function App() {
       <main>
         <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
         <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
-        <SampleSwitcher value={sample.id} onSelect={select} />
+        <SampleSwitcher value={sample.id} onSelect={(id) => (setSwitched(true), select(id))} />
         <section className="rr-card" aria-labelledby="rr-title" aria-busy={loaded?.id !== sample.id}>
           <div className="rr-card-head">
             <h2 id="rr-title">{shown.title}</h2>
             {agg && (
               <p className="rr-meta">
-                {agg.repo.owner}/{agg.repo.name} · {view?.metric} per {agg.time.unit} · {agg.source.mode}, read {day.format(Date.parse(agg.generatedAt))}
+                {agg.repo.owner}/{agg.repo.name} · {view?.metric} per {unit} · {agg.source.mode}, read {day.format(Date.parse(agg.generatedAt))}
               </p>
             )}
           </div>
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
           {mobile && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
-          <div ref={frame} className="rr-frame" {...(mobile && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0 })}>
-            {agg && view && width > 0 && <RiverChart aggregate={agg} view={view} width={width} mobile={mobile} />}
+          <div ref={frame} className="rr-frame" {...(mobile && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0, onKeyDown: scrollEnds })}>
+            {agg && view && layout && view.rivers.length > 0 && (
+              <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={active} chart={focus.chart} svg={focus.svg} describedBy={summaryId} />
+            )}
+            {view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
           </div>
+          {layout && view && (
+            <p className="rr-key rr-muted">
+              {layout.estimated.length > 0 && (
+                <span><svg width="22" height="6" aria-hidden="true"><line x1="2" x2="20" y1="3" y2="3" className="rr-estimated" /></svg>estimated from sampled commits</span>
+              )}
+              {layout.partial && (
+                <span><svg width="8" height="14" aria-hidden="true"><line x1="4" x2="4" y1="0" y2="14" className="rr-survey" /></svg>last {unit} is partial, {layout.partial.text}</span>
+              )}
+              {view.rivers.some((r) => r.bot) && (
+                <span><svg width="18" height="12" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="9" className="rr-bot rr-key-bot" /></svg>dotted outline: bot</span>
+              )}
+            </p>
+          )}
+          <Readout text={readout} note={active.pinned ? 'Pinned: press Escape or click the background to release.' : ''} />
+          <Controls value={options} onChange={change} />
+          {agg && view && notes && (
+            <>
+              <p id={summaryId} className="rr-summary">{describeView(agg, view, notes)}</p>
+              <DataTable view={view} caption={`${view.metric} per ${unit} in ${agg.repo.owner}/${agg.repo.name}; rows are rivers, columns are ${unit}s`} />
+            </>
+          )}
         </section>
       </main>
       <footer className="rr-footer">
