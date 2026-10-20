@@ -26,7 +26,9 @@ export interface PlanInput {
 /**
  * How to fetch. `full`: list every commit (`listPages` pages of 100) and read each non-merge commit.
  * `sampled`: B−1 boundary lookups and B compares (2B+2 requests with the probe), then up to `details`
- * commit reads to estimate files beyond the 300-file compare cap. `requests` is the planned maximum,
+ * commit reads to estimate files beyond the 300-file compare cap. `windowed`: even yearly buckets would
+ * exceed the cap, so `starts` keeps only the most recent years and one extra boundary lookup finds the
+ * base of bucket 0 (2B+3 requests); earlier history is not shown. `requests` is the planned maximum,
  * probe included.
  */
 export interface FetchPlan {
@@ -37,12 +39,14 @@ export interface FetchPlan {
   listPages: number;
   details: number;
   requests: number;
+  windowed: boolean;
 }
 
 /**
  * Chooses full or sampled mode and the bucket unit so that the whole fetch stays within
  * `min(budget, probe + remaining)` requests. Pure. Throws `TooLittleHistory` (fewer than 10 commits or 3
- * buckets) and `RateLimited` when even three buckets do not fit the remaining quota.
+ * buckets) and `RateLimited` only when the remaining quota does not fit even three buckets. Histories too long
+ * for the cap in yearly buckets are windowed to the most recent years.
  */
 export function planFetch(input: PlanInput): FetchPlan {
   const { commits, first, last, maxBuckets } = input;
@@ -55,14 +59,23 @@ export function planFetch(input: PlanInput): FetchPlan {
   assertEnoughHistory(commits, buckets(maxBuckets).starts.length);
   const listPages = Math.ceil(commits / 100);
   const full = PROBE_REQUESTS + listPages + commits;
-  if (full <= available) return { mode: 'full', ...buckets(maxBuckets), listPages, details: 0, requests: full };
+  if (full <= available) {
+    return { mode: 'full', ...buckets(maxBuckets), listPages, details: 0, requests: full, windowed: false };
+  }
   const cap = Math.min(maxBuckets, Math.floor((available - 2) / 2));
   const sampled = buckets(Math.max(cap, 1));
+  const windowed = sampled.starts.length > cap;
+  if (windowed) {
+    // Even yearly buckets exceed the cap: keep the latest years; bucket 0 needs its own boundary lookup.
+    const keep = Math.max(0, Math.min(maxBuckets, Math.floor((available - 3) / 2)));
+    sampled.starts = sampled.starts.slice(sampled.starts.length - keep);
+  }
   const B = sampled.starts.length;
-  if (B > cap || B < MIN_BUCKETS) {
+  if (B < MIN_BUCKETS) {
     const resetAt = input.resetAt ?? new Date(Date.now() + 3_600_000).toISOString();
     throw new RateLimited(resetAt, `Too little GitHub quota left to sample this history; it resets at ${resetAt}`);
   }
-  const details = Math.max(0, Math.min(available - (2 * B + 2), B * DETAILS_PER_BUCKET));
-  return { mode: 'sampled', ...sampled, listPages: 0, details, requests: 2 * B + 2 + details };
+  const base = 2 * B + 2 + (windowed ? 1 : 0);
+  const details = Math.max(0, Math.min(available - base, B * DETAILS_PER_BUCKET));
+  return { mode: 'sampled', ...sampled, listPages: 0, details, requests: base + details, windowed };
 }

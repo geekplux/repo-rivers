@@ -48,8 +48,32 @@ describe('planFetch', () => {
     const plan = (): unknown => planFetch(input(10_000, SPANS['3 years'], { remaining: 4, resetAt }));
     expect(plan).toThrow(RateLimited);
     expect(plan).toThrow(/2026-10-19T23:00:00.000Z/);
-    // A 15-year history needs 16 yearly buckets: 12 remaining requests are not enough.
-    expect(() => planFetch(input(10_000, SPANS['15 years'], { remaining: 12 }))).toThrow(RateLimited);
+    // A 15-year history needs 16 yearly buckets; 12 remaining requests still fit the latest 6 years.
+    expect(planFetch(input(10_000, SPANS['15 years'], { remaining: 12 }))).toMatchObject({ windowed: true, requests: 15 });
+    expect(() => planFetch(input(10_000, SPANS['15 years'], { remaining: 5 }))).toThrow(RateLimited);
+  });
+
+  it('windows histories too long for the bucket cap to the latest years instead of failing', () => {
+    const last = Date.UTC(2026, 9, 19);
+    const long = (years: number, over: Partial<PlanInput> = {}): PlanInput => {
+      return { ...input(50_000, 0, over), first: last - years * 365.25 * DAY, last };
+    };
+    for (const years of [24, 30, 40]) {
+      const plan = planFetch(long(years));
+      expect(plan).toMatchObject({ mode: 'sampled', unit: 'year', windowed: true });
+      expect(plan.starts).toHaveLength(24);
+      expect(plan.starts[0]).toBe(Date.UTC(2003, 0, 1));
+      expect(plan.requests).toBe(2 * 24 + 3 + plan.details);
+      expect(plan.requests).toBeLessThanOrEqual(55);
+    }
+    const token = planFetch(long(60, { budget: 600, maxBuckets: 48 }));
+    expect(token).toMatchObject({ windowed: true, requests: 2 * 48 + 3 + 48 * 10 });
+    expect(token.starts).toHaveLength(48);
+    expect(token.starts[0]).toBe(Date.UTC(1979, 0, 1));
+    expect(() => planFetch(long(30, { remaining: 4 }))).toThrow(RateLimited);
+    expect(() => planFetch(long(60, { budget: 600, maxBuckets: 48, remaining: 4 }))).toThrow(RateLimited);
+    // The minimal windowed plan: 3 lookups + 3 compares after the probe.
+    expect(planFetch(long(30, { remaining: 6 }))).toMatchObject({ requests: 9, starts: { length: 3 } });
   });
 
   it('reports too little history (< 10 commits or < 3 buckets)', () => {

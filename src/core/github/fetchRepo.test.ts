@@ -25,6 +25,12 @@ const commit = (i: number) => ({
   author: { login: `dev${i % 3}`, type: 'User' },
   parents: i === 6 ? [{}, {}] : [{}],
 });
+const at = (id: string, date: string) => ({
+  sha: id.padEnd(40, '0'),
+  commit: { author: { name: 'Dev', email: 'dev@example.invalid', date } },
+  author: { login: 'dev', type: 'User' },
+  parents: [{}],
+});
 const OPTIONS = { budget: recorded.budget, maxBuckets: recorded.maxBuckets };
 
 describe('fetchRepoAggregate with recorded responses (sampled mode)', () => {
@@ -86,5 +92,36 @@ describe('fetchRepoAggregate (full mode and errors)', () => {
       [`${base}/commits?sha=main&per_page=1`]: { status: 409, headers: {}, body: { message: 'Git Repository is empty.' } },
     });
     await expect(fetchRepoAggregate({ owner: 'o', name: 'small' }, { fetch: empty })).rejects.toBeInstanceOf(EmptyRepo);
+  });
+});
+
+describe('fetchRepoAggregate (windowed long history)', () => {
+  const base = '/repos/o/old';
+  const head = at('head', '2025-06-01T00:00:00Z');
+  const responses: Record<string, Recorded> = {
+    [base]: ok({ default_branch: 'main', description: null }),
+    [`${base}/commits?sha=main&per_page=1`]: ok([head], { link: `<${API}${base}/commits?per_page=1&page=5000>; rel="last"` }),
+    [`${base}/commits?sha=main&per_page=1&page=5000`]: ok([at('first', '1996-01-10T00:00:00Z')]),
+  };
+  const bounds = [2021, 2022, 2023, 2024, 2025].map((y) => {
+    const c = at(`b${y}`, `${y - 1}-12-31T12:00:00Z`);
+    responses[`${base}/commits?sha=main&until=${y}-01-01T00:00:00Z&per_page=1`] = ok([c]);
+    return c.sha;
+  });
+  bounds.push(head.sha);
+  for (const [i, from] of bounds.slice(0, -1).entries()) {
+    const commits = [1, 4, 7, 10].map((m) => at(`y${i}m${m}`, new Date(Date.UTC(2021 + i, m, 2)).toISOString()));
+    const files = [{ filename: 'src/a.ts', status: 'modified', changes: 5 }];
+    responses[`${base}/compare/${from}...${bounds[i + 1]}`] = ok({ total_commits: 100, commits, files });
+  }
+
+  it('compares from a looked-up base for bucket 0 and notes the hidden history', async () => {
+    const fetch = fakeFetch(responses);
+    const agg = await fetchRepoAggregate({ owner: 'o', name: 'old' }, { fetch, budget: 13, maxBuckets: 5 });
+    expect(agg.source).toMatchObject({ mode: 'sampled', requests: 13 });
+    expect(agg.time.starts[0]).toBe('2021-01-01T00:00:00.000Z');
+    expect(agg.time.starts).toHaveLength(5);
+    expect(agg.source.notes.join(' ')).toMatch(/History before 2021 is not shown/);
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('compare/first'))).toBe(false);
   });
 });

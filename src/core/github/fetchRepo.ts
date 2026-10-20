@@ -91,8 +91,9 @@ async function fullMode({ gh, base, branch, plan, step }: Ctx): Promise<[BucketO
  */
 async function sampledMode(ctx: Ctx, first: string, head: string, truncated: number[]) {
   const { gh, base, branch, plan, step } = ctx;
-  const bounds = [first];
-  for (const start of plan.starts.slice(1)) {
+  // A windowed plan also looks up the base of bucket 0, so it does not absorb all earlier history.
+  const bounds = plan.windowed ? [] : [first];
+  for (const start of plan.windowed ? plan.starts : plan.starts.slice(1)) {
     const res = await gh.get<GhCommit[]>(`${base}/commits?sha=${branch}&until=${isoSeconds(start)}&per_page=1`);
     bounds.push(res.data[0]?.sha ?? first);
     step('Finding bucket boundaries');
@@ -178,7 +179,9 @@ export async function fetchRepoAggregate(ref: RepoRef, options: FetchOptions = {
     [observations, seen] = [r.observations, r.seen];
     notes.unshift(
       `Sampled: one comparison per ${plan.unit}; commit counts above the 250 commits GitHub lists per comparison are extrapolated.`,
-      "The first commit's own files (the initial import) are not counted.",
+      plan.windowed
+        ? `History before ${new Date(plan.starts[0]!).getUTCFullYear()} is not shown: only the latest ${plural(plan.starts.length, 'year')} fit the request budget.`
+        : "The first commit's own files (the initial import) are not counted.",
     );
     if (truncated.length > 0) {
       const how = r.perBucket > 0 ? `estimated from ${plural(r.perBucket, 'sampled commit')} each` : 'not counted';
