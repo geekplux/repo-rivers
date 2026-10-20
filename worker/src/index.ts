@@ -1,0 +1,44 @@
+import { json } from './http.ts';
+import { repoRoute, type RouteDeps } from './repoRoute.ts';
+
+/** Generated bindings (`wrangler types`) plus the optional secret and the Workers AI binding (phase 9). */
+export interface WorkerEnv extends Omit<Env, 'API_LIMIT'> {
+  GITHUB_TOKEN?: string;
+  AI?: unknown;
+  /** Absent in unit tests; enforced by `wrangler dev` and in production. */
+  API_LIMIT?: Env['API_LIMIT'];
+}
+
+const LIMIT_WINDOW_S = 60;
+
+/** Routes `/api/*` (assets are served before the Worker runs for every other path). */
+export async function handle(request: Request, env: WorkerEnv, ctx: Pick<ExecutionContext, 'waitUntil'>, deps?: RouteDeps): Promise<Response> {
+  const { pathname } = new URL(request.url);
+  if (request.method !== 'GET') return json({ type: 'error', code: 'invalid', message: 'Only GET is supported' }, 405, { allow: 'GET' });
+  if (env.API_LIMIT) {
+    const ip = request.headers.get('cf-connecting-ip') ?? 'local';
+    if (!(await env.API_LIMIT.limit({ key: ip })).success) {
+      const resetAt = new Date(Date.now() + LIMIT_WINDOW_S * 1000).toISOString();
+      const message = 'Too many requests to this site; try again in a minute';
+      return json({ type: 'error', code: 'rate_limited', message, resetAt }, 429, { 'retry-after': String(LIMIT_WINDOW_S) });
+    }
+  }
+  if (pathname === '/api/health') return json({ ok: true, ai: Boolean(env.AI), token: Boolean(env.GITHUB_TOKEN) });
+  const m = /^\/api\/repo\/([^/]+)\/([^/]+)\/?$/.exec(pathname);
+  if (m) {
+    let owner: string, name: string;
+    try {
+      [owner, name] = [decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)];
+    } catch {
+      [owner, name] = ['', ''];
+    }
+    const { response, done } = repoRoute(owner, name, env, deps);
+    ctx.waitUntil(done);
+    return response;
+  }
+  return json({ type: 'error', code: 'not_found', message: 'No such API route' }, 404);
+}
+
+export default {
+  fetch: (request, env, ctx) => handle(request, env, ctx),
+} satisfies ExportedHandler<WorkerEnv>;
