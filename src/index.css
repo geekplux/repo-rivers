@@ -4,6 +4,9 @@
   color: #1f2a2e;
   background: #faf7f0;
 }
+html {
+  min-height: 100%;
+}
 body {
   margin: 0;
 }
