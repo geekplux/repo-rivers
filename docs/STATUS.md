@@ -2,15 +2,15 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 2 verified (PASS round 1); opening PR
+- Current phase: 3 (phase-3-github-samples), implementing
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
 | Phase | Branch | PR | State | Verify rounds |
 |---|---|---|---|---|
 | 1 | phase-1-toolchain | [#1](https://github.com/geekplux/repo-rivers/pull/1) | PR open (PASS) | 2 |
-| 2 | phase-2-aggregate-core | (opening) | verified PASS | 1 |
-| 3 | phase-3-github-samples | - | pending | 0 |
+| 2 | phase-2-aggregate-core | [#2](https://github.com/geekplux/repo-rivers/pull/2) | PR open (PASS) | 1 |
+| 3 | phase-3-github-samples | - | in progress | 0 |
 | 4 | phase-4-river-layout | - | pending | 0 |
 | 5 | phase-5-river-chart | - | pending | 0 |
 | 6 | phase-6-interaction-a11y | - | pending | 0 |
