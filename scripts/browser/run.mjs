@@ -10,7 +10,7 @@ import { setScreenshotDir } from './lib.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const HOST = '127.0.0.1';
-const PORT = 4173;
+const PORT = Number(process.env.CHECK_PORT ?? 4173); // override only if 4173 is taken on a shared box
 const BASE_URL = `http://${HOST}:${PORT}/`;
 const MARKER = `--rr-harness=${process.pid}`; // ignored by Chrome; lets cleanup find our browser
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -45,6 +45,14 @@ async function waitFor(predicate, timeoutMs, what) {
 }
 
 const browserAlive = () => spawnSync('pgrep', ['-f', '--', MARKER]).status === 0;
+const groupAlive = () => {
+  try {
+    process.kill(-server.pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
 const serverExited = () => !server || server.exitCode !== null || server.signalCode !== null;
 
 function killGroup(signal) {
@@ -67,11 +75,14 @@ async function cleanup() {
     }
     if (server) {
       killGroup('SIGTERM');
-      await waitFor(async () => serverExited(), 5000, 'preview server exit').catch(() => killGroup('SIGKILL'));
+      await waitFor(async () => !groupAlive(), 5000, 'preview server exit').catch(() => killGroup('SIGKILL'));
+      await waitFor(async () => !groupAlive(), 2000, 'preview server exit').catch(() => (ok = false));
     }
-    await waitFor(portFree, 5000, `port ${PORT} to be free`).catch(() => (ok = false));
     if (browserAlive()) ok = false;
-    console.log(ok ? 'cleanup ok' : `cleanup FAILED: port ${PORT} busy or browser still running`);
+    if (!ok) console.log('cleanup FAILED: preview server or browser still running');
+    else if (!(await waitFor(portFree, 5000, 'port').then(() => true, () => false))) {
+      console.log(`cleanup ok (our processes are gone; port ${PORT} is now held by a process this run did not start)`);
+    } else console.log('cleanup ok');
     return ok;
   })();
   return cleaning;
@@ -89,7 +100,7 @@ async function main() {
   const checks = ['smoke', `phase-${phase}`].map((n) => join(ROOT, 'scripts/browser/checks', `${n}.mjs`));
   for (const file of checks) if (!existsSync(file)) throw new Error(`missing check ${file}`);
   if (!existsSync(join(ROOT, 'dist/index.html'))) throw new Error('dist/ is missing: run `pnpm build` first');
-  if (!(await portFree())) throw new Error(`port ${PORT} is already in use`);
+  if (!(await portFree())) throw new Error(`port ${PORT} is already in use by another process (set CHECK_PORT to use a different port)`);
 
   const viteBin = join(ROOT, 'node_modules/vite/bin/vite.js');
   server = spawn(process.execPath, [viteBin, 'preview', '--host', HOST, '--port', String(PORT), '--strictPort'], {
