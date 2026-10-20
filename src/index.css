@@ -48,6 +48,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-dimmable { transition: opacity 120ms ease-out; }
 .rr-focusing .rr-dimmable:not(.rr-on) { opacity: 0.18; }
 .rr-river.rr-on:not(.rr-bot) { stroke: var(--rr-ink); stroke-width: 1.5; }
+.rr-river.rr-bot.rr-on { stroke-width: 2.25; }
 .rr-cursor { stroke: var(--rr-ink); stroke-opacity: 0.6; pointer-events: none; }
 .rr-cursor-box { fill: var(--rr-bg); stroke: var(--rr-ink); }
 .rr-cursor-tag { fill: var(--rr-ink); }
@@ -70,6 +71,8 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-seg:disabled label { cursor: default; }
 .rr-check { display: inline-flex; align-items: center; gap: 6px; }
 .rr-check:has(:disabled) { opacity: 0.55; }
+.rr-ctl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rr-hint { color: var(--rr-ink-2); }
 .rr-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--rr-ink); }
 .rr-summary { max-width: 80ch; margin: 8px 0; }
 .rr-empty { display: grid; place-items: center; min-height: 320px; margin: 0; color: var(--rr-ink-2); }

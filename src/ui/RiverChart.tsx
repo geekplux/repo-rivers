@@ -4,6 +4,7 @@ import { link } from '../core/layout/ribbons.ts';
 import type { RepoAggregate } from '../core/schema.ts';
 import type { RiverView } from '../core/view.ts';
 import { Axis } from './Axis.tsx';
+import { cursorTag, floatLabel } from './overlays.ts';
 import type { FocusState } from './useRiverFocus.ts';
 
 const fill = (c: number): string => `var(--rr-river-${c})`;
@@ -56,12 +57,10 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
   const { left, right, top, bottom } = L.plot;
   const dims = (rid: string) => cls('rr-dimmable', rid === on && 'rr-on');
   const shape = L.rivers.find((r) => r.id === on);
-  const float = shape && col && bucket !== null && L.labels.dropped.includes(shape.id)
-    ? { text: shape.bot ? `${shape.label} · bot` : shape.label, x: col.x, y: Math.max(top + 7, shape.edges.top[bucket]! - 11) }
-    : null;
-  const tag = col && bucket !== null ? view.buckets[bucket]!.label : '';
-  const tagW = 7.4 * tag.length + 10;
-  const tagX = col ? Math.min(Math.max(col.x, left + tagW / 2), right - tagW / 2) : 0;
+  const floatText = shape && col && bucket !== null && L.labels.dropped.includes(shape.id) ? (shape.bot ? `${shape.label} · bot` : shape.label) : '';
+  const float = shape && floatText && bucket !== null ? { text: floatText, ...floatLabel(L, shape, bucket, floatText) } : null;
+  const tag = col && bucket !== null ? cursorTag(view.buckets[bucket]!.label, col.x, left, right) : null;
+  const unit = time.unit;
   return (
     <svg data-testid="river-chart" aria-label={`River chart of ${repo.owner}/${repo.name}`} width={L.width} height={L.height}
       viewBox={`0 0 ${L.width} ${L.height}`} className="rr-chart" {...svg}>
@@ -71,11 +70,12 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
           <line x1="3" y1="0" x2="3" y2="6" className="rr-hatch" />
         </pattern>
       </defs>
-      <Axis layout={L} starts={time.starts} />
-      <g ref={ref} tabIndex={0} role="group" aria-roledescription="river chart" className="rr-plot" aria-describedby={describedBy} {...chart}
+      <Axis layout={L} starts={time.starts} avoid={tag?.avoid} />
+      <g ref={ref} tabIndex={0} role="application" aria-roledescription="river chart" className="rr-plot" aria-describedby={describedBy} {...chart}
         data-active={on ?? ''} data-bucket={bucket ?? ''} data-pinned={active.pinned}
-        aria-label={`${view.metric} per ${time.unit}. Arrow keys move between rivers and ${time.unit}s, Enter pins, Escape clears.`}>
-        <rect x={left + 1} y={top - 5} width={right - left - 2} height={bottom - top + 10} rx="3" className="rr-ring" />
+        aria-label={`${repo.owner}/${repo.name}, ${view.metric} per ${unit}. Up and Down arrows change river, Left and Right change ${unit}, Home and End jump to the ends, Enter pins, Escape clears.`}>
+        {/* Encloses plot, axis and gutter (layout reserves a 4 px inset), so it never covers data. */}
+        <rect x={1} y={1} width={L.width - 2} height={L.height - 2} rx="3" className="rr-ring" />
         <g aria-hidden="true">
           <g className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`}>
             {L.rivers.map((r) => (
@@ -103,6 +103,7 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
                 </g>
               );
             })}
+            {col && <line x1={col.x} x2={col.x} y1={top} y2={bottom} className="rr-cursor" data-cursor-line />}
             {L.labels.placed.map((p) => (
               <g key={`${p.id}${p.x}`} className={dims(p.id)}>
                 {p.leader && <line x1={p.leader[0]} y1={p.leader[1]} x2={p.leader[2]} y2={p.leader[3]} className="rr-leader-halo" />}
@@ -112,14 +113,13 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
               </g>
             ))}
           </g>
-          {col && (
+          {tag && (
             <g data-cursor={bucket}>
-              <line x1={col.x} x2={col.x} y1={top} y2={bottom} className="rr-cursor" />
-              <rect x={tagX - tagW / 2} y={bottom + 7} width={tagW} height={18} rx="2" className="rr-cursor-box" />
-              <text x={tagX} y={bottom + 16} textAnchor="middle" className="rr-cursor-tag">{tag}</text>
+              <rect x={tag.x - tag.width / 2} y={bottom + 7} width={tag.width} height={18} rx="2" className="rr-cursor-box" />
+              <text x={tag.x} y={bottom + 16} textAnchor="middle" className="rr-cursor-tag">{tag.text}</text>
             </g>
           )}
-          {float && <text x={Math.min(Math.max(float.x, left + 4), right - 7.4 * float.text.length - 4)} y={float.y} className="rr-label" data-float>{float.text}</text>}
+          {float && <text x={float.x} y={float.y} textAnchor="middle" className="rr-label" data-float>{float.text}</text>}
         </g>
       </g>
       {L.partial && (

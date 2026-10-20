@@ -207,6 +207,16 @@ describe('layout against the spec numbers', () => {
     expect(Math.max(...s.columns.filter((c) => c.factor === 1).map((c) => c.height))).toBeGreaterThan(s.domain * s.unit - 0.5);
   });
 
+  it('reserves a 4 px inset for the focus ring: plot, gutter labels and axis stay inside it', () => {
+    const bad = [...CASES, ...CASES.map(({ name, dimension }) => ({ name: `${name} mobile`, dimension, L: lay(name, { dimension }, { width: 358, height: undefined, mobile: true }) }))]
+      .flatMap(({ name, dimension, L }) => {
+        const out = L.labels.placed.filter((p) => p.x < 4 || p.x + p.width > L.width - 4).map((p) => p.id);
+        const ok = L.plot.left === 4 && L.plot.right <= L.width - 4 && L.height === L.plot.bottom + 30;
+        return ok && out.length === 0 ? [] : [`${name} ${dimension}: ${JSON.stringify(L.plot)} ${out}`];
+      });
+    expect(bad).toEqual([]);
+  });
+
   it('L10 hues are sticky across a depth change unless a touching river holds that hue', () => {
     for (const name of SAMPLES) {
       const before = lay(name, { dimension: 'modules', depth: 2 });

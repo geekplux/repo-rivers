@@ -111,7 +111,7 @@ The data shows this behaves as intended: Vite `packages/vite` ← `src/node`, `p
 - The dotted rule (2 px dots, secondary ink) runs 3 px below the axis line across each run of truncated buckets. The label `estimated` appears at the first run if 70 px are free.
 
 ## 6. Interaction (phase 6; state `{river, bucket, pinned}`)
-**Focus model.** The chart is a single tab stop: `<g tabindex="0" role="group" aria-roledescription="river chart">`. The prose summary is linked through `aria-describedby`.
+**Focus model.** The chart is a single tab stop: `<g tabindex="0" role="application" aria-roledescription="river chart">`. The prose summary is linked through `aria-describedby`.
 
 **Pointer.**
 - `bucket = clamp(floor((x − left)/w), 0, B−1)`.

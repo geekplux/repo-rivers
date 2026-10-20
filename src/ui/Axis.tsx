@@ -1,4 +1,5 @@
 import type { RiverLayout } from '../core/layout/layout.ts';
+import { overlaps } from './overlays.ts';
 
 /**
  * Year spans along x: graticule lines ("meridians") at year starts and centred year labels, thinned to every
@@ -14,10 +15,14 @@ export function yearTicks(starts: readonly string[], left: number, w: number): {
   return { lines, labels: thin(step).map((s) => ({ x: s.x, text: String(s.year) })) };
 }
 
-/** Graticule, year labels, the axis line and the dotted "estimated" rule under truncated buckets. */
-export function Axis({ layout: L, starts }: { layout: RiverLayout; starts: readonly string[] }) {
+/**
+ * Graticule, year labels, the axis line and the dotted "estimated" rule under truncated buckets. Year labels and
+ * the "estimated" text whose x span overlaps `avoid` (the cursor's bucket tag) are hidden.
+ */
+export function Axis({ layout: L, starts, avoid }: { layout: RiverLayout; starts: readonly string[]; avoid?: readonly [number, number] }) {
   const { left, right, top, bottom } = L.plot;
   const { lines, labels: ticks } = yearTicks(starts, left, L.bucketWidth);
+  const clear = (x0: number, x1: number): boolean => !avoid || !overlaps([x0, x1], avoid);
   const labels = ticks.map((l) => ({ ...l, x: Math.min(Math.max(l.x, left + 16), right - 16) }));
   const yearY = bottom + 20;
   // "estimated" sits on the dotted rule's line, left-aligned 6 px after the first run, only where it is clear of
@@ -25,7 +30,7 @@ export function Axis({ layout: L, starts }: { layout: RiverLayout; starts: reado
   const [first, next] = L.estimated;
   const tx = first ? first.x1 + 6 : 0;
   const tw = 7.4 * 'estimated'.length;
-  const roomy = first && tx + tw <= Math.min(right, next ? next.x0 - 6 : Infinity) &&
+  const roomy = first && tx + tw <= Math.min(right, next ? next.x0 - 6 : Infinity) && clear(tx, tx + tw) &&
     labels.every((l) => { const half = (7.4 * l.text.length) / 2 + 8; return l.x + half <= tx || l.x - half >= tx + tw; });
   return (
     <g className="rr-axis" aria-hidden="true">
@@ -33,7 +38,7 @@ export function Axis({ layout: L, starts }: { layout: RiverLayout; starts: reado
       <line x1={left} x2={right} y1={bottom + 2} y2={bottom + 2} className="rr-grid" />
       {L.estimated.map((e) => <line key={e.from} x1={e.x0 + 1} x2={e.x1 - 1} y1={bottom + 5} y2={bottom + 5} className="rr-estimated" data-estimated />)}
       {roomy && <text x={tx} y={bottom + 5} className="rr-tick rr-estimated-label">estimated</text>}
-      {labels.map((l) => (
+      {labels.filter((l) => clear(l.x - 3.7 * l.text.length, l.x + 3.7 * l.text.length)).map((l) => (
         <text key={l.text} x={l.x} y={yearY} textAnchor="middle" className="rr-tick">{l.text}</text>
       ))}
     </g>

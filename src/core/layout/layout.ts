@@ -7,6 +7,9 @@ import { extend, link, ribbonPath, type Point } from './ribbons.ts';
 import { band, clipDomain, linear, sqrt } from './scale.ts';
 
 /** Transfer stroke width on a fixed scale across datasets: 1 file ≈ 1.5 px, 100+ files = 6 px (§3.3). */
+/** Horizontal inset of the plot inside the SVG (room for the focus ring). */
+const INSET = 4;
+
 const strokeOf = (files: number): number => 1 + sqrt(100, 5)(Math.min(files, 100));
 
 /** Inputs besides the view. All lengths are CSS px at the real container width (never viewBox-scaled). */
@@ -105,7 +108,8 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
   const max = Math.max(0, ...totals);
   const { domain, clipped } = o.scale === 'sqrt' ? { domain: max, clipped: [] } : clipDomain(totals);
   const head = clipped.length ? LABEL_HEIGHT + 8 : 0; // room for the `↑ 224K` label above a full-height column
-  const plot = { left: 0, right: width - gutter, top: 8 + head, bottom: 8 + head + H };
+  // A 4 px inset on both sides keeps the chart's focus ring (drawn at the SVG edge) off the data and gutter labels.
+  const plot = { left: INSET, right: width - gutter - INSET, top: 8 + head, bottom: 8 + head + H };
   const { width: w, x } = band(B, plot.left, plot.right);
   const xs = [plot.left, ...view.buckets.map((_, i) => x(i)), plot.right];
   const avail = Math.max(0, H - gap * (lanes.length - 1));
@@ -182,7 +186,7 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
     edges: { top: tops[j]!, bottom: bots[j]! }, thickness: thick[j]!,
   }));
   const layout: RiverLayout = {
-    width, height: plot.bottom + 28, plot, bucketWidth: w, domain, unit, columns, rivers, transfers,
+    width, height: plot.bottom + 30, plot, bucketWidth: w, domain, unit, columns, rivers, transfers,
     labels: { placed: labels.placed, dropped: labels.dropped }, clipped: markers, partial, estimated,
   };
   return { layout, gutter: labels.gutterWidth };
