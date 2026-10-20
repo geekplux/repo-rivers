@@ -23,3 +23,6 @@ Record every non-trivial decision here: date, decision, alternatives considered,
 | 2026-10-19 | No agent skill or CLI in v1 (T17) | Ship a skill | Anatomy bar (SKILL.md + kit + references + audits + evals) costs ~2 phases with no first-run value; on the roadmap. |
 | 2026-10-19 | Rate-limiting binding on `/api/*` and strict `EraSummary` schema (T18) | None | Prevent abuse / LLM-proxy use. |
 | 2026-10-19 | Commit Sean's North-star edit to CLAUDE.md on main together with the plan | Leave uncommitted | It is a planning/instruction doc and must be on main before phases branch from it. |
+| 2026-10-19 | Accept phase 1 at ~920 changed lines (budget ~400) and list it under Known gaps | Split into phase 1a/1b | Size is infrastructure (schema validator 210, browser harness 160, configs); splitting would add a stack layer with no review benefit. Later phases must hold the budget and move overflow to the next phase. |
+| 2026-10-19 | Browser harness supports `CHECK_PORT` (default 4173) | Fixed 4173 | Another project on the shared box (`wayback-diff`) runs its own `vite preview` on 4173; verifiers use `CHECK_PORT=4183`. |
+| 2026-10-19 | Error class named `AggregateParseError` (plan said `AggregateError`) | Plan name | Avoid clashing with JS built-in `AggregateError`. |
