@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 3 (phase-3-github-samples), implementing
+- Current phase: 3 verified (PASS round 2); opening PR
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -10,7 +10,7 @@ STATE: IN-PROGRESS
 |---|---|---|---|---|
 | 1 | phase-1-toolchain | [#1](https://github.com/geekplux/repo-rivers/pull/1) | PR open (PASS) | 2 |
 | 2 | phase-2-aggregate-core | [#2](https://github.com/geekplux/repo-rivers/pull/2) | PR open (PASS) | 1 |
-| 3 | phase-3-github-samples | - | in progress | 0 |
+| 3 | phase-3-github-samples | (opening) | verified PASS | 2 |
 | 4 | phase-4-river-layout | - | pending | 0 |
 | 5 | phase-5-river-chart | - | pending | 0 |
 | 6 | phase-6-interaction-a11y | - | pending | 0 |
@@ -21,7 +21,11 @@ STATE: IN-PROGRESS
 | 11 | phase-11-gallery-launch | - | pending | 0 |
 | 12 | phase-12-deploy-prep | - | pending | 0 |
 
+## Carry-overs (scheduled into later phases)
+- P4/P5 (dataviz): sampled-estimate spikes (e.g. Svelte 2019-Q1 dominates) — consider sqrt scale / clipping / capping the estimate.
+- P7: move-finder for modules first seen in truncated buckets, then regenerate svelte.json (restores src→packages/svelte); cap/window full-mode buckets at maxBuckets; `*others` person should carry bot status; add a truncated-compare test fixture.
+
 ## Follow-ups
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
-Last updated: 2026-10-20 01:52 UTC
+Last updated: 2026-10-20 03:38 UTC
