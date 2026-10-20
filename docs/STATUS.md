@@ -2,13 +2,13 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 1 (phase-1-toolchain), starting
+- Current phase: 1 verified (PASS round 2); opening PR
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
 | Phase | Branch | PR | State | Verify rounds |
 |---|---|---|---|---|
-| 1 | phase-1-toolchain | - | in progress | 0 |
+| 1 | phase-1-toolchain | (opening) | verified PASS | 2 |
 | 2 | phase-2-aggregate-core | - | pending | 0 |
 | 3 | phase-3-github-samples | - | pending | 0 |
 | 4 | phase-4-river-layout | - | pending | 0 |
@@ -24,4 +24,4 @@ STATE: IN-PROGRESS
 ## Follow-ups
 - (none yet)
 
-Last updated: 2026-10-19 00:27 UTC (plan committed; phase 1 starting)
+Last updated: 2026-10-20 01:21 UTC
