@@ -26,3 +26,13 @@ describe.each(samples.map((s) => s.id))('built-in sample %s', (id) => {
     expect(raw).not.toMatch(/@[\w-]+\.\w+/); // no email addresses
   });
 });
+
+describe('built-in sample svelte', () => {
+  it('shows the 2023 move of the compiler into packages/svelte as a transfer', () => {
+    const agg = parseAggregate(JSON.parse(files['./svelte.json']!));
+    const name = (i: number): string | undefined => agg.paths.prefixes[i];
+    const moves = agg.paths.transfers.filter((t) => name(t.to)?.startsWith('packages/svelte') && name(t.from)?.startsWith('src/'));
+    expect(moves.reduce((n, t) => n + t.files, 0)).toBeGreaterThanOrEqual(100);
+    expect(moves.every((t) => agg.time.starts[t.bucket]?.startsWith('2023'))).toBe(true);
+  });
+});
