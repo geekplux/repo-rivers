@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 4 verified (PASS round 1); opening PR
+- Current phase: 5 (phase-5-river-chart), implementing
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -11,8 +11,8 @@ STATE: IN-PROGRESS
 | 1 | phase-1-toolchain | [#1](https://github.com/geekplux/repo-rivers/pull/1) | PR open (PASS) | 2 |
 | 2 | phase-2-aggregate-core | [#2](https://github.com/geekplux/repo-rivers/pull/2) | PR open (PASS) | 1 |
 | 3 | phase-3-github-samples | [#4](https://github.com/geekplux/repo-rivers/pull/4) | PR open (PASS) | 2 |
-| 4 | phase-4-river-layout | (opening) | verified PASS | 1 |
-| 5 | phase-5-river-chart | - | pending | 0 |
+| 4 | phase-4-river-layout | [#5](https://github.com/geekplux/repo-rivers/pull/5) | PR open (PASS) | 1 |
+| 5 | phase-5-river-chart | - | in progress | 0 |
 | 6 | phase-6-interaction-a11y | - | pending | 0 |
 | 7 | phase-7-worker-api | - | pending | 0 |
 | 8 | phase-8-paste-url | - | pending | 0 |
@@ -28,4 +28,4 @@ STATE: IN-PROGRESS
 ## Follow-ups
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
-Last updated: 2026-10-20 05:56 UTC
+Last updated: 2026-10-20 05:57 UTC
