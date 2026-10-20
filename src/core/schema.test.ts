@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import demo from '../samples/demo.json' with { type: 'json' };
+import demo from '../../tests/fixtures/demo.json' with { type: 'json' };
 import { AggregateParseError, parseAggregate } from './schema.ts';
 import { samples } from '../samples/index.ts';
 
@@ -29,10 +29,9 @@ describe('parseAggregate', () => {
     expect(agg.contributors.people).toHaveLength(4);
   });
 
-  it('loads the demo through the sample registry', async () => {
-    const entry = samples.find((s) => s.id === 'demo');
-    expect(entry?.title).toBe('Demo (synthetic)');
-    await expect(entry!.load()).resolves.toMatchObject({ schemaVersion: 1 });
+  it('loads the default sample (Vite) through the registry', async () => {
+    expect(samples[0]?.title).toBe('Vite');
+    await expect(samples[0]!.load()).resolves.toMatchObject({ schemaVersion: 1, repo: { name: 'vite' } });
   });
 
   it('rejects non-objects', () => {

@@ -1,4 +1,4 @@
-// Phase 1: the synthetic demo sample renders offline as >= 5 labelled rivers.
+// Phase 1: the default sample renders offline as >= 5 labelled rivers (the demo became the Vite sample in phase 3).
 import { DESKTOP, MOBILE, assert, shoot, shootCvd } from '../lib.mjs';
 
 export default async function phase1({ page }) {
@@ -12,11 +12,9 @@ export default async function phase1({ page }) {
   for (const d of await rivers.evaluateAll((els) => els.map((el) => el.getAttribute('d') ?? ''))) {
     assert(d.startsWith('M') && !d.includes('NaN'), 'every river path has valid geometry');
   }
-  assert(await page.getByRole('heading', { name: 'Demo (synthetic)' }).isVisible(), 'sample labelled "Demo (synthetic)"');
-  assert(
-    (await page.getByRole('button', { name: 'Demo (synthetic)' }).getAttribute('aria-pressed')) === 'true',
-    'selected sample button is aria-pressed',
-  );
+  const title = (await page.locator('nav button[aria-pressed="true"]').textContent()) ?? '';
+  assert(title.length > 0, 'the selected sample button is aria-pressed');
+  assert(await page.getByRole('heading', { name: title, exact: true }).isVisible(), `sample labelled "${title}"`);
 
   await shoot(page, '01-sample-desktop', DESKTOP);
   await shoot(page, '02-sample-mobile', MOBILE);
