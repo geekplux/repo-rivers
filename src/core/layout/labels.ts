@@ -1,14 +1,17 @@
-/** Greedy direct-label placement (docs/viz/rivers.md §5.6): inside → end gutter → stack edge → dropped. */
+/**
+ * Greedy direct-label placement (docs/viz/rivers.md §5.6): inside → end gutter → stack edge → dropped, then a
+ * peak callout for dropped top-3 rivers and, on mobile, callouts until every full window holds 2 labels (L9 a, b).
+ */
 import { edgeAt } from './ribbons.ts';
 
 /** An axis-aligned box in CSS px. */
 export interface Box { x: number; y: number; width: number; height: number }
 
-/** A placed label; `leader` is a gutter label's `[x1, y1, x2, y2]` line back to its river. */
+/** A placed label; `leader` is a gutter or callout label's `[x1, y1, x2, y2]` line back to its river. */
 export interface PlacedLabel extends Box {
   id: string;
   text: string;
-  kind: 'inside' | 'gutter' | 'edge';
+  kind: 'inside' | 'gutter' | 'edge' | 'callout';
   leader?: readonly [number, number, number, number];
 }
 
@@ -125,7 +128,57 @@ export function placeLabels(input: LabelInput): { placed: PlacedLabel[]; dropped
     dropped.push(smallest.band.id);
     fit = fit.filter((q) => q !== smallest);
   }
+
+  const rescue = (band: LabelBand, lo: number, hi: number): boolean => {
+    const label = callout(input, band, lo, hi, [...obstacles, ...placed]);
+    if (label) placed.push(label);
+    if (label && dropped.includes(band.id)) dropped.splice(dropped.indexOf(band.id), 1);
+    return label !== undefined;
+  };
+  const ranked = bands.toSorted((a, b) => b.total - a.total);
+  for (const band of ranked.slice(0, 3)) if (dropped.includes(band.id)) rescue(band, plot.left, plot.right);
+  for (let lo = plot.left; Number.isFinite(window) && lo + window <= plot.right; lo += window) {
+    const inside = (p: Box): boolean => p.x >= lo && p.x + p.width <= lo + window;
+    for (const band of ranked) {
+      if (placed.filter(inside).length >= 2) break;
+      if (!placed.some((p) => p.id === band.id && inside(p))) rescue(band, lo, lo + window);
+    }
+  }
   return { placed, dropped, gutterWidth };
+}
+
+/** Does the `[x1, y1, x2, y2]` segment pass through `box` (2 px margin)? Sampled every 2 px. */
+function crosses([x1, y1, x2, y2]: readonly number[], box: Box): boolean {
+  const n = Math.ceil(Math.hypot(x2! - x1!, y2! - y1!) / 2);
+  return Array.from({ length: n + 1 }, (_, k) => k / Math.max(1, n)).some((t) =>
+    hits({ x: x1! + t * (x2! - x1!), y: y1! + t * (y2! - y1!), width: 0, height: 0 }, box));
+}
+
+/**
+ * Peak callout: the label sits clear of the whole stack (above or below it), at most 4 columns from the river's
+ * peak inside `[lo, hi]`, with a leader from the river's centre at that peak to the label.
+ */
+function callout(input: LabelInput, band: LabelBand, lo: number, hi: number, taken: readonly (Box & { leader?: readonly number[] })[]): PlacedLabel | undefined {
+  const { bands, xs, plot, bucketWidth: w, measure } = input;
+  const text = ellipsize(band.text);
+  const width = measure(text);
+  const cols = xs.slice(1, -1).flatMap((x, i) => (x >= lo && x < hi && (band.values[i] ?? 0) > 0 ? [i] : []));
+  if (!cols.length) return undefined;
+  const peak = cols.reduce((m, i) => (band.values[i]! > band.values[m]! ? i : m));
+  const [ax, ay] = [xs[peak + 1]!, (band.top[peak + 1]! + band.bottom[peak + 1]!) / 2];
+  for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) {
+    const x = Math.max(lo, plot.left, Math.min(ax + (k * w) / 2 - width / 2, Math.min(hi, plot.right) - width));
+    const above = Math.min(...bands.map((b) => span(xs, b.top, x, x + width, Math.min))) - 6 - LABEL_HEIGHT;
+    const below = Math.max(...bands.map((b) => span(xs, b.bottom, x, x + width, Math.max))) + 6;
+    for (const y of [above, below].toSorted((p, q) => Math.abs(p - ay) - Math.abs(q - ay))) {
+      if (y < plot.top || y + LABEL_HEIGHT > plot.bottom) continue;
+      const box = { x, y, width, height: LABEL_HEIGHT };
+      const leader = [ax, ay, Math.min(Math.max(ax, x + 4), x + width - 4), y > ay ? y : y + LABEL_HEIGHT] as const;
+      const clash = taken.some((o) => hits(box, o) || crosses(leader, o) || (o.leader !== undefined && crosses(o.leader, box)));
+      if (!clash) return { ...box, id: band.id, text, kind: 'callout', leader };
+    }
+  }
+  return undefined;
 }
 
 /** A label 4 px above (or below) the stack at the peak column, if this river is the top (bottom) lane there. */

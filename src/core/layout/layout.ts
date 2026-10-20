@@ -71,8 +71,8 @@ export interface RiverLayout {
   rivers: RiverShape[];
   transfers: TransferShape[];
   labels: { placed: PlacedLabel[]; dropped: string[] };
-  /** Outlier columns drawn at `factor` scale with a break mark and `text` (e.g. `↑ 224K`). */
-  clipped: { index: number; x: number; total: number; factor: number; text: string; box: Box }[];
+  /** Outlier columns drawn at `factor` scale with a break mark (`mark`, near the stack top) and `text` (`↑ 224K`, in `box`). */
+  clipped: { index: number; x: number; total: number; factor: number; text: string; box: Box; mark: Box }[];
   /** Survey line at `asOf` inside a partial last bucket, with its label. */
   partial: { x: number; text: string; box: Box } | null;
   /** Runs of truncated (estimated) buckets as x spans. */
@@ -98,13 +98,14 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
   const B = view.buckets.length;
   const width = mobile ? Math.max(o.width, 720, 28 * B) : o.width;
   const H = o.height ?? (mobile ? 360 : Math.min(480, Math.max(320, 0.45 * width)));
-  const plot = { left: 0, right: width - gutter, top: 8, bottom: 8 + H };
-  const { width: w, x } = band(B, plot.left, plot.right);
-  const xs = [plot.left, ...view.buckets.map((_, i) => x(i)), plot.right];
   const totals = view.buckets.map((_, i) => lanes.reduce((s, r) => s + (r.values[i] ?? 0), 0));
-  const avail = Math.max(0, H - gap * (lanes.length - 1));
   const max = Math.max(0, ...totals);
   const { domain, clipped } = o.scale === 'sqrt' ? { domain: max, clipped: [] } : clipDomain(totals);
+  const head = clipped.length ? LABEL_HEIGHT + 8 : 0; // room for the `↑ 224K` label above a full-height column
+  const plot = { left: 0, right: width - gutter, top: 8 + head, bottom: 8 + head + H };
+  const { width: w, x } = band(B, plot.left, plot.right);
+  const xs = [plot.left, ...view.buckets.map((_, i) => x(i)), plot.right];
+  const avail = Math.max(0, H - gap * (lanes.length - 1));
   const unit = domain > 0 ? linear([0, domain], [0, avail])(1) : 0;
   const factor = totals.map((t) => (t > domain ? domain / t : 1));
   const root = sqrt(max, avail);
@@ -152,7 +153,8 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
     const bw = measure(text);
     const c = columns[index]!;
     const box = { x: Math.max(plot.left, c.x - bw / 2), y: Math.max(0, c.top - 4 - LABEL_HEIGHT), width: bw, height: LABEL_HEIGHT };
-    return { index, x: c.x, total: c.total, factor: c.factor, text, box };
+    const mark = { x: c.x - w / 2, y: c.top + 6, width: w, height: 10 };
+    return { index, x: c.x, total: c.total, factor: c.factor, text, box, mark };
   });
   const partial = partialMarker(view, o.asOf, plot.left, w, measure);
   const runs = [...new Set(o.truncatedBuckets ?? [])].filter((i) => i >= 0 && i < B).toSorted((p, q) => p - q);
@@ -169,7 +171,7 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
     })),
     xs, plot, bucketWidth: w, measure, gutter: !mobile, gutterRoom: gutter, window: mobile ? 360 : Infinity,
     minThickness: o.labelMinThickness ?? 18,
-    obstacles: [...markers.map((m) => m.box), ...(partial ? [partial.box] : [])],
+    obstacles: [...markers.flatMap((m) => [m.box, m.mark]), ...(partial ? [partial.box] : [])],
   });
   const colors = assignColors(lanes, o.previousColors);
   const rivers = lanes.map((r, j): RiverShape => ({

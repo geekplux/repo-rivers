@@ -112,7 +112,7 @@ describe.each(CASES)('$name $dimension at 1104×440', ({ name, dimension, L }) =
 
   it('L9 labels: 2 px apart, inside labels within their band with 2 px padding, placed ∪ dropped = rivers', () => {
     const { placed, dropped } = L.labels;
-    const others = [...L.clipped.map((c) => c.box), ...(L.partial ? [L.partial.box] : [])];
+    const others = [...L.clipped.flatMap((c) => [c.box, c.mark]), ...(L.partial ? [L.partial.box] : [])];
     expect(placed.flatMap((a, i) => [...placed.slice(i + 1), ...others].filter((b) => hits(a, b)))).toEqual([]);
     const xs = [left, ...L.columns.map((c) => c.x), right];
     const cramped = placed.filter((p) => p.kind === 'inside').filter((p) => {
@@ -172,16 +172,38 @@ describe('layout against the spec numbers', () => {
     expect(shown(get('svelte', 'modules'))).toEqual(['m:site→m:documentation 6', 'm:packages→m:playgrounds 10']);
   });
 
-  it('L9 desktop labels the top 3 rivers by total, and ≥ 5 rivers per sample in modules', () => {
-    // Spec gap (reported): Vite's docs/.vitepress is two one-column spikes in a middle lane with v_{B−1} = 0, so
-    // inside / gutter / stack edge cannot hold its label at 1104 px; it is listed in labels.dropped instead.
+  it('L9 desktop labels the top 3 rivers by total (peak callout fallback), and ≥ 5 rivers per sample in modules', () => {
     const missing = CASES.filter((c) => c.name !== 'demo').flatMap(({ name, dimension, L }) => {
       const labelled = new Set(L.labels.placed.map((p) => p.id));
       const top3 = [...viewOf(name, dimension).values()].toSorted((a, b) => b.total - a.total).slice(0, 3);
       const few = dimension === 'modules' && labelled.size < 5 ? [`${name}: only ${labelled.size}`] : [];
       return [...few, ...top3.filter((r) => !labelled.has(r.id)).map((r) => `${name} ${dimension} ${r.id}`)];
     });
-    expect(missing).toEqual(['vite modules m:docs/.vitepress']);
+    expect(missing).toEqual([]);
+    const vp = get('vite', 'modules').labels.placed.find((p) => p.id === 'm:docs/.vitepress')!;
+    expect([vp.kind, vp.leader?.length]).toEqual(['callout', 4]);
+  });
+
+  it('L9 (amended) mobile: every full 360 px window holds ≥ 2 whole labels; callout leaders miss other labels', () => {
+    const thin = CASES.filter((c) => c.name !== 'demo').flatMap(({ name, dimension }) => {
+      const agg = AGG[name]!;
+      const L = lay(name, { dimension }, { width: 358, height: undefined, mobile: true });
+      const placed = L.labels.placed;
+      const crossed = placed.filter((p) => p.kind === 'callout').flatMap((p) => placed.filter((q) => q !== p && [0, 0.25, 0.5, 0.75, 1]
+        .some((t) => hits({ x: p.leader![0] + t * (p.leader![2] - p.leader![0]), y: p.leader![1] + t * (p.leader![3] - p.leader![1]), width: 0, height: 0 }, q))));
+      const windows = Array.from({ length: Math.floor(L.plot.right / 360) }, (_, k) => k * 360);
+      const few = windows.filter((lo) => placed.filter((p) => p.x >= lo && p.x + p.width <= lo + 360).length < 2);
+      return [...few.map((lo) => `${agg.repo.name} ${dimension} window ${lo}`), ...crossed.map((q) => `${name} leader crosses ${q.id}`)];
+    });
+    expect(thin).toEqual([]);
+  });
+
+  it('S2 the Svelte break mark has reserved space above the plot and a full-height column beside it', () => {
+    const s = get('svelte', 'modules');
+    expect(s.plot.top).toBe(30);
+    expect(s.clipped[0]!.box.y).toBeGreaterThanOrEqual(0);
+    expect(s.clipped[0]!.box.y + LABEL_HEIGHT).toBeLessThanOrEqual(s.columns[9]!.top - 4 + 1e-9);
+    expect(Math.max(...s.columns.filter((c) => c.factor === 1).map((c) => c.height))).toBeGreaterThan(s.domain * s.unit - 0.5);
   });
 
   it('L10 hues are sticky across a depth change unless a touching river holds that hue', () => {
