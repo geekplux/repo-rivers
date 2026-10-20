@@ -23,6 +23,7 @@ STATE: IN-PROGRESS
 
 ## Carry-overs (scheduled into later phases)
 - P5: peak-callout label fallback (top-3 always labelled, e.g. Vite docs/.vitepress); mobile 'every full 360 px window ≥2 labels'; break mark must avoid labels; reserve top space for `↑ 224K`; year axis + 'estimated' text label; recheck Svelte packages/site under deuteranopia.
+- P6 (from a11y review): readout/table must name every label-dropped river; chart tab stop + key map (A3); describeView summary via aria-describedby incl. partial/estimated caveats; live announcement on sample switch; focused label stays full-opacity when others dim to 0.18; halo the dotted survey line if relied on; CVD screenshots with a river focused; aria-label caveats, aria-hidden arrow in scroll hint, per-sample document.title.
 - P7: move-finder for modules first seen in truncated buckets, then regenerate svelte.json (restores src→packages/svelte); cap/window full-mode buckets at maxBuckets; `*others` person should carry bot status; add a truncated-compare test fixture.
 
 ## Follow-ups
