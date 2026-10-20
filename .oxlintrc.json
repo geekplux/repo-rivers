@@ -10,6 +10,6 @@
     "vitest/expect-expect": ["error", { "assertFunctionNames": ["expect", "expectRejects"] }],
     "jsx-a11y/prefer-tag-over-role": "off"
   },
-  "overrides": [{ "files": ["scripts/**/*.mjs", "vite.config.ts"], "env": { "node": true } }],
+  "overrides": [{ "files": ["scripts/**/*.mjs", "scripts/**/*.ts", "vite.config.ts"], "env": { "node": true } }],
   "ignorePatterns": ["dist", "node_modules", "docs/screenshots", ".wrangler"]
 }

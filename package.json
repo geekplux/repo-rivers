@@ -16,7 +16,8 @@
     "lint": "oxlint --deny-warnings",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
-    "check:browser": "node scripts/browser/run.mjs"
+    "check:browser": "node scripts/browser/run.mjs",
+    "samples:build": "node scripts/build-samples.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
