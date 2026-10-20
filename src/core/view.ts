@@ -1,3 +1,4 @@
+import { OTHERS_ID } from './aggregate.ts';
 import { bucketLabel } from './buckets.ts';
 import { autoDepth, collapsePrefix } from './paths.ts';
 import type { RepoAggregate } from './schema.ts';
@@ -77,7 +78,8 @@ function remap(links: readonly ViewTransfer[], target: ReadonlyMap<string, strin
 /**
  * Derives the {@link RiverView} for one dimension: collapses module prefixes to the chosen depth (transfers
  * inside one module disappear), drops bots unless asked, keeps the top N rivers by total and sums the rest
- * into "other" so every column total is preserved. Pure: same input, deeply equal output; never mutates `agg`.
+ * into "other" (as is the stored `*others` person) so every column total is preserved.
+ * Pure: same input, deeply equal output; never mutates `agg`.
  */
 export function selectView(agg: RepoAggregate, options: ViewOptions): RiverView {
   const { dimension, depth = 'auto', topN = 10, includeBots = false } = options;
@@ -87,9 +89,10 @@ export function selectView(agg: RepoAggregate, options: ViewOptions): RiverView 
   const ranked = [...byId.values()]
     .filter((d) => sum(d.values) > 0)
     .toSorted((a, b) => sum(b.values) - sum(a.values) || (a.id < b.id ? -1 : 1));
-  const rest = ranked.slice(topN);
-  const target = new Map(ranked.slice(0, topN).map((d) => [d.id, d.id]));
-  const rivers = ranked.slice(0, topN).map(finish);
+  const top = ranked.filter((d) => d.id !== `p:${OTHERS_ID}`).slice(0, topN);
+  const rest = ranked.filter((d) => !top.includes(d));
+  const target = new Map(top.map((d) => [d.id, d.id]));
+  const rivers = top.map(finish);
   if (rest.length > 0) {
     const values = agg.time.starts.map((_, i) => sum(rest.map((d) => d.values[i] ?? 0)));
     rivers.push(finish({ id: OTHER, label: OTHER, kind: 'other', bot: false, values }));
