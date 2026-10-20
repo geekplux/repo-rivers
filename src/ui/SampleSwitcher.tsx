@@ -3,7 +3,7 @@ import { findSample, samples, type SampleEntry } from '../samples/index.ts';
 
 const fromUrl = (): SampleEntry => findSample(new URLSearchParams(location.search).get('sample') ?? '') ?? samples[0]!;
 
-/** The selected sample, kept in `?sample=<id>` (pushState, no reload; back/forward work). */
+/** The selected sample, kept in `?sample=<id>` (pushState, no reload; back/forward work); selecting one drops `?repo=`. */
 export function useSampleParam(): [SampleEntry, (id: string) => void] {
   const [sample, setSample] = useState(fromUrl);
   useEffect(() => {
@@ -14,6 +14,7 @@ export function useSampleParam(): [SampleEntry, (id: string) => void] {
   const select = (id: string) => {
     const url = new URL(location.href);
     url.searchParams.set('sample', id);
+    url.searchParams.delete('repo'); // a sample replaces a pasted repo
     history.pushState(null, '', url);
     setSample(fromUrl());
   };
