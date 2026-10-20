@@ -1,47 +1,61 @@
 import { useEffect, useState } from 'react';
 import type { RepoAggregate } from './core/schema.ts';
-import { samples } from './samples/index.ts';
-import { MinimalRivers } from './ui/MinimalRivers.tsx';
+import { findSample } from './samples/index.ts';
+import { RiverChart } from './ui/RiverChart.tsx';
+import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
+import { useMedia, useWidth } from './ui/useSize.ts';
+import { Wordmark } from './ui/Wordmark.tsx';
 
-type Loaded = { id: string } & ({ status: 'ready'; aggregate: RepoAggregate } | { status: 'error'; message: string });
+type Loaded = { id: string; aggregate: RepoAggregate } | { id: string; error: string };
+const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 export function App() {
-  const [sampleId, setSampleId] = useState(samples[0]!.id);
+  const [sample, select] = useSampleParam();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const sample = samples.find((s) => s.id === sampleId) ?? samples[0]!;
-  const state = loaded?.id === sample.id ? loaded : { status: 'loading' as const };
+  const [frame, width] = useWidth<HTMLDivElement>();
+  const mobile = useMedia('(max-width: 640px)');
 
   useEffect(() => {
     let live = true;
-    const id = sample.id;
     sample.load().then(
-      (aggregate) => live && setLoaded({ id, status: 'ready', aggregate }),
-      (e: unknown) => live && setLoaded({ id, status: 'error', message: e instanceof Error ? e.message : String(e) }),
+      (aggregate) => live && setLoaded({ id: sample.id, aggregate }),
+      (e: unknown) => live && setLoaded({ id: sample.id, error: e instanceof Error ? e.message : String(e) }),
     );
-    return () => {
-      live = false;
-    };
+    return () => void (live = false);
   }, [sample]);
 
+  const agg = loaded && 'aggregate' in loaded ? loaded.aggregate : null;
+  const shown = findSample(loaded?.id ?? '') ?? sample;
   return (
-    <main>
-      <header>
-        <h1>repo-rivers</h1>
-        <p>A repository's history as rivers of modules and contributors.</p>
+    <div className="rr-page">
+      <header className="rr-header">
+        <Wordmark />
+        <a href="https://github.com/geekplux/repo-rivers">GitHub</a>
       </header>
-      <nav aria-label="Built-in samples">
-        {samples.map((s) => (
-          <button key={s.id} type="button" aria-pressed={s.id === sampleId} onClick={() => setSampleId(s.id)}>
-            {s.title}
-          </button>
-        ))}
-      </nav>
-      <section aria-live="polite" aria-busy={state.status === 'loading'}>
-        <h2>{sample.title}</h2>
-        {state.status === 'loading' && <p>Loading sample…</p>}
-        {state.status === 'error' && <p role="alert">Could not load this sample: {state.message}</p>}
-        {state.status === 'ready' && <MinimalRivers key={sample.id} aggregate={state.aggregate} />}
-      </section>
-    </main>
+      <main>
+        <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
+        <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
+        <SampleSwitcher value={sample.id} onSelect={select} />
+        <section className="rr-card" aria-labelledby="rr-title" aria-busy={loaded?.id !== sample.id}>
+          <div className="rr-card-head">
+            <h2 id="rr-title">{shown.title}</h2>
+            {agg && (
+              <p className="rr-meta">
+                {agg.repo.owner}/{agg.repo.name} · lines changed per {agg.time.unit} · {agg.source.mode}, read {day.format(Date.parse(agg.generatedAt))}
+              </p>
+            )}
+          </div>
+          {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
+          {mobile && <p className="rr-muted rr-caption">Scroll for later years →</p>}
+          <div ref={frame} className="rr-frame" {...(mobile && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0 })}>
+            {agg && width > 0 && <RiverChart aggregate={agg} width={width} mobile={mobile} />}
+          </div>
+        </section>
+      </main>
+      <footer className="rr-footer">
+        Data from the GitHub API, sampled when a history is large. Built-in samples work offline, with no key.{' '}
+        <a href="https://github.com/geekplux/repo-rivers">Source</a>
+      </footer>
+    </div>
   );
 }
