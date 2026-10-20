@@ -21,3 +21,15 @@ export { createClient, parseLastPage, type ClientOptions, type GitHubClient, typ
 export * from './github/plan.ts';
 export { fetchRepoAggregate, type FetchOptions, type FetchProgress } from './github/fetchRepo.ts';
 export { selectView, type River, type RiverView, type ViewOptions, type ViewTransfer } from './view.ts';
+export {
+  layoutRivers,
+  type LayoutOptions,
+  type RiverLayout,
+  type RiverShape,
+  type TransferShape,
+} from './layout/layout.ts';
+export { LABEL_HEIGHT, ellipsize, placeLabels, type Box, type LabelBand, type LabelInput, type PlacedLabel } from './layout/labels.ts';
+export { laneOrder } from './layout/order.ts';
+export { curve, edgeAt, extend, link, ribbonPath, type Point } from './layout/ribbons.ts';
+export { band, clipDomain, linear, quantile, sqrt, type Scale } from './layout/scale.ts';
+export * from './palette.ts';
