@@ -93,6 +93,10 @@ export default async function phase6({ page, baseURL }) {
   const requests = [];
   page.on('request', (r) => requests.push(r.url()));
   await runAxe(page, 'vite sample view');
+  assert((await announced(page)) === '', 'nothing is announced on page load');
+  assert((await page.locator(PLOT).getAttribute('role')) === 'application', 'the chart is role="application"');
+  const botsHint = await page.getByRole('checkbox', { name: 'Include bots' }).evaluate((c) => document.getElementById(c.getAttribute('aria-describedby'))?.textContent);
+  assert(botsHint === '(contributors only)', `disabled Include bots explains itself (${botsHint})`);
   const key = await page.locator('.rr-key').innerText();
   assert(key.includes('estimated from sampled commits') && key.includes('partial'), `text key under the chart (${key})`);
   const idle = await readout(page);
@@ -135,6 +139,15 @@ export default async function phase6({ page, baseURL }) {
     return { vis: getComputedStyle(r).visibility, stroke: getComputedStyle(r).stroke, bg: getComputedStyle(document.body).backgroundColor };
   });
   assert(ring.vis === 'visible' && contrast(rgb(ring.stroke), rgb(ring.bg)) >= 3, `focus ring visible and >= 3:1 (${JSON.stringify(ring)})`);
+  await frameCard(page);
+  const rules = await page.evaluate(() => [...document.querySelectorAll('[data-estimated]')].map((el) => {
+    const r = el.getBoundingClientRect();
+    // Along the rule only its dots (or bare background between them) may be topmost: nothing, the ring included, covers it.
+    const top = Array.from({ length: Math.floor(r.width / 2) }, (_, k) => document.elementFromPoint(r.x + 1 + 2 * k, r.y + r.height / 2));
+    const covered = top.filter((e) => !e?.matches('[data-estimated], svg.rr-chart')).map((e) => e?.getAttribute('class'));
+    return { dots: top.filter((e) => e?.matches('[data-estimated]')).length, covered: [...new Set(covered)] };
+  }));
+  assert(rules.length > 0 && rules.every((r) => r.dots > 0 && r.covered.length === 0), `the estimated rule stays visible while the chart has focus (${JSON.stringify(rules)})`);
   let s = await state(page);
   const big = await page.evaluate(() => [...document.querySelectorAll('path[data-river]:not([data-river="other"])')].toSorted((a, b) => b.dataset.total - a.dataset.total)[0].dataset.river);
   assert(s.river === big && s.bucket !== '', `focus lands on the largest river (${s.river} vs ${big})`);
@@ -164,8 +177,12 @@ export default async function phase6({ page, baseURL }) {
   assert((await announced(page)) === (await readout(page)), 'the readout is announced through the polite live region');
   await page.keyboard.press('Enter');
   assert((await state(page)).pinned, 'Enter pins');
-  assert((await announced(page)).endsWith('. Pinned: press Escape or click the background to release.'), 'pinning is announced');
+  assert((await announced(page)).endsWith('. Pinned'), 'pinning is announced');
+  await page.keyboard.press('ArrowLeft');
+  assert(!(await announced(page)).includes('Pinned'), 'moving while pinned does not repeat "Pinned"');
+  await page.keyboard.press('ArrowRight');
   await page.keyboard.press('Escape');
+  assert((await announced(page)).endsWith('. Released'), 'unpinning is announced');
   await expectHighlight(page, s.river);
   await frameCard(page);
   await shoot(page, '02-keyboard-focus-desktop', DESKTOP);
@@ -180,6 +197,8 @@ export default async function phase6({ page, baseURL }) {
   requests.length = 0;
   await page.getByRole('radio', { name: 'Contributors' }).check();
   await page.locator('path[data-river^="p:"]').first().waitFor();
+  const depthHint = await page.locator('fieldset:has(legend:text-is("Depth"))').evaluate((f) => document.getElementById(f.getAttribute('aria-describedby'))?.textContent);
+  assert(depthHint === '(modules only)', `disabled Depth explains itself (${depthHint})`);
   assert((await state(page)).bucket === kept, `contributors keep the focused bucket (${kept})`);
   assert(requests.length === 0, `no refetch on dimension change (${requests})`);
   assert((await readout(page)).includes(' commit'), 'readout switches to commits');
