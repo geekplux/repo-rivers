@@ -1,0 +1,47 @@
+repo-rivers phase 7: wrangler dev live check (verify round 1, 2026-10-20 ~22:15 UTC)
+==================================================================================
+
+$ curl -s https://api.github.com/rate_limit        # before starting
+core: limit 60, remaining 9                          # < 35: the live miss call is SKIPPED (shared quota)
+# (later readings swung between 52, 0 and 19 with different reset times: shared/varying egress)
+
+$ setsid nohup pnpm dev:worker > /tmp/rr-wrangler.log 2>&1 &     # wrangler dev --port 8787, process group 447383
+env.API_LIMIT (20 requests/60s)   Rate Limit   local
+[wrangler:info] Ready on http://localhost:8787
+
+$ curl -i http://127.0.0.1:8787/api/health
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Cache-Control: no-store
+{"ok":true,"ai":false,"token":false}
+
+$ curl -i http://127.0.0.1:8787/                    -> HTTP/1.1 200 OK, text/html, <title>repo-rivers</title>, <div id="root">
+$ curl -i http://127.0.0.1:8787/some/deep/link      -> HTTP/1.1 200 OK, SPA index (not_found_handling)
+
+$ curl -i "http://127.0.0.1:8787/api/repo/bad%20owner/x"
+HTTP/1.1 400 Bad Request
+{"type":"error","code":"invalid","message":"Not a valid GitHub owner/name"}
+$ curl -i http://127.0.0.1:8787/api/repo/under_score/x   -> 400 (same body)
+$ curl -i http://127.0.0.1:8787/api/eras                 -> 404 {"type":"error","code":"not_found","message":"No such API route"}
+$ curl -i -X POST http://127.0.0.1:8787/api/eras         -> 405, Allow: GET   (/api/eras not exposed yet)
+$ curl -i http://127.0.0.1:8787/api/nope                 -> 404
+
+# Local KV (preview namespace) already holds agg:v1:geekplux/timeline-sankey from the implementer's live
+# fetch at 2026-10-20T22:06:50Z (mode full, 25 requests, 22 commits, unauthenticated).
+$ curl -N http://127.0.0.1:8787/api/repo/geekplux/timeline-sankey
+1 NDJSON line: {"type":"result","cache":"hit","aggregate":{repo geekplux/timeline-sankey, head 67b4497, mode full, requests 25, 13 buckets}}
+[wrangler:info] GET /api/repo/geekplux/timeline-sankey 200 OK (10ms)
+$ curl -N http://127.0.0.1:8787/api/repo/GeekPlux/Timeline-Sankey      -> same entry, cache "hit" (7ms; key lowercased)
+# A fresh entry for expressjs/express (from the committed sample) was seeded through the local explorer KV API:
+$ curl -N http://127.0.0.1:8787/api/repo/expressjs/express             -> cache "hit" (7ms)
+# All three answered in 7-10 ms with no outbound GitHub request.
+
+$ for i in 1..22: curl -o /dev/null -w '%{http_code}' /api/health
+ 200 x13 then 429 x9     (20/min/IP including the earlier calls)
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+{"type":"error","code":"rate_limited","message":"Too many requests to this site; try again in a minute","resetAt":"2026-10-20T22:18:17.333Z"}
+
+$ kill -TERM -447383
+$ ps -eo pid,pgid,cmd | grep -E "workerd|wrangler"     -> (none)
+$ ss -ltnp | grep :8787                                -> (none)
