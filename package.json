@@ -11,11 +11,13 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "vite",
+    "dev:worker": "wrangler dev --port 8787",
     "build": "vite build",
     "size": "node scripts/size-check.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "lint": "oxlint --deny-warnings",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.worker.json",
+    "types:worker": "wrangler types",
     "test": "vitest run",
     "check:browser": "node scripts/browser/run.mjs",
     "samples:build": "node scripts/build-samples.ts"
@@ -35,6 +37,7 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.5",
+    "wrangler": "^4.151.3",
     "yaml": "^2.9.1"
   }
 }
