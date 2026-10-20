@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 6 (phase-6-interaction-a11y), implementing
+- Current phase: 6 verified (PASS round 1); opening PR
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -13,7 +13,7 @@ STATE: IN-PROGRESS
 | 3 | phase-3-github-samples | [#4](https://github.com/geekplux/repo-rivers/pull/4) | PR open (PASS) | 2 |
 | 4 | phase-4-river-layout | [#5](https://github.com/geekplux/repo-rivers/pull/5) | PR open (PASS) | 1 |
 | 5 | phase-5-river-chart | [#6](https://github.com/geekplux/repo-rivers/pull/6) | PR open (PASS) | 1 |
-| 6 | phase-6-interaction-a11y | - | in progress | 0 |
+| 6 | phase-6-interaction-a11y | (opening) | verified PASS | 1 |
 | 7 | phase-7-worker-api | - | pending | 0 |
 | 8 | phase-8-paste-url | - | pending | 0 |
 | 9 | phase-9-era-annotations | - | pending | 0 |
@@ -22,11 +22,11 @@ STATE: IN-PROGRESS
 | 12 | phase-12-deploy-prep | - | pending | 0 |
 
 ## Carry-overs (scheduled into later phases)
-- P5: peak-callout label fallback (top-3 always labelled, e.g. Vite docs/.vitepress); mobile 'every full 360 px window ≥2 labels'; break mark must avoid labels; reserve top space for `↑ 224K`; year axis + 'estimated' text label; recheck Svelte packages/site under deuteranopia.
-- P6: Home/End on mobile scroll region; text key under chart for the dotted "estimated" rule; bot-outline CVD check with Include bots on. From a11y review: readout/table must name every label-dropped river; chart tab stop + key map (A3); describeView summary via aria-describedby incl. partial/estimated caveats; live announcement on sample switch; focused label stays full-opacity when others dim to 0.18; halo the dotted survey line if relied on; CVD screenshots with a river focused; aria-label caveats, aria-hidden arrow in scroll hint, per-sample document.title.
 - P7: move-finder for modules first seen in truncated buckets, then regenerate svelte.json (restores src→packages/svelte); cap/window full-mode buckets at maxBuckets; `*others` person should carry bot status; add a truncated-compare test fixture.
+
+- P10: good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change.
 
 ## Follow-ups
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
-Last updated: 2026-10-20 18:17 UTC
+Last updated: 2026-10-20 19:41 UTC
