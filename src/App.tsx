@@ -110,21 +110,21 @@ export function App() {
         <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
         <div className="rr-inputs">
           <RepoInput initial={repoName} onSubmit={(ref) => (setActed(true), repo.load(ref))} />
-          <SampleSwitcher value={rs.status === 'done' ? '' : sample.id} onSelect={(id) => (repo.clear(), setSwitched(true), setActed(true), select(id))} />
+          <SampleSwitcher value={rs.status === 'idle' ? sample.id : ''} onSelect={(id) => (repo.clear(), setSwitched(true), setActed(true), select(id))} />
         </div>
         <section className="rr-card" aria-labelledby="rr-title" aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}>
           <div className="rr-card-head">
             <h2 id="rr-title" tabIndex={-1}>{title}</h2>
             {agg && !busy && (
               <p className="rr-meta">
-                {agg.repo.owner}/{agg.repo.name} · {view?.metric} per {unit} · read {day.format(Date.parse(agg.generatedAt))}
+                {repoName ? '' : `${agg.repo.owner}/${agg.repo.name} · `}{view?.metric} per {unit} · read {day.format(Date.parse(agg.generatedAt))}
               </p>
             )}
             {agg && !busy && <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />}
           </div>
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
-          {mobile && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
+          {mobile && !busy && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
           <div ref={frame} className="rr-frame" {...(mobile && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0, onKeyDown: scrollEnds })}>
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
