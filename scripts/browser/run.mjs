@@ -6,7 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
-import { setScreenshotDir } from './lib.mjs';
+import { consoleAllowed, setScreenshotDir } from './lib.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const HOST = '127.0.0.1';
@@ -135,7 +135,7 @@ async function main() {
     problems.push(`blocked network request: ${url.href}`);
     return route.abort('blockedbyclient');
   });
-  page.on('console', (msg) => msg.type() === 'error' && problems.push(`console error: ${msg.text()}`));
+  page.on('console', (msg) => msg.type() === 'error' && !consoleAllowed(msg) && problems.push(`console error: ${msg.text()}`));
   page.on('pageerror', (err) => problems.push(`page error: ${err.message}`));
 
   setScreenshotDir(join(ROOT, 'docs/screenshots', `phase-${phase}`));

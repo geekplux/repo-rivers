@@ -14,6 +14,14 @@ export function setScreenshotDir(dir) {
   screenshotDir = dir;
 }
 
+const allowedConsole = [];
+/** Declares console errors a check causes on purpose (e.g. a request it aborts); matched on text and URL. */
+export function allowConsoleError(pattern) {
+  allowedConsole.push(pattern);
+}
+/** True when a console message was declared with {@link allowConsoleError}. */
+export const consoleAllowed = (msg) => allowedConsole.some((re) => re.test(`${msg.text()} ${msg.location()?.url ?? ''}`));
+
 /** Throws with `message` unless `condition` holds. */
 export function assert(condition, message) {
   if (!condition) throw new Error(`check failed: ${message}`);
