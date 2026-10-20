@@ -99,15 +99,33 @@ describe('describeView', () => {
       const grand = totals.reduce((a, b) => a + b, 0);
       expect(text).toContain(`${view.buckets[0]!.label} to ${view.buckets.at(-1)!.label}`);
       expect(text).toContain(`The largest river is ${top.label}, with ${share(top.total, grand)} of all ${view.metric}.`);
-      const busiest = view.buckets[totals.indexOf(Math.max(...totals))]!.label;
-      expect(text).toContain(`The busiest ${agg.time.unit} was ${busiest}, with ${amount(Math.max(...totals), view.metric)}.`);
+      const busy = totals.indexOf(Math.max(...totals));
+      const flag = c.estimated.includes(busy) ? ' (estimated)' : '';
+      expect(text).toContain(`The busiest ${agg.time.unit} was ${view.buckets[busy]!.label}, with ${amount(Math.max(...totals), view.metric)}${flag}.`);
       const big = view.transfers.toSorted((a, b) => b.files - a.files)[0];
-      expect(text.includes('The largest move was')).toBe(big !== undefined);
-      expect(text).toContain(big ? `The largest move was ${big.files} files` : '');
+      const moved = big !== undefined && big.files >= 3;
+      expect(text.includes('The largest move was')).toBe(moved);
+      expect(text).toContain(moved ? `The largest move was ${big.files} files` : '');
+      expect(text.includes('No significant moves between these modules.')).toBe(dimension === 'modules' && !moved);
       expect(text).toContain(`The last ${agg.time.unit} is partial, to 20 Oct 2026.`);
       expect(text.includes('estimated')).toBe(c.estimated.length > 0);
+      expect(text.includes('(estimated')).toBe(flag !== '');
       expect(text).toContain(c.estimated.length ? `${c.estimated.length} of ${view.buckets.length} ${agg.time.unit}s are estimated from sampled commits.` : '');
     }
+  });
+
+  it('flags an estimated or clipped busiest bucket and ignores moves under 3 files', () => {
+    const view = selectView(SVELTE, { dimension: 'modules' });
+    const totals = columnTotals(view);
+    const b = totals.indexOf(Math.max(...totals));
+    const L = layoutRivers(view, { width: 1104, height: 440, truncatedBuckets: SVELTE.source.truncatedBuckets });
+    const c = caveats(SVELTE, view, L.clipped);
+    expect([c.estimated.includes(b), c.clipped.has(b)]).toEqual([true, true]);
+    expect(describeView(SVELTE, view, c)).toContain(`with ${amount(totals[b]!, view.metric)} (estimated; drawn clipped).`);
+    expect(describeView(SVELTE, view, { ...c, clipped: new Map() })).toContain(`with ${amount(totals[b]!, view.metric)} (estimated).`);
+    const small = { ...view, transfers: view.transfers.map((t) => ({ ...t, files: Math.min(t.files, 2) })) };
+    const text = describeView(SVELTE, small, c);
+    expect([text.includes('The largest move was'), text.includes('No significant moves between these modules.')]).toEqual([false, true]);
   });
 
   it('describes an empty selection', () => {

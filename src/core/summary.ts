@@ -81,7 +81,7 @@ export function readoutLine(view: RiverView, c: Caveats, riverId: string | null,
 
 /**
  * Prose summary of a view for `aria-describedby`: the period, the top river and its share, the busiest bucket,
- * the largest transfer, and the partial/estimated caveats.
+ * (flagged when estimated or drawn clipped), the largest transfer of ≥ 3 files, and the partial/estimated caveats.
  */
 export function describeView(agg: RepoAggregate, view: RiverView, c: Caveats): string {
   const { buckets, rivers, metric } = view;
@@ -96,13 +96,15 @@ export function describeView(agg: RepoAggregate, view: RiverView, c: Caveats): s
   const top = (named.length ? named : rivers).toSorted((a, b) => b.total - a.total)[0]!;
   const busiest = totals.indexOf(Math.max(...totals));
   const big = view.transfers.toSorted((a, b) => b.files - a.files || a.bucket - b.bucket)[0];
+  const flags = [c.estimated.includes(busiest) && 'estimated', c.clipped.has(busiest) && 'drawn clipped'].filter(Boolean);
   const parts = [
     head,
     `The largest river is ${top.label}, with ${share(top.total, grand)} of all ${metric}.`,
-    `The busiest ${c.unit} was ${buckets[busiest]!.label}, with ${amount(totals[busiest]!, metric)}.`,
+    `The busiest ${c.unit} was ${buckets[busiest]!.label}, with ${amount(totals[busiest]!, metric)}${flags.length ? ` (${flags.join('; ')})` : ''}.`,
   ];
-  if (big) parts.push(`The largest move was ${files(big.files)} from ${labelOf(view, big.from)} to ${labelOf(view, big.to)} in ${buckets[big.bucket]?.label}.`);
-  else if (by === 'module') parts.push('No files moved between these modules.');
+  // A move under 3 files is noise (the always-visible transfer threshold, docs/viz/rivers.md §3.3).
+  if (big && big.files >= 3) parts.push(`The largest move was ${files(big.files)} from ${labelOf(view, big.from)} to ${labelOf(view, big.to)} in ${buckets[big.bucket]?.label}.`);
+  else if (by === 'module') parts.push('No significant moves between these modules.');
   if (c.asOf !== null) parts.push(`The last ${c.unit} is partial, to ${fullDay.format(c.asOf)}.`);
   if (c.estimated.length) parts.push(`${c.estimated.length} of ${B} ${c.unit}s are estimated from sampled commits.`);
   return parts.join(' ');
