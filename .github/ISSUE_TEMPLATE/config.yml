@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/geekplux/repo-rivers/security/advisories/new
+    about: Please report security issues privately, not as a public issue.
+  - name: Good first issues
+    url: https://github.com/geekplux/repo-rivers/blob/main/docs/GOOD_FIRST_ISSUES.md
+    about: Scoped tasks with files and acceptance criteria, ready to pick up.

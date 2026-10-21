@@ -1,0 +1,47 @@
+name: Bug report
+description: Something renders wrong, errors, or is hard to use with a keyboard or screen reader.
+labels: [bug]
+body:
+  - type: input
+    id: view
+    attributes:
+      label: Repository or sample
+      description: The `?repo=` or `?sample=` part of the URL, if any.
+      placeholder: "?repo=owner/name"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open ...\n2. Press Tab until ...\n3. ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Chart or labels
+        - Keyboard or screen reader
+        - Colour or contrast
+        - Loading, errors or rate limits
+        - Era names
+        - Worker or API
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Browser, OS and assistive technology
+      placeholder: "Firefox 140, macOS 15, VoiceOver"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or console output
+      description: Please remove tokens or personal data first.
