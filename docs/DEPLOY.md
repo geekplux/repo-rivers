@@ -7,7 +7,7 @@ Nothing in this repository deploys by itself: there is no `deploy` script, and `
 ## Prerequisites
 
 1. A Cloudflare account and the dependencies installed (`pnpm i`).
-2. Sign in once: `pnpm exec wrangler login`.
+2. Sign in once: `pnpm exec wrangler login`. If `CLOUDFLARE_API_TOKEN` is set in your shell, wrangler uses it instead of the login session; unset it, or make sure it has Workers Scripts and KV edit rights on the right account.
 3. Create the KV namespace for cached aggregates and era names:
 
    ```sh
@@ -43,7 +43,7 @@ The exact command:
 pnpm build && pnpm exec wrangler deploy
 ```
 
-Wrangler prints the URL, by default `https://repo-rivers.<your-subdomain>.workers.dev`.
+Wrangler prints the URL, by default `https://repo-rivers.<your-subdomain>.workers.dev`. On an account without a workers.dev subdomain yet, the first deploy asks you to register one.
 
 ## After the deploy
 
