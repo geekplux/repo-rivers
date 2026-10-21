@@ -35,6 +35,8 @@ export function DataTable({ view, caption, eras = [] }: { view: RiverView; capti
               <tr>
                 <th scope="row">Era</th>
                 {eras.map((e) => <td key={e.start} colSpan={e.end - e.start + 1} className="rr-era-cell">{e.source === 'ai' ? `${e.title} (named by AI)` : e.title}</td>)}
+                {/* oxlint-disable-next-line jsx-a11y/control-has-associated-label -- the era row's empty Total cell */}
+                <td />
               </tr>
             </tfoot>
           )}

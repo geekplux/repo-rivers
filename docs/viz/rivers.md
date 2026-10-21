@@ -165,12 +165,12 @@ Keyboard state survives the pointer leaving the chart.
 
 ## 8. Era track (phase 9)
 - The track sits directly above the chart card and shares its x scale (same `left` and `w`). On mobile it is inside the same scroll region.
-- Its height is reserved **before** the eras arrive: 48 px, or 72 px if any bracket is narrower than 96 px. Bracket widths depend only on the deterministic segments, so swapping in AI names never shifts the layout.
+- Its height is reserved **before** the eras arrive: 48 px, or 72 px if any bracket is narrower than 200 px. Bracket widths depend only on the deterministic segments, so swapping in AI names never shifts the layout.
 - Era `{start, end}` (end bucket inclusive) spans `left + start·w` to `left + (end+1)·w`, inset 3 px at each end, which leaves a 6 px gap between brackets.
 - Bracket: a 1 px secondary-ink line at y = 40 with 6 px down-ticks at both ends.
-- Title: Fraunces italic 16 px (14 px on mobile), ink, baseline y = 32, starting at bracket start + 4. Titles are truncated with an ellipsis to the bracket width − 8. Brackets narrower than 96 px put their title on row 2 (y = 58).
+- Title: Fraunces italic 16 px (14 px on mobile), ink, baseline y = 32, starting at bracket start + 4. Titles are truncated with an ellipsis to the bracket width − 8. If any bracket is narrower than 200 px, titles alternate rows: even eras on row 1 (y = 32), odd eras on row 2 (y = 58), and each title may run to the start of the next same-row bracket (era i+2), or the track end, − 8.
 - In the chart: odd-indexed eras get a background band of ink at 4% opacity behind the rivers (8% when that era is focused or hovered).
-- Each era is a `<button>` in tab order after the chart. Focus or hover underlines the title and sets the readout to `{title} · {first}–{last} · {note}`.
+- Each era is a `<button>` in tab order after the chart. Focus or hover underlines the title and sets the readout to `{title} · {first}–{last} · {note}`. While an era is active and nothing is pinned, the chart shows its neutral state (no dimming, no cursor).
 - `named by AI` (mono 12 px, secondary ink) appears once at the right end of the track, only if any era has `source === 'ai'`.
 
 ## 9. States

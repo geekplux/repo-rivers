@@ -55,17 +55,26 @@ describe('era text', () => {
     expect(foot).toContain('<th scope="row">Era</th>');
     const spans = [...foot.matchAll(/colSpan="(\d+)"[^>]*>([^<]*)</gi)].map((m) => [Number(m[1]), m[2]]);
     expect(spans).toEqual(AI.map((e) => [e.end - e.start + 1, `${e.title} (named by AI)`]));
+    expect(foot).toMatch(/<\/td><td><\/td><\/tr>$/); // the row covers the Total column
     expect(renderToStaticMarkup(createElement(DataTable, { view: VIEW, caption: 'c' }))).not.toContain('<tfoot>');
   });
 });
 
 describe('eraBoxes', () => {
-  it('aligns brackets to bucket boundaries (inset 3 px) and reserves 48 px, or 72 px for narrow brackets', () => {
-    const { boxes, height } = eraBoxes([{ start: 0, end: 3 }, { start: 4, end: 9 }], 4, 30, 400);
-    expect(boxes.map((b) => [b.x, b.x + b.width])).toEqual([[4 + ERA_INSET, 4 + 120 - ERA_INSET], [124 + ERA_INSET, 4 + 300 - ERA_INSET]]);
+  it('aligns brackets to bucket boundaries (inset 3 px) and reserves 48 px when every bracket is at least 200 px', () => {
+    const { boxes, height } = eraBoxes([{ start: 0, end: 9 }, { start: 10, end: 19 }], 4, 30, 700);
+    expect(boxes.map((b) => [b.x, b.x + b.width])).toEqual([[4 + ERA_INSET, 4 + 300 - ERA_INSET], [304 + ERA_INSET, 4 + 600 - ERA_INSET]]);
     expect(height).toBe(48);
-    const narrow = eraBoxes([{ start: 0, end: 1 }, { start: 2, end: 9 }], 4, 30, 400);
-    expect(narrow.height).toBe(72);
-    expect(narrow.boxes[0]).toMatchObject({ row2: true, room: 400 - 7 - 8 });
+    expect(boxes.map((b) => [b.row2, b.room])).toEqual([[false, 294 - 8], [false, 294 - 8]]);
+  });
+
+  it('alternates rows when any bracket is under 200 px: each title runs to the next same-row bracket or the track end', () => {
+    const eras = [{ start: 0, end: 1 }, { start: 2, end: 9 }, { start: 10, end: 11 }, { start: 12, end: 19 }];
+    const { boxes, height } = eraBoxes(eras, 4, 30, 700);
+    expect(height).toBe(72);
+    expect(boxes.map((b) => b.row2)).toEqual([false, true, false, true]);
+    expect(boxes.map((b) => b.room)).toEqual([307 - 7 - 8, 367 - 67 - 8, 700 - 307 - 8, 700 - 367 - 8]);
+    // The height comes from the segments alone: the same for any names.
+    expect(eraBoxes(eras.map((e) => ({ ...e, title: 'x' })), 4, 30, 700).height).toBe(72);
   });
 });

@@ -17,7 +17,7 @@ import { useRepo } from './ui/useRepo.ts';
 import { Readout } from './ui/Readout.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
-import { useRiverFocus } from './ui/useRiverFocus.ts';
+import { EMPTY, useRiverFocus } from './ui/useRiverFocus.ts';
 import { useMedia, useWidth } from './ui/useSize.ts';
 import { Wordmark } from './ui/Wordmark.tsx';
 
@@ -38,6 +38,7 @@ export function App() {
   const [switched, setSwitched] = useState(false);
   const [frame, width] = useWidth<HTMLDivElement>();
   const mobile = useMedia('(max-width: 640px)');
+  const still = useMedia('(prefers-reduced-motion: reduce)');
   const summaryId = useId();
   const repo = useRepo();
   const rs = repo.state;
@@ -80,7 +81,7 @@ export function App() {
   const [status, setStatus] = useState(rs.status);
   if (status !== rs.status) {
     setStatus(rs.status);
-    if (rs.status === 'done') setSwitched(true); // "Showing owner/name: …" until the first movement
+    if (rs.status === 'done') setSwitched(true); // "Showing …" until the first movement
   }
   const shownStatus = useRef(rs.status);
   useEffect(() => {
@@ -103,13 +104,21 @@ export function App() {
   const moved = active.bucket !== null && (rs.status === 'done' || loaded?.id === sample.id);
   if (moved && !acted) setActed(true);
   if (moved && switched) setSwitched(false); // "Showing …" only until the first movement in the new chart
-  const idle = agg && view ? `${switched ? `Showing ${title}: ` : ''}${idleLine(agg, view)}` : '';
+  // The idle line starts with owner/name, so a pasted repo (title = owner/name) is not named twice.
+  const idle = agg && view ? `${switched ? (repoName ? 'Showing ' : `Showing ${title}: `) : ''}${idleLine(agg, view)}` : '';
   const failed = rs.status === 'error' ? errorCopy(rs.failure, repoName) : null;
   const readout = rs.status === 'loading' ? loadingLine(repoName, rs.progress)
     : failed ? failed.title // the visible readout names the error; the live region (below) speaks it in full
     : view && eraOn ? eraLine(view, eraOn)
     : view && notes && active.bucket !== null ? readoutLine(view, notes, active.river, active.bucket) : idle;
   const unit = agg?.time.unit;
+  useEffect(() => {
+    // On mobile, an era tapped or focused in the track shows its note in the readout: bring it on screen.
+    if (!mobile || era === null) return;
+    const el = document.querySelector('[data-testid="readout"]');
+    const r = el?.getBoundingClientRect();
+    if (r && (r.top < 0 || r.bottom > innerHeight)) el!.scrollIntoView({ block: 'nearest', behavior: still ? 'instant' : 'smooth' });
+  }, [era, mobile, still]);
   return (
     <div className="rr-page">
       <header className="rr-header">
@@ -142,7 +151,7 @@ export function App() {
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {!busy && agg && view && layout && view.rivers.length > 0 && (
               <div className="rr-stack">
-                <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
+                <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={eraOn && !active.pinned ? EMPTY : active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
                   eras={eras} activeEra={era} />
                 {/* After the chart in tab order, drawn above it (CSS order). */}
                 <EraTrack eras={eras} layout={layout} buckets={view.buckets} active={era} onActive={setEra} />
