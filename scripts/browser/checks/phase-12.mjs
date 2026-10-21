@@ -11,8 +11,8 @@ export default async function phase12({ page, baseURL, worker }) {
 
   // Record CSP violations from the very first request (the smoke check already loaded the page once).
   await page.addInitScript(() => {
-    window.__csp = [];
-    document.addEventListener('securitypolicyviolation', (e) => window.__csp.push(`${e.violatedDirective} ${e.blockedURI}`));
+    window.rrCsp = [];
+    document.addEventListener('securitypolicyviolation', (e) => window.rrCsp.push(`${e.violatedDirective} ${e.blockedURI}`));
   });
   const res = await page.goto(baseURL, { waitUntil: 'load' });
   const h = res.headers();
@@ -34,7 +34,7 @@ export default async function phase12({ page, baseURL, worker }) {
   await page.evaluate(() => document.fonts.ready);
   const fonts = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family));
   assert(fonts.some((f) => /Fraunces/.test(f)), `the self-hosted display font loads (got ${JSON.stringify(fonts)})`);
-  const violations = await page.evaluate(() => window.__csp);
+  const violations = await page.evaluate(() => window.rrCsp);
   assert(violations.length === 0, `no CSP violations (got ${JSON.stringify(violations)})`);
   await shoot(page, '01-fullstack-sample-desktop');
 
