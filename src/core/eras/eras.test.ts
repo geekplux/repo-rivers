@@ -6,7 +6,7 @@ import { parseAggregate, type RepoAggregate } from '../schema.ts';
 import { heuristicEras } from './heuristic.ts';
 import { eraRequest } from './prompt.ts';
 import { eraCount, partition, segmentEras } from './segment.ts';
-import { SUMMARY_MAX_BYTES, summarizeForEras, type EraSummary } from './summary.ts';
+import { SUMMARY_MAX_BYTES, summarizeForEras, type EraFacts, type EraSummary } from './summary.ts';
 import { NOTE_MAX, TITLE_MAX, checkEras, clampText, parseEraSummary, parseNames } from './validate.ts';
 
 const SAMPLES = { vite, svelte, express } as Record<string, unknown>;
@@ -99,6 +99,15 @@ describe('summarizeForEras', () => {
     expect(summary.eras[0]!.contributors).toBe(1);
     expect(() => parseEraSummary(JSON.parse(json))).not.toThrow();
   });
+
+  it('notes a change of lead module within an era (shift) and the lead module’s own trend', () => {
+    const agg = synthetic({ alpha: regime(24, [0, 12], 150), beta: regime(24, [12, 24]) });
+    const [e] = summarizeForEras(agg, [{ start: 0, end: 23 }]).eras;
+    expect(e).toMatchObject({ top: [['alpha', 60], ['beta', 40]], shift: ['alpha', 'beta'], leadTrend: 'falling' });
+    const steady = summarizeForEras(synthetic({ alpha: rep(24, 10), beta: rep(24, 5) }), [{ start: 0, end: 23 }]).eras[0]!;
+    expect(steady.shift).toBeUndefined();
+    expect(steady.leadTrend).toBe('steady');
+  });
 });
 
 const ok = (): EraSummary => summarizeForEras(parseAggregate(structuredClone(express)));
@@ -123,9 +132,19 @@ describe('parseEraSummary', () => {
     expect(mutate((s) => (s.eras[0]!.from = '2020-13'))).toThrow(/YYYY-MM/);
     expect(mutate((s) => (s.eras[0]!.top = [['a', 1], ['b', 1], ['c', 1], ['d', 1], ['e', 1]]))).toThrow(/at most 4/);
     expect(mutate((s) => (s.eras = []))).toThrow(/at least one/);
+    expect(mutate((s) => (s.eras[0]!.shift = ['a', 'b b']))).toThrow(/identifier/);
+    expect(mutate((s) => (s.eras[0]!.leadTrend = 'up' as never))).toThrow(/unknown/);
+    expect(mutate((s) => delete (s.eras[0] as Partial<EraFacts>).leadTrend)).toThrow(/keys/);
+    expect(mutate((s) => (s.eras[0]!.shift = ['a', 'b']))).not.toThrow();
     expect(() => parseEraSummary('{}')).toThrow(/object/);
   });
 });
+
+const fact = (o: Partial<EraFacts>, i: number): EraFacts => ({
+  start: i, end: i, from: '2020-01', to: '2020-01', top: [], trend: 'steady', leadTrend: 'steady', activity: 'medium', contributors: 1, newcomers: 0, moves: [], ...o,
+});
+const titles = (...eras: Partial<EraFacts>[]): string[] =>
+  heuristicEras({ v: 1, repo: 'demo', unit: 'month', eras: eras.map(fact) }).map((e) => e.title);
 
 describe('names', () => {
   const summary = summarizeForEras(parseAggregate(structuredClone(svelte)));
@@ -138,6 +157,32 @@ describe('names', () => {
     expect(new Set(eras.map((e) => e.title)).size).toBe(eras.length);
     expect(heuristicEras(summary)).toEqual(eras);
     expect(eras.find((e) => /move to packages/.test(e.title))?.note).toMatch(/952 files moved from test to packages/);
+  });
+
+
+  it('heuristic titles: a shift within the era, a move from smaller modules, the lead module’s trend', () => {
+    expect(titles({ top: [['packages/vite', 40]], shift: ['src/node', 'packages/vite'] })).toEqual(['From src/node to packages/vite']);
+    expect(titles({ top: [['abc', 40]], shift: ['packages/aaaaaaaaaaaa', 'packages/bbbbbbbbbbb'] })).toEqual(['The abc era']); // over 32 characters
+    expect(titles({ top: [['packages/vite', 40]], moves: [['other', 'packages/create-vite', 122]] })).toEqual(['The move to packages/create-vite']);
+    expect(titles({ top: [['lib', 40]], moves: [['other', 'packages/create-vite', 49]] })).toEqual(['The lib era']);
+    expect(titles({ top: [['lib', 40]] }, { top: [['lib', 40]], trend: 'falling', leadTrend: 'rising' })).toEqual(['The lib era', 'lib picks up']);
+  });
+
+  it('heuristic titles: last path segments only when unambiguous, and a fallback when a pair is too long', () => {
+    expect(titles({ top: [['lib', 60]] }, { top: [['lib', 60], ['docs/guide', 30]] })).toEqual(['The lib era', 'lib and guide']);
+    expect(titles({ top: [['src/core', 60], ['docs', 20]] }, { top: [['src/core', 60], ['lib/core', 30]] })[1]).toBe('src/core and lib/core');
+    expect(titles({ top: [['a'.repeat(18), 60]] }, { top: [['a'.repeat(18), 60], ['b'.repeat(18), 30]] })[1]).toBe(`More ${'a'.repeat(18)}`);
+  });
+
+  it('heuristic titles: "Back to" a former lead; the year only when the lead is the same', () => {
+    expect(titles({ top: [['lib', 60]] }, { top: [['test', 60]] }, { top: [['lib', 60]] })).toEqual(['The lib era', 'The test era', 'Back to lib']);
+    const rising: Partial<EraFacts> = { top: [['lib', 60]], leadTrend: 'rising', from: '2021-01' };
+    expect(titles({ top: [['lib', 60]] }, rising, rising)).toEqual(['The lib era', 'lib picks up', 'lib picks up, 2021']);
+  });
+
+  it('heuristic notes call low activity below average', () => {
+    const [e] = heuristicEras({ v: 1, repo: 'demo', unit: 'month', eras: [fact({ top: [['lib', 60]], activity: 'low' }, 0)] });
+    expect(e!.note).toMatch(/below-average activity$/);
   });
 
   it('clampText strips markup and cuts with an ellipsis', () => {

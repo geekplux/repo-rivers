@@ -10,7 +10,8 @@ export function eraRequest(summary: EraSummary) {
   const n = summary.eras.length;
   const system =
     `You name eras in the history of a software repository. You get JSON facts for ${n} consecutive eras ` +
-    '(module shares of lines changed, trend, activity, contributor counts, files moved between modules). ' +
+    '(module shares of lines changed, overall and lead-module trend, a change of lead module within the era, activity, ' +
+    'contributor counts, files moved between modules). ' +
     `Answer with JSON {"eras":[{"title","note"}]} with exactly ${n} items, in order. Title: at most ${TITLE_MAX} ` +
     `characters, plain words, names what changed (e.g. "The packages/ monorepo"). Note: at most ${NOTE_MAX} characters, ` +
     'one plain sentence using only the given facts. No people, no markup, no numbers that are not in the facts.';

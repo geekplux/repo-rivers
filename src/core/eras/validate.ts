@@ -21,11 +21,13 @@ type Obj = Record<string, unknown>;
 const bad = (why: string): never => {
   throw new TypeError(`invalid era summary: ${why}`);
 };
+/** `keys` is space-separated; a trailing `?` marks an optional key. */
 function exact(v: unknown, keys: string): Obj {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) bad('expected an object');
   const want = keys.split(' ');
   const got = Object.keys(v as Obj);
-  if (got.length !== want.length || !got.every((k) => want.includes(k))) bad(`expected exactly the keys ${keys}`);
+  const known = (k: string) => want.includes(k) || want.includes(`${k}?`);
+  if (!got.every(known) || !want.every((k) => k.endsWith('?') || got.includes(k))) bad(`expected exactly the keys ${keys}`);
   return v as Obj;
 }
 const int = (v: unknown, max: number): number => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= max ? (v as number) : bad('integer out of range'));
@@ -47,13 +49,15 @@ export function parseEraSummary(input: unknown): EraSummary {
   const s = exact(input, 'v repo unit eras');
   if (s.v !== 1) bad('unsupported version');
   const eras = list(s.eras, 6, (e): EraFacts => {
-    const f = exact(e, 'start end from to top trend activity contributors newcomers moves');
+    const f = exact(e, 'start end from to top trend leadTrend activity contributors newcomers moves shift?');
+    const shift = f.shift === undefined ? undefined : tuple(f.shift, 2).map(id);
     return {
       start: int(f.start, 9999), end: int(f.end, 9999), from: month(f.from), to: month(f.to),
       top: list(f.top, 4, (t) => { const [m, p] = tuple(t, 2); return [id(m), int(p, 100)]; }),
-      trend: pick(f.trend, TRENDS), activity: pick(f.activity, LEVELS),
+      trend: pick(f.trend, TRENDS), leadTrend: pick(f.leadTrend, TRENDS), activity: pick(f.activity, LEVELS),
       contributors: int(f.contributors, 1e6), newcomers: int(f.newcomers, 1e6),
       moves: list(f.moves, 2, (t) => { const [a, b, n] = tuple(t, 3); return [id(a), id(b), int(n, 1e6)]; }),
+      ...(shift && { shift: shift as [string, string] }),
     };
   });
   if (eras.length === 0) bad('expected at least one era');
