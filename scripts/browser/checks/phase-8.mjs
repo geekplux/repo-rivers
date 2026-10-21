@@ -76,6 +76,8 @@ export default async function phase8({ page, baseURL }) {
   const toStream = (route) => route.continue({ url: `http://127.0.0.1:${port}${new URL(route.request().url()).pathname}` });
   await page.route('**/api/repo/sveltejs/svelte', toStream);
   await page.route('**/api/repo/vitejs/vite', toStream);
+  // Results served by the Worker ask it to name their eras (phase 9); answer "no AI names" so the heuristic stays.
+  await page.route('**/api/eras', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"eras":[],"source":"heuristic"}' }));
   try {
     // AC2: invalid input → inline error tied with aria-describedby, no request.
     await page.goto(baseURL, { waitUntil: 'load' });
@@ -175,6 +177,8 @@ export default async function phase8({ page, baseURL }) {
     await expectError(page, 'tiny/one', 'This repo has too little history to draw', ['Try another repo', 'Show a sample instead'], '08-error-too-little');
     await expectError(page, 'blank/void', 'Empty repository', ['Try another repo', 'Show a sample instead']);
 
+    // Chrome may refetch the favicon while offline; that is not the app's request.
+    allowConsoleError(/ERR_INTERNET_DISCONNECTED.*\/favicon\.svg/);
     await page.context().setOffline(true);
     api.length = 0;
     await expectError(page, 'offline/case', 'You’re offline', ['Try again', 'Show a sample instead'], '09-error-offline');
