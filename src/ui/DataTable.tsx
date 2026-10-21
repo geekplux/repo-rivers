@@ -1,10 +1,11 @@
 import { useId } from 'react';
+import type { Era } from '../core/schema.ts';
 import type { RiverView } from '../core/view.ts';
 
 const num = new Intl.NumberFormat('en');
 
-/** "View as table": every river by bucket, with a caption and row/column headers; values straight from the view. */
-export function DataTable({ view, caption }: { view: RiverView; caption: string }) {
+/** "View as table": every river by bucket, with a caption and row/column headers; values straight from the view. Eras, if any, are a footer row. */
+export function DataTable({ view, caption, eras = [] }: { view: RiverView; caption: string; eras?: readonly Era[] }) {
   const id = useId();
   return (
     <details className="rr-table">
@@ -29,6 +30,14 @@ export function DataTable({ view, caption }: { view: RiverView; caption: string 
               </tr>
             ))}
           </tbody>
+          {eras.length > 0 && (
+            <tfoot>
+              <tr>
+                <th scope="row">Era</th>
+                {eras.map((e) => <td key={e.start} colSpan={e.end - e.start + 1} className="rr-era-cell">{e.source === 'ai' ? `${e.title} (named by AI)` : e.title}</td>)}
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </details>

@@ -2,7 +2,7 @@
  * Deterministic text for screen readers and the readout bar (docs/viz/rivers.md §6): the prose summary of a
  * view, the idle line and the per-river/bucket readout. Every number comes from the {@link RiverView}.
  */
-import type { BucketUnit, RepoAggregate } from './schema.ts';
+import type { BucketUnit, Era, RepoAggregate } from './schema.ts';
 import type { RiverView } from './view.ts';
 
 const num = new Intl.NumberFormat('en');
@@ -108,4 +108,18 @@ export function describeView(agg: RepoAggregate, view: RiverView, c: Caveats): s
   if (c.asOf !== null) parts.push(`The last ${c.unit} is partial, to ${fullDay.format(c.asOf)}.`);
   if (c.estimated.length) parts.push(`${c.estimated.length} of ${B} ${c.unit}s are estimated from sampled commits.`);
   return parts.join(' ');
+}
+
+const span = (view: RiverView, e: Pick<Era, 'start' | 'end'>): string => `${view.buckets[e.start]?.label ?? ''}–${view.buckets[e.end]?.label ?? ''}`;
+
+/** The readout for a focused or hovered era: `{title} · {first}–{last} · {note}` (docs/viz/rivers.md §8). */
+export function eraLine(view: RiverView, era: Era): string {
+  return [era.title, span(view, era), era.note].filter(Boolean).join(' · ');
+}
+
+/** The eras for the prose summary: `3 eras: The test era (Q4 2016–Q3 2018); … .`, noting AI-written names. */
+export function describeEras(view: RiverView, eras: readonly Era[]): string {
+  if (eras.length === 0) return '';
+  const list = eras.map((e) => `${e.title} (${span(view, e)})`).join('; ');
+  return `${eras.length} eras: ${list}.${eras.some((e) => e.source === 'ai') ? ' Era names were written by AI.' : ''}`;
 }

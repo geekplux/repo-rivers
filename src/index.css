@@ -52,6 +52,21 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-cursor { stroke: var(--rr-ink); stroke-opacity: 0.6; pointer-events: none; }
 .rr-cursor-box { fill: var(--rr-bg); stroke: var(--rr-ink); }
 .rr-cursor-tag { fill: var(--rr-ink); }
+/* Era track (phase 9, docs/viz/rivers.md §8): drawn above the chart, after it in tab order. */
+.rr-stack { display: flex; flex-direction: column; width: max-content; }
+.rr-eras { order: -1; position: relative; flex: none; }
+.rr-era { position: absolute; top: 0; height: 100%; margin: 0; padding: 0; border: 0; background: none; color: var(--rr-ink); font: inherit; text-align: left; cursor: default; }
+.rr-era:focus-visible { outline-offset: -1px; }
+.rr-era-title { position: absolute; left: 4px; top: 16px; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: italic 500 16px/20px var(--rr-display); font-synthesis: style; text-underline-offset: 3px; }
+.rr-era-row2 { top: 42px; }
+.rr-era:is(:hover, :focus-visible, [data-active]) .rr-era-title { text-decoration: underline; }
+.rr-era-bracket { position: absolute; left: 0; right: 0; top: 40px; height: 6px; border: 1px solid var(--rr-ink-2); border-bottom: 0; }
+.rr-era-ai { position: absolute; right: 4px; top: 0; font: 12px/16px var(--rr-mono); color: var(--rr-ink-2); }
+.rr-era-band { fill: var(--rr-ink); opacity: 0.04; }
+.rr-era-band.rr-on { opacity: 0.08; }
+.rr-table td.rr-era-cell { text-align: left; font-family: var(--rr-display); font-style: italic; }
+@media (max-width: 640px) { .rr-era-title { font-size: 14px; } }
 .rr-key { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; margin: 2px 0 8px; }
 .rr-key span { display: inline-flex; align-items: center; gap: 6px; }
 .rr-key-bot { fill: none; }

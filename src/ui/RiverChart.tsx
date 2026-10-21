@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type KeyboardEvent, type MouseEvent } from 'react';
 import type { RiverLayout } from '../core/layout/layout.ts';
 import { link } from '../core/layout/ribbons.ts';
-import type { RepoAggregate } from '../core/schema.ts';
+import type { Era, RepoAggregate } from '../core/schema.ts';
 import type { RiverView } from '../core/view.ts';
 import { Axis } from './Axis.tsx';
 import { cursorTag, floatLabel } from './overlays.ts';
@@ -23,6 +23,9 @@ export interface RiverChartProps {
   svg: { onPointerMove: (e: MouseEvent<SVGSVGElement>) => void; onPointerLeave: () => void; onClick: (e: MouseEvent<SVGSVGElement>) => void };
   /** Id of the prose summary (`aria-describedby`). */
   describedBy: string;
+  /** Eras: odd ones get a faint background band; the focused or hovered one a stronger band. */
+  eras?: readonly Era[];
+  activeEra?: number | null;
 }
 
 /**
@@ -30,7 +33,7 @@ export interface RiverChartProps {
  * one focusable group for keyboard exploration, dimming of the other rivers, the active river's outline and
  * transfers, and a bucket cursor (docs/viz/rivers.md §6).
  */
-export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, svg, describedBy }: RiverChartProps) {
+export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, svg, describedBy, eras = [], activeEra = null }: RiverChartProps) {
   const id = useId();
   const ref = useRef<SVGGElement>(null);
   useEffect(() => {
@@ -48,7 +51,7 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
   const col = bucket === null ? undefined : L.columns[bucket];
   // Mobile: keep the keyboard's bucket inside the scroll region.
   useEffect(() => {
-    const region = ref.current?.ownerSVGElement?.parentElement;
+    const region = ref.current?.closest('.rr-frame');
     if (!mobile || !col || !region || document.activeElement !== ref.current) return;
     if (col.x < region.scrollLeft + 40 || col.x > region.scrollLeft + region.clientWidth - 40) region.scrollLeft = col.x - region.clientWidth / 2;
   }, [mobile, col]);
@@ -77,6 +80,10 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
         {/* Encloses plot, axis and gutter (layout reserves a 4 px inset), so it never covers data. */}
         <rect x={1} y={1} width={L.width - 2} height={L.height - 2} rx="3" className="rr-ring" />
         <g aria-hidden="true">
+          {eras.map((e, i) => (i % 2 === 1 || i === activeEra) && (
+            <rect key={e.start} x={left + e.start * L.bucketWidth} width={(e.end - e.start + 1) * L.bucketWidth} y={top} height={bottom - top}
+              className={cls('rr-era-band', i === activeEra && 'rr-on')} data-era-band={i} />
+          ))}
           <g className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`}>
             {L.rivers.map((r) => (
               <path key={r.id} d={r.path} data-river={r.id} data-total={view.rivers.find((v) => v.id === r.id)?.total}

@@ -1,16 +1,18 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
-import { caveats, describeView, idleLine, readoutLine } from './core/summary.ts';
+import { caveats, describeEras, describeView, eraLine, idleLine, readoutLine } from './core/summary.ts';
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
 import { Controls, type ControlValue } from './ui/Controls.tsx';
 import { DataTable } from './ui/DataTable.tsx';
+import { EraTrack } from './ui/EraTrack.tsx';
 import { Progress } from './ui/Progress.tsx';
 import { REPO_INPUT_ID, RepoInput } from './ui/RepoInput.tsx';
 import { FallbackNotice, SourceNote } from './ui/SourceNote.tsx';
 import { ErrorState } from './ui/states/ErrorState.tsx';
 import { errorCopy, loadingLine, type ErrorAction } from './ui/states/copy.ts';
+import { useEras } from './ui/useEras.ts';
 import { useRepo } from './ui/useRepo.ts';
 import { Readout } from './ui/Readout.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
@@ -60,6 +62,12 @@ export function App() {
     const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
     return layoutRivers(view, { width, mobile, asOf: agg.generatedAt, truncatedBuckets, previousColors: hues });
   }, [agg, view, width, mobile, hues]);
+  // Heuristic eras at once; AI names swap in later when the Worker served this repo (and are cached with it).
+  const eras = useEras(agg, rs.status === 'done' && rs.via === 'worker', (named, a) => {
+    if (rs.status === 'done' && rs.aggregate === a) repo.remember(rs.ref, { ...a, eras: named });
+  });
+  const [era, setEra] = useState<number | null>(null);
+  const eraOn = era === null ? undefined : eras[era];
   const [acted, setActed] = useState(false); // the live readout stays quiet until the first user action
   const change = (next: ControlValue) => {
     if (layout) setHues(Object.fromEntries(layout.rivers.map((r) => [r.id, r.color])));
@@ -99,6 +107,7 @@ export function App() {
   const failed = rs.status === 'error' ? errorCopy(rs.failure, repoName) : null;
   const readout = rs.status === 'loading' ? loadingLine(repoName, rs.progress)
     : failed ? failed.title // the visible readout names the error; the live region (below) speaks it in full
+    : view && eraOn ? eraLine(view, eraOn)
     : view && notes && active.bucket !== null ? readoutLine(view, notes, active.river, active.bucket) : idle;
   const unit = agg?.time.unit;
   return (
@@ -132,7 +141,12 @@ export function App() {
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {!busy && agg && view && layout && view.rivers.length > 0 && (
-              <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={active} chart={focus.chart} svg={focus.svg} describedBy={summaryId} />
+              <div className="rr-stack">
+                <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
+                  eras={eras} activeEra={era} />
+                {/* After the chart in tab order, drawn above it (CSS order). */}
+                <EraTrack eras={eras} layout={layout} buckets={view.buckets} active={era} onActive={setEra} />
+              </div>
             )}
             {!busy && view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
           </div>
@@ -149,12 +163,12 @@ export function App() {
               )}
             </p>
           )}
-          <Readout text={readout} spoken={failed ? `${failed.title}. ${failed.body}` : readout} pinned={active.pinned} live={acted} />
+          <Readout text={readout} spoken={failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : readout} pinned={active.pinned} live={acted} />
           <Controls value={options} onChange={change} disabled={busy} />
           {!busy && agg && view && notes && (
             <>
-              <p id={summaryId} className="rr-summary">{describeView(agg, view, notes)}</p>
-              <DataTable view={view} caption={`${view.metric} per ${unit} in ${agg.repo.owner}/${agg.repo.name}; rows are rivers, columns are ${unit}s`} />
+              <p id={summaryId} className="rr-summary">{describeView(agg, view, notes)} {describeEras(view, eras)}</p>
+              <DataTable view={view} eras={eras} caption={`${view.metric} per ${unit} in ${agg.repo.owner}/${agg.repo.name}; rows are rivers, columns are ${unit}s`} />
             </>
           )}
         </section>

@@ -93,5 +93,7 @@ export function useRepo() {
     cancel: () => (stop(), setState(before.current)),
     /** Back to the selected sample. */
     clear: () => (stop(), setState(IDLE)),
+    /** Stores an updated aggregate (e.g. with AI era names) in the browser cache. */
+    remember: (ref: RepoRef, aggregate: RepoAggregate) => void cache.put(ref, aggregate),
   };
 }
