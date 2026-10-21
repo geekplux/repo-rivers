@@ -1,9 +1,11 @@
-STATE: IN-PROGRESS
+STATE: DONE
+
+All 12 phases are done and open as stacked PRs (nothing merged). **Deployment is prepared but awaiting Sean's approval to deploy** (see PR #13 and docs/DEPLOY.md; exact command: `pnpm build && pnpm exec wrangler deploy`).
 
 # Status
 
-- Current phase: 12 verified (PASS round 1); opening PR
-- Plan: docs/PLAN.md (12 phases), committed on main
+- Current phase: none (all phases complete; deploy awaits approval)
+- Plan: docs/PLAN.md (12 phases), on main
 - Blockers: none
 
 | Phase | Branch | PR | State | Verify rounds |
@@ -19,16 +21,17 @@ STATE: IN-PROGRESS
 | 9 | phase-9-era-annotations | [#10](https://github.com/geekplux/repo-rivers/pull/10) | PR open (PASS) | 2 |
 | 10 | phase-10-oss-docs | [#11](https://github.com/geekplux/repo-rivers/pull/11) | PR open (PASS) | 2 |
 | 11 | phase-11-gallery-launch | [#12](https://github.com/geekplux/repo-rivers/pull/12) | PR open (PASS) | 2 |
-| 12 | phase-12-deploy-prep | (opening) | verified PASS | 1 |
+| 12 | phase-12-deploy-prep | [#13](https://github.com/geekplux/repo-rivers/pull/13) | PR open (PASS), awaiting Sean's approval to deploy | 1 |
 
-## Carry-overs (scheduled into later phases)
-- P12: fix wrangler.dev.jsonc header comment (points to worker/test/wranglerConfig.test.ts; actual scripts/wrangler-config.test.ts); DEPLOY.md/README: recommend a public-repo-only (fine-grained, no private access) GITHUB_TOKEN for the Worker secret.
-
-- (done in P10: docs/GOOD_FIRST_ISSUES.md) good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change; browser-fallback network failure while online shown as 'offline' (should be 'GitHub not answering'); cancel during back/forward leaves stale ?repo=; real Worker 429 logs a console resource error.
+## Needs Sean
+- Approve and run the deploy (PR #13 / docs/DEPLOY.md): create the KV namespace and paste its id into both wrangler configs, enable Workers AI, optionally set a public-repo-read-only `GITHUB_TOKEN` secret, then `pnpm build && pnpm exec wrangler deploy`.
+- Enable GitHub private vulnerability reporting in the repo settings (SECURITY.md and CODE_OF_CONDUCT.md link to it).
+- Review docs/LAUNCH.md drafts; nothing has been posted.
 
 ## Follow-ups
-- Sean: enable GitHub private vulnerability reporting in the repo settings (SECURITY.md and CODE_OF_CONDUCT.md link to it).
-- After deploy (needs Sean): run `scripts/build-eras.ts` with Cloudflare account credentials to replace heuristic sample era names with AI-written ones (non-blocking).
-- Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
+- After deploy: replace the README demo placeholder and the localhost `?sample=` links in examples/README.md with the live URL.
+- After deploy: run `pnpm eras:build --ai` (CLOUDFLARE_ACCOUNT_ID + a Workers-AI-only WORKERS_AI_TOKEN) to replace heuristic sample era names with AI-written ones (non-blocking).
+- Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope).
+- Smaller improvements are listed in docs/GOOD_FIRST_ISSUES.md.
 
 Last updated: 2026-10-21 04:39 UTC
