@@ -14,7 +14,9 @@ pnpm dev:worker   # optional, in a second terminal: the API for pasting any publ
 
 No account and no API key. The built-in samples (Vite, Svelte, Express) render offline. Pasting `owner/name` or a GitHub URL also works without the Worker: the browser then reads GitHub directly, against your own rate limit.
 
-<img src="docs/images/hero.png" width="720" alt="The Vite sample: rivers of modules from 2020 to 2026, with packages/vite as the widest river, dashed arrows where files moved between folders, and three named eras above the chart.">
+<a href="docs/images/hero.png"><img src="docs/hero.gif" width="720" alt="The Vite sample: rivers of modules from 2020 to 2026 sweep in from the left, with packages/vite as the widest river, dashed arrows where files moved between folders, and three named eras above the chart. The pointer then follows packages/vite and a second river, dimming the other rivers while the readout gives each quarter's lines changed."></a>
+
+More examples, with the story each sample tells: [the gallery](examples/README.md). The image above links to a still version.
 
 ## What you can read from it
 
