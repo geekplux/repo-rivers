@@ -4,9 +4,10 @@ import type { RepoAggregate } from '../../src/core/schema.ts';
 import { json, ndjson, type Send } from './http.ts';
 import { cacheKey, isFresh, readEntry, writeEntry, type CacheEntry, type KvStore } from './kv.ts';
 
-/** Bindings the route needs. `GITHUB_TOKEN` is optional and is never echoed or logged. */
+/** Bindings the route needs. `GITHUB_TOKEN` is optional and is never echoed or logged; without `RIVERS_KV`
+ * (PR Previews) nothing is cached. */
 export interface RepoEnv {
-  RIVERS_KV: KvStore;
+  RIVERS_KV?: KvStore;
   GITHUB_TOKEN?: string;
 }
 

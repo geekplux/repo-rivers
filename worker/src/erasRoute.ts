@@ -11,9 +11,10 @@ export interface AiRunner {
   run(model: string, input: ReturnType<typeof eraRequest>): Promise<unknown>;
 }
 
-/** Bindings the route needs; without `AI` every answer is the heuristic (O3). */
+/** Bindings the route needs; without `AI` every answer is the heuristic (O3); without `RIVERS_KV` (PR Previews)
+ * nothing is cached. */
 export interface ErasEnv {
-  RIVERS_KV: KvStore;
+  RIVERS_KV?: KvStore;
   AI?: AiRunner;
 }
 
@@ -57,7 +58,7 @@ export async function erasRoute(request: Request, env: ErasEnv): Promise<Respons
   }
   if (!summary) return json({ type: 'error', code: 'invalid', message: 'Expected { summary } with a valid era summary' }, 400);
   const key = await erasKey(summary);
-  const cached = await env.RIVERS_KV.get(key).catch(() => null);
+  const cached = env.RIVERS_KV ? await env.RIVERS_KV.get(key).catch(() => null) : null;
   if (cached) {
     try {
       const eras = checkEras(JSON.parse(cached), summary.eras);
@@ -68,6 +69,6 @@ export async function erasRoute(request: Request, env: ErasEnv): Promise<Respons
   }
   const eras = env.AI ? await nameWithAi(env.AI, summary) : null;
   if (!eras) return json({ eras: heuristicEras(summary), source: 'heuristic' });
-  await env.RIVERS_KV.put(key, JSON.stringify(eras), { expirationTtl: ERAS_TTL_SECONDS }).catch(() => console.error('KV write failed'));
+  await env.RIVERS_KV?.put(key, JSON.stringify(eras), { expirationTtl: ERAS_TTL_SECONDS }).catch(() => console.error('KV write failed'));
   return json({ eras, source: 'ai' });
 }

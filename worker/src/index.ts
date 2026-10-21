@@ -2,8 +2,10 @@ import { erasRoute, type AiRunner } from './erasRoute.ts';
 import { json } from './http.ts';
 import { repoRoute, type RouteDeps } from './repoRoute.ts';
 
-/** Generated bindings (`wrangler types`) plus the optional secret; `AI` may be absent (local dev, tests). */
-export interface WorkerEnv extends Omit<Env, 'API_LIMIT' | 'AI'> {
+/** Generated bindings (`wrangler types`) plus the optional secret; `AI` may be absent (local dev, tests), and
+ * `RIVERS_KV` is absent in PR Previews (wrangler.jsonc `previews`), which then run uncached. */
+export interface WorkerEnv extends Omit<Env, 'API_LIMIT' | 'AI' | 'RIVERS_KV'> {
+  RIVERS_KV?: Env['RIVERS_KV'];
   GITHUB_TOKEN?: string;
   AI?: AiRunner;
   /** Absent in unit tests; enforced by `wrangler dev` and in production. */

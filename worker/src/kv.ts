@@ -27,8 +27,9 @@ export const cacheKey = (owner: string, name: string): string => `agg:v1:${owner
 /** True while `entry` is under {@link FRESH_MS} old. */
 export const isFresh = (entry: CacheEntry, now: number): boolean => now - entry.fetchedAt < FRESH_MS;
 
-/** Reads an entry; anything unparsable (old schema, corrupt) counts as a miss. */
-export async function readEntry(kv: KvStore, key: string): Promise<CacheEntry | null> {
+/** Reads an entry; no KV binding (PR Previews) or anything unparsable (old schema, corrupt) counts as a miss. */
+export async function readEntry(kv: KvStore | undefined, key: string): Promise<CacheEntry | null> {
+  if (!kv) return null;
   const raw = await kv.get(key);
   if (raw === null) return null;
   try {
@@ -40,7 +41,8 @@ export async function readEntry(kv: KvStore, key: string): Promise<CacheEntry | 
   }
 }
 
-/** Writes an entry with a {@link TTL_SECONDS} expiry. */
-export function writeEntry(kv: KvStore, key: string, entry: CacheEntry): Promise<void> {
+/** Writes an entry with a {@link TTL_SECONDS} expiry; a no-op without a KV binding. */
+export async function writeEntry(kv: KvStore | undefined, key: string, entry: CacheEntry): Promise<void> {
+  if (!kv) return;
   return kv.put(key, JSON.stringify(entry), { expirationTtl: TTL_SECONDS });
 }

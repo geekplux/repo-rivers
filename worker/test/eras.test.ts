@@ -81,6 +81,13 @@ describe('POST /api/eras', () => {
     expect(kv.puts).toHaveLength(0);
   });
 
+  it('names with AI on every request without a RIVERS_KV binding (PR Previews)', async () => {
+    const ai = fakeAi(() => ({ response: { eras: names() } }));
+    expect((await post({ AI: ai })).body.source).toBe('ai');
+    expect((await post({ AI: ai })).body.source).toBe('ai');
+    expect(ai.run).toHaveBeenCalledTimes(2);
+  });
+
   it('a missing AI binding falls back to the heuristic (O3)', async () => {
     const { body } = await post({ RIVERS_KV: fakeKv() });
     expect(body).toEqual({ eras: heuristicEras(SUMMARY), source: 'heuristic' });
