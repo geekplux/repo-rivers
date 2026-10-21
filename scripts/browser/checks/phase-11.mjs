@@ -1,6 +1,7 @@
 // Phase 11: the ?embed=social card (docs/PLAN.md phase 11): 1280×640, nothing cut off, legible, passes axe,
-// keyboard-operable chart; screenshots 01-embed-social and its CVD simulations.
-import { assert, runAxe, shoot, shootCvd, tabTo } from '../lib.mjs';
+// a static picture (no tab stops: the chart is role="img" with a summary); screenshots 01-embed-social and its CVD
+// simulations.
+import { assert, runAxe, shoot, shootCvd } from '../lib.mjs';
 
 const SOCIAL = { width: 1280, height: 640 };
 
@@ -33,12 +34,29 @@ export default async function phase11({ page, baseURL }) {
   await shoot(page, '01-embed-social', SOCIAL);
   await shootCvd(page, '02-embed-social', SOCIAL);
 
-  // The chart stays keyboard-operable in the card: Tab reaches it and an arrow key lights a river.
-  await tabTo(page, '[aria-roledescription="river chart"]');
+  // The card is screenshot-only: no tab stops, and the chart is an image named by a summary and described by
+  // the prose summary. Tab and an arrow key change nothing.
+  const a11y = await page.evaluate(() => {
+    const svg = document.querySelector('[data-testid="river-chart"]');
+    const tabbable = [...document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')].filter((el) => el.tabIndex >= 0 && !el.disabled);
+    return {
+      tabbable: tabbable.map((el) => el.outerHTML.slice(0, 80)),
+      role: svg.getAttribute('role'),
+      label: svg.getAttribute('aria-label') ?? '',
+      described: document.getElementById(svg.getAttribute('aria-describedby') ?? '')?.textContent ?? '',
+      application: document.querySelectorAll('[role="application"], [aria-roledescription]').length,
+    };
+  });
+  assert(a11y.tabbable.length === 0, `no tab stops in the social card (got ${JSON.stringify(a11y.tabbable)})`);
+  assert(a11y.role === 'img' && a11y.application === 0, 'the chart is role="img", not an application');
+  assert(/^River chart of vitejs\/vite: .+ per \w+ in \d+ rivers, .+ to .+$/.test(a11y.label), `the chart is named by a summary (got "${a11y.label}")`);
+  assert(a11y.described.length > 80 && a11y.described.includes('vite'), 'aria-describedby points to the prose summary');
+  await page.keyboard.press('Tab');
   await page.keyboard.press('ArrowRight');
-  assert(await page.locator('[data-testid="river-chart"] .rr-river.rr-on').count() === 1, 'an arrow key highlights one river');
+  const after = await page.evaluate(() => ({ focus: document.activeElement === document.body, lit: document.querySelectorAll('.rr-on').length }));
+  assert(after.focus && after.lit === 0, 'Tab and arrow keys leave the static card unchanged');
 
   // ?sample= picks the sample.
   await page.goto(new URL('?embed=social&sample=express', baseURL).href, { waitUntil: 'load' });
-  await page.locator('[data-testid="river-chart"][aria-label="River chart of expressjs/express"]').waitFor({ timeout: 10_000 });
+  await page.locator('[data-testid="river-chart"][aria-label^="River chart of expressjs/express:"]').waitFor({ timeout: 10_000 });
 }

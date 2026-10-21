@@ -17,15 +17,29 @@ export interface RiverChartProps {
   mobile: boolean;
   /** The active river and bucket (from `useRiverFocus`). */
   active: FocusState;
-  /** Keyboard and focus handlers for the chart's single tab stop. */
-  chart: { onFocus: () => void; onKeyDown: (e: KeyboardEvent<SVGGElement>) => void };
-  /** Pointer handlers (hover, click to pin). */
-  svg: { onPointerMove: (e: MouseEvent<SVGSVGElement>) => void; onPointerLeave: () => void; onClick: (e: MouseEvent<SVGSVGElement>) => void };
+  /** Keyboard and focus handlers for the chart's single tab stop (ignored when not `interactive`). */
+  chart?: { onFocus: () => void; onKeyDown: (e: KeyboardEvent<SVGGElement>) => void };
+  /** Pointer handlers: hover, click to pin (ignored when not `interactive`). */
+  svg?: { onPointerMove: (e: MouseEvent<SVGSVGElement>) => void; onPointerLeave: () => void; onClick: (e: MouseEvent<SVGSVGElement>) => void };
   /** Id of the prose summary (`aria-describedby`). */
   describedBy: string;
   /** Eras: odd ones get a faint background band; the focused or hovered one a stronger band. */
   eras?: readonly Era[];
   activeEra?: number | null;
+  /**
+   * `false` draws a static picture (the `?embed=social` card): no tab stop, no pointer or key handlers, and the
+   * SVG is `role="img"` named by a one-line summary and described by the prose summary. Default `true`.
+   */
+  interactive?: boolean;
+}
+
+/** The static chart's accessible name: repository, measure and time span. */
+export function staticChartLabel(aggregate: RepoAggregate, view: RiverView): string {
+  const { owner, name } = aggregate.repo;
+  const first = view.buckets[0]?.label;
+  const last = view.buckets.at(-1)?.label;
+  const span = first && last ? `, ${first} to ${last}` : '';
+  return `River chart of ${owner}/${name}: ${view.metric} per ${aggregate.time.unit} in ${view.rivers.length} rivers${span}`;
 }
 
 /**
@@ -33,7 +47,7 @@ export interface RiverChartProps {
  * one focusable group for keyboard exploration, dimming of the other rivers, the active river's outline and
  * transfers, and a bucket cursor (docs/viz/rivers.md §6).
  */
-export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, svg, describedBy, eras = [], activeEra = null }: RiverChartProps) {
+export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, svg, describedBy, eras = [], activeEra = null, interactive = true }: RiverChartProps) {
   const id = useId();
   const ref = useRef<SVGGElement>(null);
   useEffect(() => {
@@ -64,9 +78,18 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
   const float = shape && floatText && bucket !== null ? { text: floatText, ...floatLabel(L, shape, bucket, floatText) } : null;
   const tag = col && bucket !== null ? cursorTag(view.buckets[bucket]!.label, col.x, left, right) : null;
   const unit = time.unit;
+  const plot = interactive
+    ? {
+        ref, tabIndex: 0, role: 'application', 'aria-roledescription': 'river chart', 'aria-describedby': describedBy, ...chart,
+        'aria-label': `${repo.owner}/${repo.name}, ${view.metric} per ${unit}. Up and Down arrows change river, Left and Right change ${unit}, Home and End jump to the ends, Enter pins, Escape clears.`,
+      }
+    : { ref };
+  const root = interactive
+    ? { 'aria-label': `River chart of ${repo.owner}/${repo.name}`, ...svg }
+    : { role: 'img', 'aria-label': staticChartLabel(aggregate, view), 'aria-describedby': describedBy };
   return (
-    <svg data-testid="river-chart" aria-label={`River chart of ${repo.owner}/${repo.name}`} width={L.width} height={L.height}
-      viewBox={`0 0 ${L.width} ${L.height}`} className="rr-chart" {...svg}>
+    <svg data-testid="river-chart" data-static={!interactive || undefined} width={L.width} height={L.height}
+      viewBox={`0 0 ${L.width} ${L.height}`} className="rr-chart" {...root}>
       <defs>
         <pattern id={`${id}h`} patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
           <rect width="6" height="6" style={{ fill: fill(8) }} />
@@ -74,9 +97,7 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
         </pattern>
       </defs>
       <Axis layout={L} starts={time.starts} avoid={tag?.avoid} />
-      <g ref={ref} tabIndex={0} role="application" aria-roledescription="river chart" className="rr-plot" aria-describedby={describedBy} {...chart}
-        data-active={on ?? ''} data-bucket={bucket ?? ''} data-pinned={active.pinned}
-        aria-label={`${repo.owner}/${repo.name}, ${view.metric} per ${unit}. Up and Down arrows change river, Left and Right change ${unit}, Home and End jump to the ends, Enter pins, Escape clears.`}>
+      <g className="rr-plot" {...plot} data-active={on ?? ''} data-bucket={bucket ?? ''} data-pinned={active.pinned}>
         {/* Encloses plot, axis and gutter (layout reserves a 4 px inset), so it never covers data. */}
         <rect x={1} y={1} width={L.width - 2} height={L.height - 2} rx="3" className="rr-ring" />
         <g aria-hidden="true">

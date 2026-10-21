@@ -6,7 +6,7 @@ import { selectView } from '../core/view.ts';
 import { findSample, samples } from '../samples/index.ts';
 import { EraTrack } from './EraTrack.tsx';
 import { RiverChart } from './RiverChart.tsx';
-import { EMPTY, useRiverFocus } from './useRiverFocus.ts';
+import { EMPTY } from './useRiverFocus.ts';
 import { Wordmark } from './Wordmark.tsx';
 
 /** Chart width inside the 1280×640 card (48 px side padding) and plot height that leaves room for the pitch. */
@@ -16,7 +16,8 @@ const OPTIONS = { dimension: 'modules', depth: 'auto', includeBots: false } as c
 
 /**
  * `?embed=social`: a fixed 1280×640 card (wordmark, pitch, chart with its eras) for the social preview image
- * and the gallery. `?sample=` picks the sample (Vite by default). Same chart and focus model as the app.
+ * and the gallery. `?sample=` picks the sample (Vite by default). A screenshot-only embed, so the chart and era
+ * brackets are static: no tab stops, the chart is an image named by a summary and described by the prose below.
  */
 export function SocialCard() {
   const sample = findSample(new URLSearchParams(location.search).get('sample') ?? '') ?? samples[0]!;
@@ -25,8 +26,6 @@ export function SocialCard() {
   useEffect(() => void (document.title = `${sample.title} · repo rivers`), [sample]);
   const view = useMemo(() => agg && selectView(agg, OPTIONS), [agg]);
   const layout = useMemo(() => agg && view && layoutRivers(view, { width: WIDTH, height: HEIGHT, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets }), [agg, view]);
-  const focus = useRiverFocus(layout, view?.rivers ?? [], sample.id);
-  const [era, setEra] = useState<number | null>(null);
   const summaryId = useId();
   const eras = agg?.eras ?? [];
   const years = view ? `${view.buckets[0]?.label.slice(-4)}–${view.buckets.at(-1)?.label.slice(-4)}` : '';
@@ -44,9 +43,8 @@ export function SocialCard() {
         </p>
         {agg && view && layout && (
           <div className="rr-stack">
-            <RiverChart aggregate={agg} view={view} layout={layout} mobile={false} active={era !== null && !focus.active.pinned ? EMPTY : focus.active}
-              chart={focus.chart} svg={focus.svg} describedBy={summaryId} eras={eras} activeEra={era} />
-            <EraTrack eras={eras} layout={layout} buckets={view.buckets} active={era} onActive={setEra} />
+            <RiverChart aggregate={agg} view={view} layout={layout} mobile={false} active={EMPTY} describedBy={summaryId} eras={eras} interactive={false} />
+            <EraTrack eras={eras} layout={layout} buckets={view.buckets} active={null} interactive={false} />
           </div>
         )}
         {agg && view && layout && (

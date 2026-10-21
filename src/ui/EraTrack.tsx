@@ -32,7 +32,9 @@ export interface EraTrackProps {
   layout: RiverLayout;
   buckets: RiverView['buckets'];
   active: number | null;
-  onActive: (era: number | null) => void;
+  onActive?: (era: number | null) => void;
+  /** `false` renders the brackets as static text with no tab stops (the `?embed=social` card). Default `true`. */
+  interactive?: boolean;
 }
 
 /**
@@ -40,17 +42,26 @@ export interface EraTrackProps {
  * the chart. Focus or hover shows the note in the readout (hover wins while it lasts); the button's name is the
  * title, dates and provenance, and its description the note. "named by AI" appears only when the names are AI's.
  */
-export function EraTrack({ eras, layout: L, buckets, active, onActive }: EraTrackProps) {
+export function EraTrack({ eras, layout: L, buckets, active, onActive, interactive = true }: EraTrackProps) {
   const { boxes, height } = eraBoxes(eras, L.plot.left, L.bucketWidth, L.width);
   const id = useId();
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
-  useLayoutEffect(() => onActive(hovered ?? focused), [hovered, focused, onActive]); // before paint: no frame without the readout
+  useLayoutEffect(() => onActive?.(hovered ?? focused), [hovered, focused, onActive]); // before paint: no frame without the readout
   return (
     <div className="rr-eras" style={{ width: L.width, height }} role="group" aria-label="Eras" data-testid="era-track">
       {eras.map((e, i) => {
         const b = boxes[i]!;
         const span = `${buckets[e.start]?.label}–${buckets[e.end]?.label}`;
+        if (!interactive) {
+          return (
+            <div key={`${e.start}-${e.end}`} className="rr-era" data-era={i} data-source={e.source} style={{ left: b.x, width: b.width }}>
+              <span className={b.row2 ? 'rr-era-title rr-era-row2' : 'rr-era-title'} style={{ maxWidth: Math.max(0, b.room) }}>{e.title}</span>
+              <span className="rr-sr">, {span}{e.source === 'ai' ? ', named by AI' : ''}</span>
+              <span className="rr-era-bracket" aria-hidden="true" />
+            </div>
+          );
+        }
         return (
           <button key={`${e.start}-${e.end}`} type="button" className="rr-era" data-era={i} data-source={e.source} data-active={i === active || undefined}
             aria-label={`${e.title}, ${span}${e.source === 'ai' ? ', named by AI' : ''}`} aria-describedby={`${id}-${i}`}
