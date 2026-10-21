@@ -1,7 +1,7 @@
 // Local-dev copy of wrangler.jsonc (`pnpm dev:worker`), identical except that it has no `ai` binding: Workers AI
 // has no local mode, and the binding would open a remote session with whatever Cloudflare credentials are around.
 // Without it, /api/health reports `ai: false` and /api/eras answers with heuristic names. Keep the rest in sync
-// with wrangler.jsonc (worker/test/wranglerConfig.test.ts checks this). Types come from wrangler.jsonc.
+// with wrangler.jsonc (scripts/wrangler-config.test.ts checks this). Types come from wrangler.jsonc.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "repo-rivers",
@@ -15,10 +15,10 @@
   "kv_namespaces": [
     {
       "binding": "RIVERS_KV",
-      "id": "00000000000000000000000000000000-placeholder",
-      "preview_id": "00000000000000000000000000000000-preview"
+      "id": "00000000000000000000000000000000"
     }
   ],
-  "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }]
+  "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }],
+  "observability": { "enabled": true }
   // Optional secret: GITHUB_TOKEN in .dev.vars (never in this file).
 }

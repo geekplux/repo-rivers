@@ -35,3 +35,21 @@ it('wrangler.dev.jsonc is wrangler.jsonc minus the AI binding; dev:worker uses i
   expect(scripts['types:worker']).toBe('wrangler types -c wrangler.jsonc');
   expect(scripts['check:worker']).toBe('node scripts/worker-smoke.mjs');
 });
+
+it('deploy prep: placeholder KV id, observability, dry-run script only, security headers', () => {
+  const deploy = readJsonc('wrangler.jsonc');
+  expect(deploy.kv_namespaces).toEqual([{ binding: 'RIVERS_KV', id: '0'.repeat(32) }]);
+  expect(deploy.observability).toEqual({ enabled: true });
+  const scripts = (JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }).scripts;
+  expect(scripts['check:deploy']).toBe('wrangler deploy --dry-run --outdir .wrangler/dry-run');
+  // Nothing that deploys can be run by accident: the only `wrangler deploy` is the dry run.
+  expect(Object.keys(scripts).filter((k) => /deploy/.test(k))).toEqual(['check:deploy']);
+  expect(Object.values(scripts).filter((v) => /wrangler (pages )?deploy/.test(v))).toEqual([scripts['check:deploy']]);
+  const headers = readFileSync('public/_headers', 'utf8');
+  expect(headers).toContain(
+    "Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'",
+  );
+  expect(headers).toMatch(/\/assets\/\*\n {2}Cache-Control: public, max-age=31536000, immutable/);
+  expect(headers).toContain('X-Content-Type-Options: nosniff');
+  expect(headers).toContain('Referrer-Policy: strict-origin-when-cross-origin');
+});

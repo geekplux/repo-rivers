@@ -22,6 +22,8 @@
     "check:browser": "node scripts/browser/run.mjs",
     "gallery": "node scripts/browser/run.mjs --gallery",
     "check:worker": "node scripts/worker-smoke.mjs",
+    "check:fullstack": "node scripts/browser/run.mjs --worker --phase 12",
+    "check:deploy": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
     "samples:build": "node scripts/build-samples.ts",
     "eras:build": "node scripts/build-eras.ts"
   },
