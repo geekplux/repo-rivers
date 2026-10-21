@@ -4,8 +4,6 @@
 
 **Live demo:** coming soon (link after deploy)
 
-<img src="docs/images/hero.png" width="720" alt="The Vite sample: rivers of modules from 2020 to 2026, with packages/vite as the widest river, dashed arrows where files moved between folders, and three named eras above the chart.">
-
 ## Quick start
 
 ```sh
@@ -15,6 +13,8 @@ pnpm dev:worker   # optional, in a second terminal: the API for pasting any publ
 ```
 
 No account and no API key. The built-in samples (Vite, Svelte, Express) render offline. Pasting `owner/name` or a GitHub URL also works without the Worker: the browser then reads GitHub directly, against your own rate limit.
+
+<img src="docs/images/hero.png" width="720" alt="The Vite sample: rivers of modules from 2020 to 2026, with packages/vite as the widest river, dashed arrows where files moved between folders, and three named eras above the chart.">
 
 ## What you can read from it
 
@@ -28,14 +28,14 @@ No account and no API key. The built-in samples (Vite, Svelte, Express) render o
 1. **Read.** The [`fetchRepoAggregate`](src/core/github/fetchRepo.ts) function asks the GitHub REST API for the default branch's history (3 requests to size it up).
 2. **Map paths to modules.** Lockfiles, build output and vendored code are ignored; each file counts at most 2,000 lines per bucket. Folders are kept to depth 3, so the depth control needs no refetch.
 3. **Map commits to contributors.** A contributor is a GitHub login, or a hash of the email address. Merge commits are not counted.
-4. **Bucket by time.** The smallest of week, month, quarter or year that gives at most 24 buckets (48 with a token).
+4. **Bucket by time.** The smallest of week, month, quarter or year that gives at most 24 buckets (48 with a token; the Vite and Svelte samples were built with one, hence their 27 and 41 quarters).
 5. **Draw flows.** A pure layout function turns the buckets into ribbons, transfers and direct labels in SVG. Runtime dependencies are `react` and `react-dom` only.
 
-**Sampling and rate limits.** Unauthenticated GitHub access allows 60 requests per hour. Small repositories are read commit by commit. Larger ones are sampled with one comparison per bucket, which caps a fetch at 55 requests. A "sampled" badge says what was estimated. Results are cached for 24 hours in the Worker (Cloudflare KV) and in your browser.
+**Sampling and rate limits.** Unauthenticated GitHub access allows 60 requests per hour. Small repositories are read commit by commit. Larger ones are sampled with one comparison per bucket, which caps a fetch at 55 requests. A "sampled" badge says what was estimated. Results are cached in the Worker (Cloudflare KV) and in your browser: fresh for 24 h, kept up to 30 days and revalidated.
 
 **The move-finder.** GitHub lists at most 300 files per comparison, which can hide a large reorganisation. When a folder first appears in such a bucket, repo-rivers finds the commit that created it and reads its renames, at about 3 to 6 extra requests per folder.
 
-**Where AI is used: one place, naming eras.** Era boundaries are computed deterministically (an optimal partition of the timeline by module shares and activity). A language model (Workers AI) only writes a short title and note for each era, from a summary of under 2 KB with no person names, no commit messages and no repository owner. The result is cached. Without AI, eras get template names, and the chart works with no eras at all.
+**Where AI is used: one place, naming eras.** Era boundaries are computed deterministically (an optimal partition of the timeline by module shares and activity). A language model (Workers AI) only writes a short title and note for each era, from a summary of at most 2 KB with no person names, no commit messages and no repository owner. The result is cached. Without AI, eras get template names, and the chart works with no eras at all.
 
 More detail: [docs/EXTENDING.md](docs/EXTENDING.md) (public API, adapters, theming) and [docs/viz/rivers.md](docs/viz/rivers.md) (the visual encoding).
 
