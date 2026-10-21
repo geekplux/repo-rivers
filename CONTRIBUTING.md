@@ -52,7 +52,7 @@ Many contributors work on laptops or shared machines.
 
 ## Adding a built-in sample
 
-Samples must be public, well known, and not finance-related.
+Samples are public, well-known open-source projects with a few years of history.
 
 1. Add the id and `owner/name` to `SAMPLES` in `scripts/build-samples.ts` and to `SAMPLES` in `scripts/build-eras.ts`.
 2. Run `pnpm samples:build --only <id>`, then `pnpm eras:build`. Without a token the script stays within GitHub's unauthenticated limit and resumes from its cache if it runs out; `GITHUB_TOKEN=... pnpm samples:build` (environment only) gives a finer sample.
