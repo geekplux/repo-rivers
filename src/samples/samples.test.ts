@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { heuristicEras } from '../core/eras/heuristic.ts';
+import { summarizeForEras } from '../core/eras/summary.ts';
 import { parseAggregate } from '../core/schema.ts';
 import { samples } from './index.ts';
 
@@ -12,6 +14,11 @@ describe.each(samples.map((s) => s.id))('built-in sample %s', (id) => {
   it('is valid and at most 50 KB', () => {
     expect(new TextEncoder().encode(raw).length).toBeLessThanOrEqual(MAX_BYTES);
     expect(agg.repo.name).toBe(id);
+  });
+
+  it('ships heuristic eras offline, matching the deterministic segments (pnpm eras:build)', () => {
+    expect(agg.eras).toEqual(heuristicEras(summarizeForEras(agg)));
+    expect(agg.eras!.every((e) => e.source === 'heuristic')).toBe(true);
   });
 
   it('states honestly how it was fetched', () => {

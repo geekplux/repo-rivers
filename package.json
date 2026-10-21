@@ -20,7 +20,8 @@
     "types:worker": "wrangler types",
     "test": "vitest run",
     "check:browser": "node scripts/browser/run.mjs",
-    "samples:build": "node scripts/build-samples.ts"
+    "samples:build": "node scripts/build-samples.ts",
+    "eras:build": "node scripts/build-eras.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
