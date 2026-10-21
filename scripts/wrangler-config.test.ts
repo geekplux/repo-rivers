@@ -23,12 +23,13 @@ function readJsonc(path: string): Record<string, unknown> {
   return JSON.parse(out.replace(/,(\s*[}\]])/g, '$1')) as Record<string, unknown>;
 }
 
-it('wrangler.dev.jsonc is wrangler.jsonc minus the AI binding; dev:worker uses it, types use the deploy config', () => {
+it('wrangler.dev.jsonc is wrangler.jsonc minus the AI binding and previews; dev:worker uses it, types use the deploy config', () => {
   const deploy = readJsonc('wrangler.jsonc');
   const dev = readJsonc('wrangler.dev.jsonc');
   expect(deploy.ai).toEqual({ binding: 'AI' });
   expect(dev).not.toHaveProperty('ai');
-  const { ai: _ai, ...rest } = deploy;
+  expect(dev).not.toHaveProperty('previews');
+  const { ai: _ai, previews: _previews, ...rest } = deploy;
   expect(dev).toEqual(rest);
   const scripts = (JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }).scripts;
   expect(scripts['dev:worker']).toBe('wrangler dev -c wrangler.dev.jsonc --port 8787');
@@ -54,4 +55,14 @@ it('deploy prep: real 32-hex KV id, observability, dry-run script only, security
   expect(headers).toMatch(/\/assets\/\*\n {2}Cache-Control: public, max-age=31536000, immutable/);
   expect(headers).toContain('X-Content-Type-Options: nosniff');
   expect(headers).toContain('Referrer-Policy: strict-origin-when-cross-origin');
+});
+
+it('previews: AI, a separate rate-limit namespace, and no KV (Previews never touch the production cache)', () => {
+  const deploy = readJsonc('wrangler.jsonc');
+  const prodLimit = (deploy.ratelimits as { namespace_id: string }[])[0]!;
+  expect(deploy.previews).toEqual({
+    ratelimits: [{ name: 'API_LIMIT', namespace_id: '1102', simple: { limit: 20, period: 60 } }],
+    ai: { binding: 'AI' },
+  });
+  expect(prodLimit.namespace_id).not.toBe('1102');
 });

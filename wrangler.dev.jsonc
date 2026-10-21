@@ -1,4 +1,5 @@
-// Local-dev copy of wrangler.jsonc (`pnpm dev:worker`), identical except that it has no `ai` binding: Workers AI
+// Local-dev copy of wrangler.jsonc (`pnpm dev:worker`), identical except that it has no `ai` binding (and no `previews` block,
+// which only `wrangler preview` reads): Workers AI
 // has no local mode, and the binding would open a remote session with whatever Cloudflare credentials are around.
 // Without it, /api/health reports `ai: false` and /api/eras answers with heuristic names. Keep the rest in sync
 // with wrangler.jsonc (scripts/wrangler-config.test.ts checks this). Types come from wrangler.jsonc.

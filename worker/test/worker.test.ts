@@ -114,6 +114,16 @@ describe('/api/health', () => {
 });
 
 describe('GET /api/repo/:owner/:name cache paths', () => {
+  it('runs uncached without a RIVERS_KV binding (PR Previews): every request is a miss', async () => {
+    for (let i = 0; i < 2; i++) {
+      const gh = fakeFetch(RECORDED);
+      const { res, lines } = await call(REPO, {}, { ...OPTS, fetch: gh });
+      expect(res.status).toBe(200);
+      expect(lines.at(-1)).toMatchObject({ type: 'result', cache: 'miss', aggregate: { repo: { name: 'timeline-sankey' } } });
+      expect(gh).toHaveBeenCalled();
+    }
+  });
+
   it('serves a KV entry under 24 h old with no GitHub request', async () => {
     const gh = fakeFetch({});
     const kv = fakeKv({ [KEY]: entry(NOW - FRESH_MS + HOUR) });
