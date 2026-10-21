@@ -1,6 +1,6 @@
 // `pnpm gallery` (docs/PLAN.md phase 11): renders the shareable assets with the harness's one browser.
 // examples/<sample>-{light,dark,contributors}.png, docs/social-preview.png (1280×640), docs/images/hero.png
-// (the static hero) and docs/hero.gif (reveal + hover pass, via ffmpeg when it is installed).
+// (the static hero) and docs/hero.gif (reveal + hover pass, ≤ 5 s, 3 plays, via ffmpeg when it is installed).
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,6 +10,9 @@ import { assert } from '../lib.mjs';
 const ROOT = join(import.meta.dirname, '../../..');
 const FFMPEG = process.env.FFMPEG_PATH ?? '/usr/bin/ffmpeg';
 const FPS = 10;
+/** The hero GIF's limits: at most 5 s per play, and 3 plays in all (ffmpeg `-loop 2` = 2 repeats). */
+const MAX_SECONDS = 5;
+const LOOPS = 2;
 const MB = 1024 * 1024;
 const PAGE = { width: 1280, height: 1100 };
 const CHART = '[data-testid="river-chart"]';
@@ -83,23 +86,24 @@ async function heroFrames(page, url, dir) {
     await frame();
   }
   const still = join(dir, `f${String(n).padStart(4, '0')}.png`);
-  hold(still, 7);
+  hold(still, 4);
   await page.emulateMedia({ reducedMotion: 'reduce' }); // instant dimming during the hover pass
   const rivers = await page.locator(`${CHART} path[data-river]`).evaluateAll((ps) =>
     ps.filter((p) => p.dataset.river !== 'other').map((p) => ({ id: p.dataset.river, total: Number(p.dataset.total) })).toSorted((a, b) => b.total - a.total));
   const B = JSON.parse(readFileSync(join(ROOT, 'src/samples/vite.json'), 'utf8')).time.starts.length;
   const [first, second] = [await riverPoints(page, rivers[0].id, B), await riverPoints(page, rivers[1].id, B)];
   assert(first.length >= 10 && second.length >= 3, `hover paths found (${first.length}, ${second.length})`);
-  for (const pass of [first, second.slice(-8)]) {
+  const every = Math.ceil(first.length / 14); // at most 14 hover frames on the first river
+  for (const pass of [first.filter((_, i) => i % every === 0 || i === first.length - 1), second.slice(-6)]) {
     let last;
     for (const [x, y] of pass) {
       await page.mouse.move(x, y);
       last = await frame();
     }
-    hold(last, 3);
+    hold(last, 2);
   }
   await page.mouse.move(0, 0);
-  hold(still, 8);
+  hold(still, 5);
   return { frames: n, still };
 }
 
@@ -108,7 +112,7 @@ function makeGif(dir, out) {
   if (probe.error || probe.status !== 0) return false;
   for (const [width, colors] of [[960, 128], [880, 96], [800, 64]]) {
     const filter = `scale=${width}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=${colors}[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
-    const run = spawnSync(FFMPEG, ['-v', 'error', '-y', '-framerate', String(FPS), '-i', join(dir, 'f%04d.png'), '-vf', filter, '-loop', '0', out], { encoding: 'utf8' });
+    const run = spawnSync(FFMPEG, ['-v', 'error', '-y', '-framerate', String(FPS), '-i', join(dir, 'f%04d.png'), '-vf', filter, '-loop', String(LOOPS), out], { encoding: 'utf8' });
     assert(run.status === 0, `ffmpeg failed: ${run.stderr}`);
     const size = statSync(out).size;
     console.log(`  wrote ${rel(out)} at ${width} px, ${colors} colours: ${(size / MB).toFixed(2)} MB`);
@@ -147,12 +151,12 @@ export default async function gallery({ page, baseURL }) {
   assert(dims.width === 1280 && dims.height === 640 && bytes <= MB, `social preview 1280×640 ≤ 1 MB (got ${dims.width}×${dims.height}, ${bytes} B)`);
   console.log(`  wrote ${rel(social)} (1280×640, ${(bytes / 1024).toFixed(0)} KB)`);
 
-  // Hero: frames → GIF (≤ 2 MB, ≤ 8 s); the fully revealed frame is the static hero and the fallback.
+  // Hero: frames → GIF (≤ 2 MB, ≤ 5 s, 3 plays); the fully revealed frame is the static hero and the fallback.
   await page.setViewportSize(PAGE);
   const dir = mkdtempSync(join(tmpdir(), 'rr-hero-'));
   try {
     const { frames, still } = await heroFrames(page, at('?sample=vite'), dir);
-    assert(frames / FPS <= 8, `hero GIF ≤ 8 s (got ${frames / FPS} s)`);
+    assert(frames / FPS <= MAX_SECONDS, `hero GIF ≤ ${MAX_SECONDS} s (got ${frames / FPS} s)`);
     copyFileSync(still, join(ROOT, 'docs/images/hero.png'));
     console.log(`  wrote docs/images/hero.png (${frames} frames at ${FPS} fps = ${frames / FPS} s)`);
     if (!makeGif(dir, join(ROOT, 'docs/hero.gif'))) console.log(`  ${FFMPEG} not found: no GIF written; docs/images/hero.png is the fallback`);
