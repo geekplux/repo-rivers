@@ -58,6 +58,10 @@ Found a barrier? Please [open an issue](https://github.com/geekplux/repo-rivers/
 - Nothing about people is sent to the AI model.
 - Aggregates (counts per folder and per contributor name) are cached in Cloudflare KV and in your browser's `localStorage`.
 
+## Deploy
+
+The app and its API are one Cloudflare Worker. Prerequisites, the exact command (`pnpm build && pnpm exec wrangler deploy`), a smoke test and rollback are in [docs/DEPLOY.md](docs/DEPLOY.md). `pnpm build && pnpm run check:deploy` is a dry run that uploads nothing.
+
 ## Roadmap
 
 - A hosted demo on Cloudflare.
