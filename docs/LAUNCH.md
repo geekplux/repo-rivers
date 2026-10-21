@@ -1,6 +1,6 @@
 # Launch kit
 
-> **Drafts only. Do not post until Sean approves.** Nothing in this file has been posted anywhere. Replace `<demo link>` with the hosted URL after deployment.
+> **Drafts only. Do not post until Sean approves.** Nothing in this file has been posted anywhere.
 
 Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280×640), the README GIF [`docs/hero.gif`](hero.gif) and the [gallery](../examples/README.md). Regenerate them with `pnpm build && pnpm gallery`.
 
@@ -12,7 +12,7 @@ Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280
 
 > I wanted to see how a codebase grew and moved, not just how many commits it had. repo-rivers draws a repository's history as a timeline-sankey: each top-level folder (or contributor) is a river that widens when it gets busy, and dashed arrows show files moving from one folder into another, such as Svelte's `test` moving into `packages` in 2023.
 >
-> Try it: <demo link>. Three samples (Vite, Svelte, Express) are bundled and render offline. Paste `owner/name` or a GitHub URL for any public repository; no account and no key.
+> Try it: https://reporivers.geekplux.org. Three samples (Vite, Svelte, Express) are bundled and render offline. Paste `owner/name` or a GitHub URL for any public repository; no account and no key.
 >
 > How it works:
 > - The GitHub REST API gives the default branch's history. Small repositories are read commit by commit; larger ones are sampled with one comparison per time bucket, which caps a fetch at 55 requests (the unauthenticated limit is 60 an hour). A "sampled" badge says what was estimated.
@@ -29,11 +29,11 @@ Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280
 
 **Single post:**
 
-> Paste a GitHub repo, see its history as rivers: folders widen when busy, and dashed arrows show code moving between them. Svelte's 2023 move into packages/ is one picture. No account, no key; samples work offline. <demo link>
+> Paste a GitHub repo, see its history as rivers: folders widen when busy, and dashed arrows show code moving between them. Svelte's 2023 move into packages/ is one picture. No account, no key; samples work offline. https://reporivers.geekplux.org
 
 **Thread (3 posts):**
 
-1. > repo-rivers draws a repository's history as a timeline-sankey: one river per top-level folder or contributor, quarter by quarter. Here is Vite moving from src/node to packages/vite. <demo link> [attach docs/hero.gif]
+1. > repo-rivers draws a repository's history as a timeline-sankey: one river per top-level folder or contributor, quarter by quarter. Here is Vite moving from src/node to packages/vite. https://reporivers.geekplux.org [attach docs/hero.gif]
 2. > Svelte, 2016 to 2026: the Q1 2019 spike is the Svelte 3 rewrite, and in Q2 2023 dashed arrows carry 952 files from test/ and 231 from src/ into packages/. Express, 2009 to 2026: a long, steady river. [attach examples/svelte-light.png]
 3. > Under the hood: the GitHub REST API (sampled to stay under the 60 requests/hour limit), a pure SVG layout, and one small cached model call that names the eras. Keyboard and screen-reader friendly, colour-blind-safe palette, MIT. Source: https://github.com/geekplux/repo-rivers
 
@@ -43,7 +43,7 @@ Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280
 
 A developer joins a project built on Svelte and wants a mental map of the repository before reading code.
 
-1. Open `<demo link>?sample=svelte`.
+1. Open `https://reporivers.geekplux.org?sample=svelte`.
 2. The chart shows `src` and `test` until 2023, then `packages`. The bracket *The move to packages* and the dashed arrows explain why old blog posts and issues point to paths that no longer exist.
 3. Tab into the chart and press the arrow keys: the readout gives lines changed and the share of each quarter, so the busiest folders of the last year are clear.
 4. Switch to **Contributors** to see who has been active recently, and open **View as table** to copy the numbers.
@@ -54,7 +54,7 @@ Takeaway in under a minute: where the code lives now, when it moved, and who to 
 
 A conference speaker wants one picture of how a mature project ages.
 
-1. Open `<demo link>?sample=express` (one bucket per year, 2009 to 2026).
+1. Open `https://reporivers.geekplux.org?sample=express` (one bucket per year, 2009 to 2026).
 2. The early years are the widest: `spec` and `docs` flow and then end, and `test` takes over.
 3. After 2015 the river is narrow and steady, `lib` and `test` year after year, with a bump in 2024 around Express 5.
 4. **Contributors** shows the hand-over: tj from 2009 to 2013, dougwilson from 2014, and newer maintainers in 2024.

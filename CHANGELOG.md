@@ -18,3 +18,7 @@ All notable changes to this project are documented here. The format is based on 
 - The move-finder, which recovers large reorganisations hidden by GitHub's 300-file comparison limit.
 - Era annotations: deterministic boundaries, names from one cached Workers AI call through `/api/eras`, and template names when AI is unavailable.
 - Open-source documentation: README, contributing guide, Code of Conduct, security policy, issue and pull request templates, extension guide and good first issues.
+
+### Changed
+- GitHub's hourly API limit now reaches the browser as its own error code (`github_rate_limited`), separate from this site's per-IP limit (`too_many_requests`), and the UI explains each one plainly, with GitHub's reset time when it is known.
+- The rate-limit binding uses its own namespace id (`1002`), so it no longer shares a counter with other Workers on the account.

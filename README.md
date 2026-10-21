@@ -2,7 +2,7 @@
 
 **See a GitHub repository's history as rivers.** Modules and contributors flow across time, widen when they get busy, and merge or split when the code is reorganised. Short era notes name the key periods.
 
-**Live demo:** coming soon (link after deploy)
+**Live demo:** https://reporivers.geekplux.org
 
 ## Quick start
 

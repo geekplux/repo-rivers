@@ -1,4 +1,4 @@
-# Phase 12 verify round 1 — 2026-10-21T04:37:13Z
+# Dry run after the post-launch cleanup — 2026-10-21T18:49:24Z (originally captured in phase 12 verify round 1 with the placeholder KV id)
 # Command: env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID pnpm run check:deploy  (exit 0; after pnpm build)
 
 > repo-rivers@0.0.0 check:deploy <repo>
@@ -6,15 +6,10 @@
  ⛅️ wrangler 4.151.3
 ────────────────────
 ✨ Read 12 files from the assets directory <repo>/dist
-Total Upload: 47.29 KiB / gzip: 15.23 KiB
+Total Upload: 47.36 KiB / gzip: 15.26 KiB
 Your Worker has access to the following bindings:
 Binding                                               Resource          
-env.RIVERS_KV (00000000000000000000000000000000)      KV Namespace      
+env.RIVERS_KV (e15b4e2e25d64a9fa1ae087ef86d8a0b)      KV Namespace      
 env.AI                                                AI                
 env.API_LIMIT (20 requests/60s)                       Rate Limit        
 --dry-run: exiting now.
-
-# .wrangler/dry-run/ (gitignored via .gitignore:16 .wrangler/):
-112 README.md
-48428 index.js
-125335 index.js.map

@@ -25,10 +25,14 @@ export function errorCopy(f: { code: FailureCode; via: Via; resetAt?: string }, 
   switch (f.code) {
     case 'not_found':
       return { title: `Couldn’t find ${repo}`, body: 'It may be private, or the name may be misspelled; repo rivers can only read public repositories.', actions: [{ id: 'edit', label: 'Check the spelling' }, SAMPLE] };
-    case 'rate_limited':
+    case 'rate_limited': {
+      const when = at ? `after ${at}` : 'in up to an hour';
       return f.via === 'worker'
-        ? { title: 'GitHub’s hourly limit reached', body: `The shared limit resets at ${at ?? 'the top of the hour'}. Your browser can read it now with your own quota of 60 requests an hour.`, actions: [{ id: 'browser', label: 'Try from your browser' }, SAMPLE] }
-        : { title: 'Your GitHub hourly limit is used up', body: `Your browser’s quota of 60 requests an hour resets at ${at ?? 'the top of the hour'}.`, actions: [SAMPLE] };
+        ? { title: 'GitHub’s hourly limit was reached', body: `This site reads GitHub without an account, so it shares GitHub’s API limit of 60 requests an hour; please try again ${when}, or read it from your browser now with your own quota.`, actions: [{ id: 'browser', label: 'Try from your browser' }, SAMPLE] }
+        : { title: 'GitHub’s hourly limit was reached', body: `Your browser’s own quota of 60 GitHub API requests an hour is used up for now; please try again ${when}.`, actions: [SAMPLE] };
+    }
+    case 'busy':
+      return { title: 'A short pause, please', body: 'This site answers about 20 requests a minute from one address; please try again in a minute.', actions: [{ id: 'retry', label: 'Try again' }, SAMPLE] };
     case 'too_little':
       return { title: 'This repo has too little history to draw', body: `${repo} has fewer than 10 commits or spans fewer than 3 time periods.`, actions: [{ id: 'edit', label: 'Try another repo' }, SAMPLE] };
     case 'empty':

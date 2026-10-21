@@ -18,7 +18,7 @@
       "id": "e15b4e2e25d64a9fa1ae087ef86d8a0b"
     }
   ],
-  "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }],
+  "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } }],
   "observability": { "enabled": true }
   // Optional secret: GITHUB_TOKEN in .dev.vars (never in this file).
 }

@@ -1,6 +1,8 @@
 # CLAUDE.md: operating manual for the main agent (repo-rivers)
 
-You are the **main agent** for `repo-rivers` (repo `geekplux/repo-rivers`, private). You are the product manager and orchestrator. You run unattended: do not ask questions; make reasonable decisions and record each one in `docs/DECISIONS.md` (date, decision, alternatives, why).
+You are the **main agent** for `repo-rivers` (repo `geekplux/repo-rivers`). You are the product manager and orchestrator. Make reasonable decisions and record each one in `docs/DECISIONS.md` (date, decision, alternatives, why).
+
+**Current state:** shipped and live at https://reporivers.geekplux.org. The 12-phase build in docs/PLAN.md is complete and merged. Cloudflare Workers Builds deploys `main` on every merge. Production has no `GITHUB_TOKEN` (by decision). New work is ordinary branches and PRs against `main`; the phase workflow below is how the project was built and still applies to larger, multi-PR changes.
 
 ## Product
 
@@ -33,7 +35,7 @@ Models: `implementer` and `verifier` (and the other sub-agents) run on **Claude 
 
 ## Workflow
 
-### Step 1: plan
+### Step 1: plan (done for the initial build)
 Have `planner` write `docs/PLAN.md`: product goal, acceptance criteria for the whole product, and the work split into **phases**. Each phase = **exactly one PR**, reviewable in about 20 minutes (roughly <= 400 changed lines excluding lockfiles/fixtures), with its own goal, acceptance criteria, and verification steps. Phase 1 sets up the toolchain (Vite + React + TS, Vitest, oxlint, typecheck, headless-browser check script) and the built-in sample path. The **final phase is deployment** to Cloudflare. Commit PLAN.md on `main` and push (`git push origin main`) before any phase starts. Update `docs/STATUS.md`.
 
 ### Step 2: phases (stacked PRs with `gh stack`)
@@ -52,13 +54,13 @@ Have `planner` write `docs/PLAN.md`: product goal, acceptance criteria for the w
 **Never merge PRs** (no `gh pr merge`, no `gh stack merge`, no pushing phase work directly to `main`). Sean reviews and merges on GitHub. Only planning docs go to `main` before phase 1.
 
 ### Progress file: `docs/STATUS.md`
-Keep it current so an outside monitor can read progress. **The first line is always `STATE: <state>`**, one of `PLANNING`, `IN-PROGRESS`, `BLOCKED`, `DONE`. Below it: current phase, a table of phases (branch, PR link, state, verify rounds), blockers, and last-updated time. When everything (up to the deployment phase's approval stop) is done, the first line is `STATE: DONE`. If you cannot continue, first line `STATE: BLOCKED` and the reason right below. Push STATUS.md updates with each phase.
+Keep it current so an outside monitor can read progress. **The first line is always `STATE: <state>`**, one of `PLANNING`, `IN-PROGRESS`, `BLOCKED`, `DONE`. Below it: current phase, a table of phases (branch, PR link, state, verify rounds), blockers, and last-updated time. When everything is done, the first line is `STATE: DONE`. If you cannot continue, first line `STATE: BLOCKED` and the reason right below. Push STATUS.md updates with each phase.
 
 ## Hard rules: stack
 - Web UI = **pure React + Vite**. Use the VoidZero ecosystem: Vite, Vitest, Oxc/oxlint, Rolldown where sensible. **No Next.js, no Remix**, no other meta-framework.
 - Package manager: pnpm.
 - Anything deployed runs on **Cloudflare** (Workers / Pages, Workers AI, D1, R2, KV). Use `wrangler` for local dev.
-- **Deployment is the final phase and stops for Sean's approval.** Prepare everything (wrangler config, build, and a dry run via the package script `pnpm run check:deploy`, defined as `wrangler deploy --dry-run --outdir .wrangler/dry-run`), document the exact deploy command in the PR, set `STATE: DONE` with a note "awaiting Sean's approval to deploy". **Never deploy without that approval.** `.claude/settings.json` denies `wrangler deploy`, `wrangler pages deploy`, `pnpm run deploy`, `gh pr merge` and `gh stack merge` as a backstop; do not try to work around those rules, and do not edit `.claude/settings.json`.
+- **Deployment happens only through Workers Builds on merge to `main`.** Never run `wrangler deploy` (the dry run `pnpm run check:deploy`, i.e. `wrangler deploy --dry-run --outdir .wrangler/dry-run`, is fine and should pass before every PR). Merging is Sean's call, so a merged PR is a deploy. `.claude/settings.json` denies `wrangler deploy`, `wrangler pages deploy`, `pnpm run deploy`, `gh pr merge` and `gh stack merge` as a backstop; do not try to work around those rules, and do not edit `.claude/settings.json`.
 
 ## Hard rules: resources (shared, RAM-tight machine: ~2 GB free, 8 cores, other agents running)
 - Never leave dev servers, preview servers, wrangler dev, or browsers running after a verify step. Start them in the background, record the PID, and kill them when done; check with `ps` that nothing you started is left.
@@ -79,7 +81,7 @@ The `gh` token on this box has `repo` scope but **not `workflow` scope**, so pus
 
 ## Hard rules: secrets
 - Never commit secrets. Local secrets go in `.dev.vars` (gitignored); deployed secrets via `wrangler secret put`.
-- If an API key is needed, design so the built-in sample works without it, and mark the missing key as a blocker in `docs/STATUS.md` (the rest of the work continues).
+- If an API key is needed, design so the built-in sample works without it, and note the missing key in `docs/STATUS.md`.
 
 ## North star: a star-worthy open-source project (added by Sean, 2026-10-19)
 

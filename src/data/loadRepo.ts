@@ -6,8 +6,11 @@ import { parseAggregate, type RepoAggregate } from '../core/schema.ts';
 /** Who read GitHub: the Worker (shared cache and quota) or this browser (the user's own 60/h quota). */
 export type Via = 'worker' | 'browser';
 
-/** Why loading failed, as the UI tells it (PLAN F10). `unavailable`: neither the Worker nor GitHub answered. */
-export type FailureCode = Exclude<RepoErrorCode, 'network'> | 'offline' | 'unavailable';
+/**
+ * Why loading failed, as the UI tells it (PLAN F10). `rate_limited` is GitHub's hourly API limit; `busy` is this
+ * site's own per-IP limit; `unavailable`: neither the Worker nor GitHub answered.
+ */
+export type FailureCode = Exclude<RepoErrorCode, 'network'> | 'busy' | 'offline' | 'unavailable';
 
 /** A load that ended without an aggregate. `resetAt` (ISO) is set for `rate_limited`. */
 export class LoadFailure extends Error {
@@ -80,7 +83,17 @@ export interface LoadResult {
 
 const UNAVAILABLE = Symbol('unavailable');
 type ErrorLine = { type: 'error'; code?: string; message?: string; resetAt?: string };
-const WORKER_CODES: Record<string, FailureCode> = { not_found: 'not_found', invalid: 'not_found', empty: 'empty', too_little: 'too_little', rate_limited: 'rate_limited', upstream: 'upstream' };
+/** Worker wire codes (worker/src/http.ts) to UI failures; `rate_limited` is the pre-split name of GitHub's limit. */
+const WORKER_CODES: Record<string, FailureCode> = {
+  not_found: 'not_found',
+  invalid: 'not_found',
+  empty: 'empty',
+  too_little: 'too_little',
+  github_rate_limited: 'rate_limited',
+  rate_limited: 'rate_limited',
+  too_many_requests: 'busy',
+  upstream: 'upstream',
+};
 
 /** A Worker error line as a failure, or `UNAVAILABLE` when the Worker itself could not reach GitHub. */
 function workerError(line: ErrorLine): typeof UNAVAILABLE {
