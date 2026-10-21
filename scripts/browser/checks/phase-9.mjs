@@ -88,6 +88,20 @@ export default async function phase9({ page, baseURL }) {
   await page.keyboard.press('Shift+Tab');
   const active = await page.locator(`${CHART} [data-era-band].rr-on`).count();
   assert(active === 1, 'the focused era’s band is highlighted');
+  // The focus indicator is a 2 px rule under the whole visible title plus the bracket, never a box crossing titles.
+  const ring = await page.evaluate(() => {
+    const b = document.activeElement;
+    const t = b.querySelector('.rr-era-title');
+    const r = t.getBoundingClientRect();
+    const hit = [...document.querySelectorAll('.rr-era-title')].filter((o) => o !== t).some((o) => {
+      const q = o.getBoundingClientRect();
+      return q.left < r.right && r.left < q.right && q.top < r.bottom && r.top < q.bottom;
+    });
+    const s = getComputedStyle(t);
+    return { outline: getComputedStyle(b).outlineStyle, rule: s.borderBottomWidth, ruleStyle: s.borderBottomStyle, bracket: getComputedStyle(b.querySelector('.rr-era-bracket')).borderTopWidth, hit };
+  });
+  assert(ring.outline === 'none' && ring.rule === '2px' && ring.ruleStyle === 'solid' && ring.bracket === '2px' && !ring.hit,
+    `era focus: a 2 px rule under the title and a 2 px bracket, not over another title (got ${JSON.stringify(ring)})`);
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '03-era-focus-desktop');
   await page.evaluate(() => document.activeElement.blur());

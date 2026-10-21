@@ -56,12 +56,16 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-stack { display: flex; flex-direction: column; width: max-content; }
 .rr-eras { order: -1; position: relative; flex: none; }
 .rr-era { position: absolute; top: 0; height: 100%; margin: 0; padding: 0; border: 0; background: none; color: var(--rr-ink); font: inherit; text-align: left; cursor: default; }
-.rr-era:focus-visible { outline-offset: -1px; }
 .rr-era-title { position: absolute; left: 4px; top: 16px; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  font: italic 500 16px/20px var(--rr-display); font-synthesis: style; text-underline-offset: 3px; }
+  padding-bottom: 2px; font: italic 500 16px/20px var(--rr-display); font-synthesis: style; text-underline-offset: 3px; }
 .rr-era-row2 { top: 42px; }
 .rr-era:is(:hover, :focus-visible, [data-active]) .rr-era-title { text-decoration: underline; }
 .rr-era-bracket { position: absolute; left: 0; right: 0; top: 40px; height: 6px; border: 1px solid var(--rr-ink-2); border-bottom: 0; }
+/* Focus: no outline box (titles may run past their button); a 2 px focus-colour rule under the whole visible title,
+   inside its own box so it never reaches a neighbour's row, plus a 2 px focus-colour bracket. */
+.rr-era:focus-visible { outline: none; }
+.rr-era:focus-visible .rr-era-title { text-decoration: none; padding-bottom: 0; border-bottom: 2px solid var(--rr-focus); }
+.rr-era:focus-visible .rr-era-bracket { height: 5px; border-width: 2px; border-color: var(--rr-focus); }
 .rr-era-ai { position: absolute; right: 4px; top: 0; font: 12px/16px var(--rr-mono); color: var(--rr-ink-2); }
 .rr-era-band { fill: var(--rr-ink); opacity: 0.04; }
 .rr-era-band.rr-on { opacity: 0.08; }
