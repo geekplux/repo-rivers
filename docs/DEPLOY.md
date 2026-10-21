@@ -2,7 +2,7 @@
 
 repo-rivers deploys as **one Cloudflare Worker**: it serves the built app from `dist/` (Workers static assets, with the headers in `public/_headers`) and answers `/api/*` (`/api/health`, `/api/repo/:owner/:name`, `/api/eras`). The deploy config is `wrangler.jsonc`. Local development uses `wrangler.dev.jsonc`, which is the same minus the `ai` binding, so `pnpm dev:worker` never contacts Cloudflare.
 
-Nothing in this repository deploys by itself: there is no `deploy` script, and `pnpm run check:deploy` is a dry run that uploads nothing.
+Production (https://reporivers.geekplux.org) is deployed by **Cloudflare Workers Builds** (Git integration): every merge to `main` builds and deploys. There is no `deploy` script, and `pnpm run check:deploy` is a dry run that uploads nothing. The manual steps below are for forks and first-time setup.
 
 ## Prerequisites
 
@@ -14,9 +14,9 @@ Nothing in this repository deploys by itself: there is no `deploy` script, and `
    pnpm exec wrangler kv namespace create RIVERS_KV
    ```
 
-   Copy the printed 32-hex `id` into `kv_namespaces[0].id` in **both** `wrangler.jsonc` and `wrangler.dev.jsonc` (a test keeps them identical apart from `ai`). The committed `00000000000000000000000000000000` is a placeholder, not a real namespace.
+   The committed id, `e15b4e2e25d64a9fa1ae087ef86d8a0b`, is the production namespace. A fork replaces it with the printed 32-hex `id` in **both** `wrangler.jsonc` and `wrangler.dev.jsonc` (a test keeps them identical apart from `ai`). Local dev simulates KV and ignores the id.
 4. **Workers AI** enabled on the account (it is available on the Free plan). It names the eras of repos fetched through the Worker. Without it, eras fall back to the deterministic names and nothing breaks.
-5. Optional, recommended: a GitHub token as a Worker secret, so the Worker gets 5,000 GitHub requests per hour instead of 60 per shared Cloudflare IP:
+5. Optional: a GitHub token as a Worker secret, so the Worker gets 5,000 GitHub requests per hour instead of 60 per shared Cloudflare IP. **Production runs without one** (by choice); when GitHub's hourly limit is hit, the UI says so, shows the reset time when GitHub sends `x-ratelimit-reset`, and offers to read the repo from the visitor's browser instead:
 
    ```sh
    pnpm exec wrangler secret put GITHUB_TOKEN
@@ -24,7 +24,7 @@ Nothing in this repository deploys by itself: there is no `deploy` script, and `
 
    Use a **fine-grained personal access token with public-repository read access only** ("Public Repositories (read-only)", no account or repository permissions, **no access to private repositories**). Any visitor can make the Worker fetch any public repo through this token, so it must not be able to see anything private. The secret never reaches a response, a log or the browser.
 
-The rate-limit binding (`API_LIMIT`, 20 requests per minute per client IP on `/api/*`) needs no setup. Its `namespace_id` only has to be unique among rate-limit bindings on the account.
+The rate-limit binding (`API_LIMIT`, 20 requests per minute per client IP on `/api/*`) needs no setup. Its `namespace_id` (`1002`) only has to be unique among rate-limit bindings on the account (explorable, on the same account, uses `1001`).
 
 ## Check before deploying
 
@@ -37,7 +37,7 @@ The dry run bundles the Worker into `.wrangler/dry-run/` (gitignored), lists the
 
 ## Deploy
 
-The exact command:
+Production deploys itself from `main` (Workers Builds). For a fork without Git integration, the exact command is:
 
 ```sh
 pnpm build && pnpm exec wrangler deploy
@@ -50,10 +50,10 @@ Wrangler prints the URL, by default `https://repo-rivers.<your-subdomain>.worker
 Smoke test:
 
 ```sh
-curl https://<worker>/api/health   # {"ok":true,"ai":true,"token":true}  (token is false without the secret)
+curl https://reporivers.geekplux.org/api/health   # {"ok":true,"ai":true,"token":false}  (token is true with the secret)
 ```
 
-Then open `https://<worker>/` and click through the Vite, Svelte and Express samples, paste a small public repo (for example `expressjs/cors`), and check that the era names arrive.
+Then open the site and click through the Vite, Svelte and Express samples, paste a small public repo (for example `expressjs/cors`), and check that the era names arrive.
 
 Optional: name the built-in samples' eras with Workers AI (they ship with deterministic names). Create a separate API token with only Workers AI permissions (the dashboard's "Workers AI" token template), then:
 
@@ -63,8 +63,6 @@ pnpm build && pnpm exec wrangler deploy   # ship the renamed samples
 ```
 
 The script makes one model call per sample and never reads `CLOUDFLARE_API_TOKEN`. Review the names before committing `src/samples/*.json`.
-
-Finally, replace the "Live demo" placeholder in `README.md` and the localhost links in `examples/README.md` with the deployed URL.
 
 ## Rollback
 
