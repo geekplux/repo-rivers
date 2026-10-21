@@ -27,6 +27,7 @@ STATE: IN-PROGRESS
 - P10: good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change; browser-fallback network failure while online shown as 'offline' (should be 'GitHub not answering'); cancel during back/forward leaves stale ?repo=; real Worker 429 logs a console resource error.
 
 ## Follow-ups
+- After deploy (needs Sean): run `scripts/build-eras.ts` with Cloudflare account credentials to replace heuristic sample era names with AI-written ones (non-blocking).
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
 Last updated: 2026-10-21 00:18 UTC
