@@ -75,8 +75,12 @@ export default async function phase9({ page, baseURL }) {
   assert(await page.evaluate(() => document.activeElement?.dataset.era === '0'), 'Tab from the chart reaches the first era');
   const line = await readout(page);
   assert(line.startsWith(`${vite.eras[0].title} · Q2 2020–`) && line.endsWith(vite.eras[0].note), `readout shows the era (got "${line}")`);
-  const name = await page.evaluate(() => document.activeElement.textContent);
-  assert(name.includes(vite.eras[0].note), 'the era button’s name includes its note for screen readers');
+  const sr = await page.evaluate(() => {
+    const b = document.activeElement;
+    return { label: b.getAttribute('aria-label'), note: document.getElementById(b.getAttribute('aria-describedby') ?? '')?.textContent };
+  });
+  assert(sr.label.startsWith(`${vite.eras[0].title}, Q2 2020–`) && !sr.label.includes(vite.eras[0].note), `the era button’s name is its title and dates (got "${sr.label}")`);
+  assert(sr.note === vite.eras[0].note, `the era button’s description is its note (got "${sr.note}")`);
   for (let i = 1; i < vite.eras.length; i++) {
     await page.keyboard.press('Tab');
     assert(await page.evaluate((n) => document.activeElement?.dataset.era === String(n), i), `Tab reaches era ${i}`);
@@ -98,6 +102,13 @@ export default async function phase9({ page, baseURL }) {
   assert(size === '14px', `mobile titles at 14 px (got ${size})`);
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '02-eras-mobile', MOBILE);
+  // Mobile: an era focused with the readout off-screen scrolls the readout into view.
+  await page.evaluate((t) => scrollTo(0, document.querySelector(t).getBoundingClientRect().top + scrollY - innerHeight + 80), TRACK);
+  const offscreen = await page.locator('[data-testid="readout"]').evaluate((r) => r.getBoundingClientRect().top >= innerHeight);
+  await page.locator(`${TRACK} .rr-era`).first().evaluate((b) => b.focus({ preventScroll: true }));
+  await page.waitForFunction(() => { const r = document.querySelector('[data-testid="readout"]').getBoundingClientRect(); return r.top >= -1 && r.bottom <= innerHeight + 1; }, null, { timeout: 3000 });
+  assert(offscreen && (await readout(page)).startsWith(vite.eras[0].title), 'mobile: focusing an era brings the readout on screen');
+  await page.evaluate(() => document.activeElement.blur());
   await page.setViewportSize(DESKTOP);
 
   // CVD screenshots (Svelte: 5 eras, two bands).
