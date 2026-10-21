@@ -12,5 +12,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "scripts/build-samples.ts", "scripts/build-eras.ts"]
+  "include": ["vite.config.ts", "scripts/build-samples.ts", "scripts/build-eras.ts", "scripts/docs.test.ts", "docs/snippets/*.ts"]
 }

@@ -4,7 +4,9 @@
  */
 import type { River } from './view.ts';
 
+/** The two colour themes, matching `prefers-color-scheme`. */
 export type Theme = 'light' | 'dark';
+/** The colour-vision deficiencies the palette is simulated under (Machado 2009, severity 1.0). */
 export type Cvd = 'protanopia' | 'deuteranopia' | 'tritanopia';
 /** A colour as three channels: sRGB (gamma or linear, 0..1) or CIELAB. */
 export type Triple = readonly [number, number, number];

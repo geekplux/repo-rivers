@@ -7,8 +7,9 @@ import type { Era } from '../schema.ts';
 import type { Segment } from './segment.ts';
 import { SUMMARY_MAX_BYTES, moduleLabel, type EraFacts, type EraSummary } from './summary.ts';
 
-/** Era title and note limits, in characters. */
+/** Maximum era title length, in characters. */
 export const TITLE_MAX = 32;
+/** Maximum era note length, in characters. */
 export const NOTE_MAX = 120;
 /** Module and repository identifiers: path-like, no spaces, at most 40 characters. */
 export const IDENT = /^[A-Za-z0-9._@+/()-]{1,40}$/;

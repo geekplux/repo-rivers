@@ -26,6 +26,7 @@ export interface LabelBand {
   bottom: readonly number[];
 }
 
+/** Inputs to {@link placeLabels}: river bands in lane order, column centres, the plot box and obstacles. */
 export interface LabelInput {
   bands: readonly LabelBand[]; // lane order
   xs: readonly number[];
@@ -41,6 +42,7 @@ export interface LabelInput {
   obstacles: readonly Box[];
 }
 
+/** Height of a label box in px (12 px mono text plus padding). */
 export const LABEL_HEIGHT = 14;
 const MARGIN = 2;
 const MAX_CHARS = 26;

@@ -41,8 +41,9 @@ function toTransfers(moves: Map<string, number>, prefixes: readonly string[], to
   return transfers.toSorted((a, b) => a.bucket - b.bucket || a.from - b.from || a.to - b.to);
 }
 
-/** Storage caps (PLAN §4.2): at most this many prefixes and people per aggregate. */
+/** Storage cap (PLAN §4.2): at most this many module prefixes per aggregate; the rest fold into "other". */
 export const MAX_PREFIXES = 60;
+/** Storage cap (PLAN §4.2): at most this many people per aggregate; the rest fold into {@link OTHERS_ID}. */
 export const MAX_PEOPLE = 30;
 /** Id of the person that absorbs the humans beyond {@link MAX_PEOPLE}; `selectView` folds it into "other". */
 export const OTHERS_ID = '*others';
