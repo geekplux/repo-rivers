@@ -11,10 +11,17 @@ export type StreamLine =
   | { type: 'result'; cache: CacheStatus; aggregate: RepoAggregate }
   | ErrorBody;
 
-/** An error line or body; `code` is one of the core error codes, or `invalid` for a bad request. */
+/**
+ * Wire error codes. Core codes pass through, except that GitHub's own rate limit is sent as
+ * `github_rate_limited` (with `resetAt` from `x-ratelimit-reset` when GitHub sent it), so the UI can tell it
+ * apart from this site's per-IP limit, `too_many_requests`. `invalid` is a bad request.
+ */
+export type WireErrorCode = Exclude<RepoErrorCode, 'rate_limited'> | 'github_rate_limited' | 'too_many_requests' | 'invalid';
+
+/** An error line or body. */
 export interface ErrorBody {
   type: 'error';
-  code: RepoErrorCode | 'invalid';
+  code: WireErrorCode;
   message: string;
   resetAt?: string;
 }
@@ -31,7 +38,8 @@ export function json(body: unknown, status = 200, headers: Record<string, string
 export function errorLine(e: unknown): ErrorBody {
   if (!(e instanceof RepoError)) return { type: 'error', code: 'upstream', message: 'Unexpected error while reading GitHub' };
   const resetAt = 'resetAt' in e && typeof e.resetAt === 'string' ? { resetAt: e.resetAt } : {};
-  return { type: 'error', code: e.code, message: e.message, ...resetAt };
+  const code = e.code === 'rate_limited' ? 'github_rate_limited' : e.code;
+  return { type: 'error', code, message: e.message, ...resetAt };
 }
 
 /** Writes one line; resolves even when the client has gone (the job is aborted instead). */

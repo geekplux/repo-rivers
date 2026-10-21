@@ -80,16 +80,23 @@ describe('loadRepo via the Worker', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps rate_limited (stream line or 429 JSON) as an error with resetAt; no automatic fallback', async () => {
+  it('keeps GitHub’s limit (github_rate_limited, or the older rate_limited) as an error with resetAt; no automatic fallback', async () => {
     const resetAt = '2026-10-20T14:05:00Z';
     for (const res of [
+      () => ndjson([line({ type: 'error', code: 'github_rate_limited', message: 'x', resetAt })]),
       () => ndjson([line({ type: 'error', code: 'rate_limited', message: 'x', resetAt })]),
-      () => new Response(JSON.stringify({ type: 'error', code: 'rate_limited', message: 'x', resetAt }), { status: 429, headers: { 'content-type': 'application/json' } }),
     ]) {
       const fetch = fakeFetch(res);
       expect(await failure(run(fetch))).toMatchObject({ code: 'rate_limited', via: 'worker', resetAt });
       expect(fetch).toHaveBeenCalledTimes(1);
     }
+  });
+
+  it('maps this site’s per-IP limit (429 too_many_requests) to busy, not to GitHub’s limit', async () => {
+    const body = JSON.stringify({ type: 'error', code: 'too_many_requests', message: 'x', resetAt: '2026-10-20T14:05:00Z' });
+    const fetch = fakeFetch(() => new Response(body, { status: 429, headers: { 'content-type': 'application/json' } }));
+    expect(await failure(run(fetch))).toMatchObject({ code: 'busy', via: 'worker' });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FailureCode } from '../../data/loadRepo.ts';
 import { errorCopy, loadingLine, resetTime } from './copy.ts';
 
-const CODES: FailureCode[] = ['not_found', 'rate_limited', 'empty', 'too_little', 'offline', 'unavailable', 'upstream'];
+const CODES: FailureCode[] = ['not_found', 'rate_limited', 'busy', 'empty', 'too_little', 'offline', 'unavailable', 'upstream'];
 
 describe('error copy (PLAN §3, F10)', () => {
   it('gives every state a title, one sentence and 1–2 actions', () => {
@@ -24,13 +24,21 @@ describe('error copy (PLAN §3, F10)', () => {
 
   it('shows the local reset time, and offers the browser only when the Worker was limited', () => {
     const worker = errorCopy({ code: 'rate_limited', via: 'worker', resetAt: '2026-10-20T12:05:00Z' }, 'o/n', 'Europe/Berlin');
-    expect(worker.title).toBe('GitHub’s hourly limit reached');
-    expect(worker.body).toContain('resets at 14:05');
+    expect(worker.title).toBe('GitHub’s hourly limit was reached');
+    expect(worker.body).toContain('try again after 14:05');
     expect(worker.actions.map((a) => a.label)).toEqual(['Try from your browser', 'Show a sample instead']);
     const browser = errorCopy({ code: 'rate_limited', via: 'browser', resetAt: '2026-10-20T12:05:00Z' }, 'o/n', 'UTC');
     expect(browser.body).toContain('12:05');
     expect(browser.actions.map((a) => a.id)).toEqual(['sample']);
     expect(resetTime(undefined)).toBeNull();
+    expect(errorCopy({ code: 'rate_limited', via: 'worker' }, 'o/n').body).toContain('try again in up to an hour');
+  });
+
+  it('tells this site’s own per-IP limit apart from GitHub’s', () => {
+    const busy = errorCopy({ code: 'busy', via: 'worker' }, 'o/n');
+    expect(busy.title).not.toMatch(/GitHub/);
+    expect(busy.body).toContain('try again in a minute');
+    expect(busy.actions.map((a) => a.id)).toEqual(['retry', 'sample']);
   });
 });
 

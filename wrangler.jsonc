@@ -19,8 +19,8 @@
       "id": "e15b4e2e25d64a9fa1ae087ef86d8a0b"
     }
   ],
-  // About 20 requests per minute per client IP on /api/*.
-  "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }],
+  // About 20 requests per minute per client IP on /api/*. namespace_id must be unique per account (explorable uses 1001).
+  "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } }],
   // Workers AI names eras (POST /api/eras). Local dev uses wrangler.dev.jsonc, which has no `ai` binding, so
   // `pnpm dev:worker` never contacts Cloudflare and the route answers with heuristic names.
   "ai": { "binding": "AI" },

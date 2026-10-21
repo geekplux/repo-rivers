@@ -40,6 +40,8 @@ it('deploy prep: real 32-hex KV id, observability, dry-run script only, security
   const deploy = readJsonc('wrangler.jsonc');
   expect(deploy.kv_namespaces).toEqual([{ binding: 'RIVERS_KV', id: 'e15b4e2e25d64a9fa1ae087ef86d8a0b' }]);
   expect(deploy.observability).toEqual({ enabled: true });
+  // Rate-limit namespace ids are per account; explorable (same account) uses 1001.
+  expect(deploy.ratelimits).toEqual([{ name: 'API_LIMIT', namespace_id: '1002', simple: { limit: 20, period: 60 } }]);
   const scripts = (JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }).scripts;
   expect(scripts['check:deploy']).toBe('wrangler deploy --dry-run --outdir .wrangler/dry-run');
   // Nothing that deploys can be run by accident: the only `wrangler deploy` is the dry run.

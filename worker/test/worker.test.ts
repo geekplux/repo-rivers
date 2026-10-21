@@ -99,7 +99,7 @@ describe('routing and validation', () => {
     const API_LIMIT = { limit: vi.fn<() => Promise<{ success: boolean }>>(async () => ({ success: false })) };
     const { res, text } = await call('/api/health', { API_LIMIT } as never);
     expect(res.status).toBe(429);
-    expect(JSON.parse(text)).toMatchObject({ code: 'rate_limited', resetAt: expect.any(String) });
+    expect(JSON.parse(text)).toMatchObject({ code: 'too_many_requests', resetAt: expect.any(String) });
   });
 });
 
@@ -190,7 +190,7 @@ describe('GET /api/repo/:owner/:name cache paths', () => {
     expect(written).toMatchObject({ headSha: agg?.repo.headSha, etag: RECORDED[HEAD]!.headers.etag, fetchedAt: NOW });
   });
 
-  it('turns a GitHub rate limit into an NDJSON rate_limited error with resetAt and caches nothing', async () => {
+  it('turns a GitHub rate limit (403) into an NDJSON github_rate_limited error with resetAt and caches nothing', async () => {
     const reset = 1_792_466_128;
     const gh = vi.fn<typeof fetch>(async () =>
       new Response('{"message":"API rate limit exceeded for 203.0.113.9."}', {
@@ -202,8 +202,15 @@ describe('GET /api/repo/:owner/:name cache paths', () => {
     const kv = fakeKv();
     const { res, lines } = await call(REPO, { RIVERS_KV: kv as never }, { fetch: gh });
     expect(res.status).toBe(200);
-    expect(lines.at(-1)).toEqual({ type: 'error', code: 'rate_limited', message: expect.any(String), resetAt: new Date(reset * 1000).toISOString() });
+    expect(lines.at(-1)).toEqual({ type: 'error', code: 'github_rate_limited', message: expect.any(String), resetAt: new Date(reset * 1000).toISOString() });
     expect(kv.puts).toEqual([]);
+  });
+
+  it('turns a GitHub 429 (secondary limit, retry-after) into github_rate_limited too', async () => {
+    const gh = vi.fn<typeof fetch>(async () => new Response('{"message":"Too many requests"}', { status: 429, headers: { 'retry-after': '120' } }));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { lines } = await call(REPO, { RIVERS_KV: fakeKv() as never }, { fetch: gh });
+    expect(lines.at(-1)).toMatchObject({ type: 'error', code: 'github_rate_limited', resetAt: expect.any(String) });
   });
 
   it('maps a missing repository to not_found', async () => {

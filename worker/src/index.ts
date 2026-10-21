@@ -22,7 +22,7 @@ export async function handle(request: Request, env: WorkerEnv, ctx: Pick<Executi
     if (!(await env.API_LIMIT.limit({ key: ip })).success) {
       const resetAt = new Date(Date.now() + LIMIT_WINDOW_S * 1000).toISOString();
       const message = 'Too many requests to this site; try again in a minute';
-      return json({ type: 'error', code: 'rate_limited', message, resetAt }, 429, { 'retry-after': String(LIMIT_WINDOW_S) });
+      return json({ type: 'error', code: 'too_many_requests', message, resetAt }, 429, { 'retry-after': String(LIMIT_WINDOW_S) });
     }
   }
   if (pathname === '/api/eras') return erasRoute(request, env);
