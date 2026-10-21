@@ -14,9 +14,9 @@
   "kv_namespaces": [
     {
       "binding": "RIVERS_KV",
-      // PLACEHOLDER (clearly fake, all zeros): run `wrangler kv namespace create RIVERS_KV` and paste the real
-      // 32-hex id here before deploying (docs/DEPLOY.md). Local dev simulates KV and ignores the id.
-      "id": "00000000000000000000000000000000"
+      // Production namespace from `wrangler kv namespace create RIVERS_KV`. Forks: replace it with your
+      // own 32-hex id before deploying (docs/DEPLOY.md). Local dev simulates KV and ignores the id.
+      "id": "e15b4e2e25d64a9fa1ae087ef86d8a0b"
     }
   ],
   // About 20 requests per minute per client IP on /api/*.

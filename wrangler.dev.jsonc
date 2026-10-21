@@ -15,7 +15,7 @@
   "kv_namespaces": [
     {
       "binding": "RIVERS_KV",
-      "id": "00000000000000000000000000000000"
+      "id": "e15b4e2e25d64a9fa1ae087ef86d8a0b"
     }
   ],
   "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }],

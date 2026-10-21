@@ -36,9 +36,9 @@ it('wrangler.dev.jsonc is wrangler.jsonc minus the AI binding; dev:worker uses i
   expect(scripts['check:worker']).toBe('node scripts/worker-smoke.mjs');
 });
 
-it('deploy prep: placeholder KV id, observability, dry-run script only, security headers', () => {
+it('deploy prep: real 32-hex KV id, observability, dry-run script only, security headers', () => {
   const deploy = readJsonc('wrangler.jsonc');
-  expect(deploy.kv_namespaces).toEqual([{ binding: 'RIVERS_KV', id: '0'.repeat(32) }]);
+  expect(deploy.kv_namespaces).toEqual([{ binding: 'RIVERS_KV', id: 'e15b4e2e25d64a9fa1ae087ef86d8a0b' }]);
   expect(deploy.observability).toEqual({ enabled: true });
   const scripts = (JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }).scripts;
   expect(scripts['check:deploy']).toBe('wrangler deploy --dry-run --outdir .wrangler/dry-run');
