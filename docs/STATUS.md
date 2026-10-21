@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 10 verified (PASS round 2); opening PR
+- Current phase: 11 (phase-11-gallery-launch), implementing
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -17,8 +17,8 @@ STATE: IN-PROGRESS
 | 7 | phase-7-worker-api | [#8](https://github.com/geekplux/repo-rivers/pull/8) | PR open (PASS) | 1 |
 | 8 | phase-8-paste-url | [#9](https://github.com/geekplux/repo-rivers/pull/9) | PR open (PASS) | 1 |
 | 9 | phase-9-era-annotations | [#10](https://github.com/geekplux/repo-rivers/pull/10) | PR open (PASS) | 2 |
-| 10 | phase-10-oss-docs | (opening) | verified PASS | 2 |
-| 11 | phase-11-gallery-launch | - | pending | 0 |
+| 10 | phase-10-oss-docs | [#11](https://github.com/geekplux/repo-rivers/pull/11) | PR open (PASS) | 2 |
+| 11 | phase-11-gallery-launch | - | in progress | 0 |
 | 12 | phase-12-deploy-prep | - | pending | 0 |
 
 ## Carry-overs (scheduled into later phases)
@@ -31,4 +31,4 @@ STATE: IN-PROGRESS
 - After deploy (needs Sean): run `scripts/build-eras.ts` with Cloudflare account credentials to replace heuristic sample era names with AI-written ones (non-blocking).
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
-Last updated: 2026-10-21 02:22 UTC
+Last updated: 2026-10-21 02:37 UTC
