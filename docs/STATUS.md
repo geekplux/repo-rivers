@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 8 (phase-8-paste-url), implementing
+- Current phase: 8 verified (PASS round 1); opening PR
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -15,7 +15,7 @@ STATE: IN-PROGRESS
 | 5 | phase-5-river-chart | [#6](https://github.com/geekplux/repo-rivers/pull/6) | PR open (PASS) | 1 |
 | 6 | phase-6-interaction-a11y | [#7](https://github.com/geekplux/repo-rivers/pull/7) | PR open (PASS) | 1 |
 | 7 | phase-7-worker-api | [#8](https://github.com/geekplux/repo-rivers/pull/8) | PR open (PASS) | 1 |
-| 8 | phase-8-paste-url | - | in progress | 0 |
+| 8 | phase-8-paste-url | (opening) | verified PASS | 1 |
 | 9 | phase-9-era-annotations | - | pending | 0 |
 | 10 | phase-10-oss-docs | - | pending | 0 |
 | 11 | phase-11-gallery-launch | - | pending | 0 |
@@ -24,9 +24,9 @@ STATE: IN-PROGRESS
 ## Carry-overs (scheduled into later phases)
 - P12: DEPLOY.md/README: recommend a public-repo-only (fine-grained, no private access) GITHUB_TOKEN for the Worker secret.
 
-- P10: good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change.
+- P10: good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change; browser-fallback network failure while online shown as 'offline' (should be 'GitHub not answering'); cancel during back/forward leaves stale ?repo=; real Worker 429 logs a console resource error.
 
 ## Follow-ups
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
-Last updated: 2026-10-20 22:41 UTC
+Last updated: 2026-10-21 00:18 UTC
