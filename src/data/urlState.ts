@@ -15,3 +15,8 @@ export function withRepo(href: string, ref: RepoRef | null): string {
   url.search = [repo, rest].filter(Boolean).join('&');
   return url.toString();
 }
+
+/** The embed view in `?embed=` (only `social`, the 1280×640 card), or null for the full app. */
+export function embedFromSearch(search: string): 'social' | null {
+  return new URLSearchParams(search).get('embed') === 'social' ? 'social' : null;
+}

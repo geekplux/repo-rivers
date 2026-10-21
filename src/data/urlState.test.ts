@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { repoFromSearch, withRepo } from './urlState.ts';
+import { embedFromSearch, repoFromSearch, withRepo } from './urlState.ts';
 
 describe('?repo= URL state', () => {
   it('reads a valid repo and ignores invalid ones', () => {
@@ -15,5 +15,11 @@ describe('?repo= URL state', () => {
     expect(withRepo('https://x.dev/?sample=express&repo=a/b', ref)).toBe('https://x.dev/?repo=sveltejs/svelte&sample=express');
     expect(withRepo('https://x.dev/?repo=a/b&sample=express', null)).toBe('https://x.dev/?sample=express');
     expect(withRepo('https://x.dev/?repo=a/b', null)).toBe('https://x.dev/');
+  });
+
+  it('reads ?embed=social and ignores anything else', () => {
+    expect(embedFromSearch('?embed=social&sample=svelte')).toBe('social');
+    expect(embedFromSearch('?embed=other')).toBeNull();
+    expect(embedFromSearch('')).toBeNull();
   });
 });
