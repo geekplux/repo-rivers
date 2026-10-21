@@ -4,7 +4,7 @@
 
 Please report security issues privately with [GitHub private vulnerability reporting](https://github.com/geekplux/repo-rivers/security/advisories/new) (the repository's Security tab, then "Report a vulnerability"). Do not open a public issue.
 
-Include what you found, how to reproduce it, and the impact you expect. We aim to acknowledge reports within a week and to agree a disclosure date with you once a fix is ready.
+Include what you found, how to reproduce it, and the impact you expect. This is a volunteer project, so responses are best effort; we will acknowledge your report as soon as we can and agree a disclosure date with you once a fix is ready.
 
 ## Scope
 

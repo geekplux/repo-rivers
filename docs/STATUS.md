@@ -24,9 +24,10 @@ STATE: IN-PROGRESS
 ## Carry-overs (scheduled into later phases)
 - P12: fix wrangler.dev.jsonc header comment (points to worker/test/wranglerConfig.test.ts; actual scripts/wrangler-config.test.ts); DEPLOY.md/README: recommend a public-repo-only (fine-grained, no private access) GITHUB_TOKEN for the Worker secret.
 
-- P10: good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change; browser-fallback network failure while online shown as 'offline' (should be 'GitHub not answering'); cancel during back/forward leaves stale ?repo=; real Worker 429 logs a console resource error.
+- (done in P10: docs/GOOD_FIRST_ISSUES.md) good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change; browser-fallback network failure while online shown as 'offline' (should be 'GitHub not answering'); cancel during back/forward leaves stale ?repo=; real Worker 429 logs a console resource error.
 
 ## Follow-ups
+- Sean: enable GitHub private vulnerability reporting in the repo settings (SECURITY.md and CODE_OF_CONDUCT.md link to it).
 - After deploy (needs Sean): run `scripts/build-eras.ts` with Cloudflare account credentials to replace heuristic sample era names with AI-written ones (non-blocking).
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
