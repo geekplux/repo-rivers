@@ -49,6 +49,9 @@ const MAX_IDENT = 40;
 export const ident = (name: string): string =>
   (name === '' || name === '(root files)' ? '(root)' : name.replace(/[^A-Za-z0-9._@+/()-]/g, '_')).slice(0, MAX_IDENT);
 
+/** How titles and notes name an identifier: the chart's label, so `(root)` reads "(root files)". */
+export const moduleLabel = (id: string): string => (id === '(root)' ? '(root files)' : id);
+
 const month = (t: number): string => new Date(t).toISOString().slice(0, 7);
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0);
 const bytes = (s: EraSummary): number => new TextEncoder().encode(JSON.stringify(s)).length;

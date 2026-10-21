@@ -5,7 +5,7 @@
  */
 import type { Era } from '../schema.ts';
 import type { Segment } from './segment.ts';
-import { SUMMARY_MAX_BYTES, type EraFacts, type EraSummary } from './summary.ts';
+import { SUMMARY_MAX_BYTES, moduleLabel, type EraFacts, type EraSummary } from './summary.ts';
 
 /** Era title and note limits, in characters. */
 export const TITLE_MAX = 32;
@@ -82,9 +82,15 @@ export function clampText(text: string, max: number): string {
   return `${(space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s,;:.–-]+$/, '')}…`;
 }
 
+/** `(root)` as the chart labels it, when that still fits in `max` characters. */
+function rootLabel(text: string, max: number): string {
+  const t = text.replaceAll('(root)', moduleLabel('(root)'));
+  return t.length <= max ? t : text;
+}
+
 /**
  * Era names from untrusted text or JSON (`{ eras: [{ title, note }] }`, one per segment, in order): clamped
- * to {@link TITLE_MAX}/{@link NOTE_MAX}. Returns null when the shape or the segment count does not match, or a
+ * to {@link TITLE_MAX}/{@link NOTE_MAX}, with `(root)` read as "(root files)" where it fits. Returns null when the shape or the segment count does not match, or a
  * title is empty after cleaning.
  */
 export function parseNames(raw: unknown, segments: readonly Segment[], source: Era['source']): Era[] | null {
@@ -99,7 +105,7 @@ export function parseNames(raw: unknown, segments: readonly Segment[], source: E
   const eras = items.map((item: unknown, i): Era | null => {
     const { title, note } = (item ?? {}) as { title?: unknown; note?: unknown };
     if (typeof title !== 'string' || typeof note !== 'string') return null;
-    const era = { start: segments[i]!.start, end: segments[i]!.end, title: clampText(title, TITLE_MAX), note: clampText(note, NOTE_MAX), source };
+    const era = { start: segments[i]!.start, end: segments[i]!.end, title: rootLabel(clampText(title, TITLE_MAX), TITLE_MAX), note: rootLabel(clampText(note, NOTE_MAX), NOTE_MAX), source };
     return era.title ? era : null;
   });
   return eras.every((e) => e !== null) ? (eras as Era[]) : null;

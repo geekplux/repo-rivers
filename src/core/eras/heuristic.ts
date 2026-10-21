@@ -3,12 +3,12 @@
  * the model is unavailable or answers badly. Deterministic, from the {@link EraSummary} alone.
  */
 import type { Era } from '../schema.ts';
-import type { EraSummary } from './summary.ts';
+import { moduleLabel as label, type EraSummary } from './summary.ts';
 import { NOTE_MAX, TITLE_MAX, clampText } from './validate.ts';
 
-/** A module name short enough for a title: the last path segment when the whole is over 20 characters. */
-const short = (m: string): string => (m.length <= 20 ? m : (m.split('/').pop() ?? m).slice(0, 20));
-const last = (m: string): string => m.split('/').pop() || m;
+/** A module's chart label short enough for a title: the last path segment when the whole is over 20 characters. */
+const short = (id: string): string => ((m) => (m.length <= 20 ? m : (m.split('/').pop() ?? m).slice(0, 20)))(label(id));
+const last = (id: string): string => label(id).split('/').pop() || label(id);
 const plural = (n: number, one: string): string => `${n} ${one}${n === 1 ? '' : 's'}`;
 const fits = (t: string): boolean => t.length <= TITLE_MAX;
 
@@ -37,9 +37,9 @@ export function heuristicEras(summary: EraSummary): Era[] {
     if (used.has(title)) title = `${title}, ${e.from.slice(0, 4)}`;
     used.add(title);
     const parts = [
-      e.top[0] ? `${e.top[0][1]}% of changes in ${e.top[0][0]}` : 'no changes recorded',
+      e.top[0] ? `${e.top[0][1]}% of changes in ${label(e.top[0][0])}` : 'no changes recorded',
       e.contributors > 0 && `${plural(e.contributors, 'contributor')}${e.newcomers > 0 && i > 0 ? ` (${e.newcomers} new)` : ''}`,
-      move && `${plural(move[2], 'file')} moved from ${move[0] === 'other' ? 'smaller modules' : move[0]} to ${move[1]}`,
+      move && `${plural(move[2], 'file')} moved from ${move[0] === 'other' ? 'smaller modules' : label(move[0])} to ${label(move[1])}`,
       e.activity !== 'medium' && (e.activity === 'high' ? 'a busy stretch' : 'below-average activity'),
     ].filter((p): p is string => Boolean(p));
     let note = '';

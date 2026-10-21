@@ -174,6 +174,17 @@ describe('names', () => {
     expect(titles({ top: [['a'.repeat(18), 60]] }, { top: [['a'.repeat(18), 60], ['b'.repeat(18), 30]] })[1]).toBe(`More ${'a'.repeat(18)}`);
   });
 
+  it('heuristic titles and notes name root files "(root files)", as the chart does, with the fallback when too long', () => {
+    expect(titles({ top: [['test', 60]] }, { top: [['test', 50], ['(root)', 30]] })).toEqual(['The test era', 'test and (root files)']);
+    expect(titles({ top: [['(root)', 60]] })).toEqual(['The (root files) era']);
+    expect(titles({ top: [['a'.repeat(18), 60]] }, { top: [['a'.repeat(18), 60], ['(root)', 30]] })[1]).toBe(`More ${'a'.repeat(18)}`);
+    const [e] = heuristicEras({ v: 1, repo: 'demo', unit: 'month', eras: [fact({ top: [['(root)', 60]], moves: [['(root)', 'lib', 40]] }, 0)] });
+    expect(e!.note).toBe('60% of changes in (root files); 1 contributor; 40 files moved from (root files) to lib');
+    const ai = parseNames({ eras: [{ title: 'Cleaning up (root)', note: 'Mostly (root) changes' }] }, segs.slice(0, 1), 'ai');
+    expect(ai?.[0]).toMatchObject({ title: 'Cleaning up (root files)', note: 'Mostly (root files) changes' });
+    expect(parseNames({ eras: [{ title: `${'x'.repeat(24)} (root)`, note: 'n' }] }, segs.slice(0, 1), 'ai')?.[0]?.title).toBe(`${'x'.repeat(24)} (root)`);
+  });
+
   it('heuristic titles: "Back to" a former lead; the year only when the lead is the same', () => {
     expect(titles({ top: [['lib', 60]] }, { top: [['test', 60]] }, { top: [['lib', 60]] })).toEqual(['The lib era', 'The test era', 'Back to lib']);
     const rising: Partial<EraFacts> = { top: [['lib', 60]], leadTrend: 'rising', from: '2021-01' };
