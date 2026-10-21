@@ -10,7 +10,7 @@ To regenerate these images, the social preview and the README GIF: `pnpm build &
 
 ![The Vite sample in the light theme: rivers of folders from 2020 to 2026. packages/vite starts in late 2020 and is the widest river from then on; three era brackets sit above the chart.](vite-light.png)
 
-In spring 2020 Vite's code lived in `src/node` and a top-level `playground`. In Q4 2020 the repository took its monorepo layout: `packages/vite` appears and stays the widest river, and dashed arrows show `playground` moving into `packages/playground`. The era names follow the data: *From src/node to packages/vite*, *The move to packages/create-vite* (122 files moved in Q3 2021), then *More packages/vite*. The late bulge labelled `docs/.vitepress` is busy in Q1 2025 and Q2 2026.
+In spring 2020 Vite's code lived in `src/node` and a top-level `playground`. In Q4 2020 the repository took its monorepo layout: `packages/vite` appears and stays the widest river, and dashed arrows show `playground` moving into `packages/playground`. The era names follow the data: *From src/node to packages/vite*, *The move to packages/create-vite* (122 files moved in Q3 2021), then *More packages/vite*. The late bulge labelled `docs/.vitepress` is busy in Q4 2024 and Q1 2026.
 
 | Dark theme | Contributors |
 | --- | --- |
