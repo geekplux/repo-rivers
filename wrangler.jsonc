@@ -1,5 +1,6 @@
 // Cloudflare Worker: the /api/* routes plus the built SPA from ./dist (docs/PLAN.md §4.5).
-// Local dev: `pnpm build && pnpm dev:worker`. Never deploy without Sean's approval (phase 12).
+// Deploy config; local dev (`pnpm build && pnpm dev:worker`) uses wrangler.dev.jsonc. Never deploy without
+// Sean's approval (phase 12).
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "repo-rivers",
@@ -20,8 +21,8 @@
   ],
   // About 20 requests per minute per client IP on /api/*.
   "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }],
-  // Workers AI names eras (POST /api/eras). `remote: false` keeps `wrangler dev` from calling Workers AI with
-  // whatever Cloudflare credentials are around; locally the route falls back to heuristic names.
-  "ai": { "binding": "AI", "remote": false }
+  // Workers AI names eras (POST /api/eras). Local dev uses wrangler.dev.jsonc, which has no `ai` binding, so
+  // `pnpm dev:worker` never contacts Cloudflare and the route answers with heuristic names.
+  "ai": { "binding": "AI" }
   // Optional secret (never in this file): `wrangler secret put GITHUB_TOKEN`; locally in .dev.vars.
 }

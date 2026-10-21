@@ -11,15 +11,16 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "vite",
-    "dev:worker": "wrangler dev --port 8787",
+    "dev:worker": "wrangler dev -c wrangler.dev.jsonc --port 8787",
     "build": "vite build",
     "size": "node scripts/size-check.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "lint": "oxlint --deny-warnings",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.worker.json",
-    "types:worker": "wrangler types",
+    "types:worker": "wrangler types -c wrangler.jsonc",
     "test": "vitest run",
     "check:browser": "node scripts/browser/run.mjs",
+    "check:worker": "node scripts/worker-smoke.mjs",
     "samples:build": "node scripts/build-samples.ts",
     "eras:build": "node scripts/build-eras.ts"
   },
