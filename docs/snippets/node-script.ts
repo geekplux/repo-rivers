@@ -1,4 +1,4 @@
-// Fetch a repository's history from Node 22 and lay it out. Run: node docs/snippets/node-script.ts vitejs/vite
+// Fetch a repository's history from Node 22 and lay it out. Run: pnpm exec node docs/snippets/node-script.ts vitejs/vite
 import { fetchRepoAggregate, layoutRivers, parseRepoInput, selectView } from '../../src/core/index.ts';
 
 const ref = parseRepoInput(process.argv[2] ?? 'expressjs/express');

@@ -21,7 +21,7 @@ Everything that counts, samples, lays out and names eras lives in `src/core`: pu
 Run with the Node 22 that pnpm provides: `pnpm exec node docs/snippets/node-script.ts vitejs/vite`. Without `GITHUB_TOKEN` the fetch is unauthenticated and spends at most 55 of your 60 hourly requests.
 
 ```ts
-// Fetch a repository's history from Node 22 and lay it out. Run: node docs/snippets/node-script.ts vitejs/vite
+// Fetch a repository's history from Node 22 and lay it out. Run: pnpm exec node docs/snippets/node-script.ts vitejs/vite
 import { fetchRepoAggregate, layoutRivers, parseRepoInput, selectView } from '../../src/core/index.ts';
 
 const ref = parseRepoInput(process.argv[2] ?? 'expressjs/express');
@@ -46,7 +46,7 @@ console.log(`${layout.rivers.length} river paths; labels dropped: ${layout.label
 To work offline, read a committed sample instead (`pnpm exec node docs/snippets/offline-sample.ts svelte`):
 
 ```ts
-// Read a committed sample without any network. Run: node docs/snippets/offline-sample.ts svelte
+// Read a committed sample without any network. Run: pnpm exec node docs/snippets/offline-sample.ts svelte
 import { readFileSync } from 'node:fs';
 import { parseAggregate, selectView } from '../../src/core/index.ts';
 
@@ -58,7 +58,7 @@ for (const era of aggregate.eras ?? []) {
   const range = `${people.buckets[era.start]?.label} to ${people.buckets[era.end]?.label}`;
   console.log(`${era.title} (${range}): ${era.note}`);
 }
-console.log('Top contributors:', people.rivers.map((r) => r.label).join(', '));
+console.log('Top contributors:', people.rivers.filter((r) => r.kind !== 'other').map((r) => r.label).join(', '));
 ```
 
 ## Adding a built-in sample

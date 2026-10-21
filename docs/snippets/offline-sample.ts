@@ -1,4 +1,4 @@
-// Read a committed sample without any network. Run: node docs/snippets/offline-sample.ts svelte
+// Read a committed sample without any network. Run: pnpm exec node docs/snippets/offline-sample.ts svelte
 import { readFileSync } from 'node:fs';
 import { parseAggregate, selectView } from '../../src/core/index.ts';
 
@@ -10,4 +10,4 @@ for (const era of aggregate.eras ?? []) {
   const range = `${people.buckets[era.start]?.label} to ${people.buckets[era.end]?.label}`;
   console.log(`${era.title} (${range}): ${era.note}`);
 }
-console.log('Top contributors:', people.rivers.map((r) => r.label).join(', '));
+console.log('Top contributors:', people.rivers.filter((r) => r.kind !== 'other').map((r) => r.label).join(', '));
