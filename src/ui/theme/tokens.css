@@ -1,0 +1,57 @@
+/* "Survey map" design tokens (docs/PLAN.md §3). River fills mirror PALETTES in src/core/palette.ts (tokens.test.ts). */
+@font-face {
+  font-family: Fraunces;
+  src: url('/fonts/fraunces-subset.woff2') format('woff2');
+  font-weight: 500 650;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+  --rr-bg: #f5f1e8;
+  --rr-ink: #1b2330;
+  --rr-ink-2: #4f5868;
+  --rr-grid: #ddd5c4;
+  --rr-focus: #1b2330;
+  --rr-river-0: #704c01;
+  --rr-river-1: #0390ce;
+  --rr-river-2: #048a5f;
+  --rr-river-3: #928a02;
+  --rr-river-4: #0b67ab;
+  --rr-river-5: #9e5d3e;
+  --rr-river-6: #be6c9a;
+  --rr-river-7: #00595c;
+  --rr-river-8: #6c7178;
+  --rr-display: Fraunces, Georgia, serif;
+  --rr-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --rr-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --rr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --rr-bg: #10161f;
+    --rr-ink: #e9e4d8;
+    --rr-ink-2: #a7afbc;
+    --rr-grid: #253041;
+    --rr-focus: #e9e4d8;
+    --rr-river-0: #e0ae60;
+    --rr-river-1: #97d5fb;
+    --rr-river-2: #3cc494;
+    --rr-river-3: #e4d50c;
+    --rr-river-4: #0698f4;
+    --rr-river-5: #e36a1c;
+    --rr-river-6: #d27fad;
+    --rr-river-7: #468e8c;
+    --rr-river-8: #61676d;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

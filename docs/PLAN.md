@@ -527,7 +527,7 @@ pnpm check:browser --phase <n>
   - Highlight and dim styles, with transfers revealed on focus.
   - `Readout.tsx` (aria-live polite; numbers come only from the view model).
   - `Controls.tsx`: Modules | Contributors as a radio group, Depth auto/1/2/3 as a radio group (modules only), and an Include bots checkbox.
-  - `src/core/summary.ts` (`describeView`: prose summary, unit-tested), `DataTable.tsx` (inside `<details>`, caption, `th scope`) and the chart's `role="group"`, `aria-roledescription` and `aria-describedby`.
+  - `src/core/summary.ts` (`describeView`: prose summary, unit-tested), `DataTable.tsx` (inside `<details>`, caption, `th scope`) and the chart's `role="application"`, `aria-roledescription` and `aria-describedby`.
   - `axe-core` as a dev dependency and `runAxe` in the harness, plus `checks/phase-6.mjs`.
 - **Acceptance criteria:**
   1. A keyboard-only walk works: Tab into the chart, Up/Down/Left/Right/Home/End/Enter/Escape behave per A3, and the readout text updates and is announced. A visible focus ring is present and has ≥ 3:1 contrast.

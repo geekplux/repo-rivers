@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest something that would help you read a repository's history.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to find out or do?
+      description: Describe the situation, for example "onboarding to a large monorepo".
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have tried
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I looked at the roadmap in the README and at docs/GOOD_FIRST_ISSUES.md.
+          required: true
+        - label: It works without an account or API key for first-time users, or degrades gracefully.
