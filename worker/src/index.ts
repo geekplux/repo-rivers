@@ -1,10 +1,11 @@
+import { erasRoute, type AiRunner } from './erasRoute.ts';
 import { json } from './http.ts';
 import { repoRoute, type RouteDeps } from './repoRoute.ts';
 
-/** Generated bindings (`wrangler types`) plus the optional secret and the Workers AI binding (phase 9). */
-export interface WorkerEnv extends Omit<Env, 'API_LIMIT'> {
+/** Generated bindings (`wrangler types`) plus the optional secret; `AI` may be absent (local dev, tests). */
+export interface WorkerEnv extends Omit<Env, 'API_LIMIT' | 'AI'> {
   GITHUB_TOKEN?: string;
-  AI?: unknown;
+  AI?: AiRunner;
   /** Absent in unit tests; enforced by `wrangler dev` and in production. */
   API_LIMIT?: Env['API_LIMIT'];
 }
@@ -14,7 +15,8 @@ const LIMIT_WINDOW_S = 60;
 /** Routes `/api/*` (assets are served before the Worker runs for every other path). */
 export async function handle(request: Request, env: WorkerEnv, ctx: Pick<ExecutionContext, 'waitUntil'>, deps?: RouteDeps): Promise<Response> {
   const { pathname } = new URL(request.url);
-  if (request.method !== 'GET') return json({ type: 'error', code: 'invalid', message: 'Only GET is supported' }, 405, { allow: 'GET' });
+  const method = pathname === '/api/eras' ? 'POST' : 'GET';
+  if (request.method !== method) return json({ type: 'error', code: 'invalid', message: `Only ${method} is supported` }, 405, { allow: method });
   if (env.API_LIMIT) {
     const ip = request.headers.get('cf-connecting-ip') ?? 'local';
     if (!(await env.API_LIMIT.limit({ key: ip })).success) {
@@ -23,6 +25,7 @@ export async function handle(request: Request, env: WorkerEnv, ctx: Pick<Executi
       return json({ type: 'error', code: 'rate_limited', message, resetAt }, 429, { 'retry-after': String(LIMIT_WINDOW_S) });
     }
   }
+  if (pathname === '/api/eras') return erasRoute(request, env);
   if (pathname === '/api/health') return json({ ok: true, ai: Boolean(env.AI), token: Boolean(env.GITHUB_TOKEN) });
   const m = /^\/api\/repo\/([^/]+)\/([^/]+)\/?$/.exec(pathname);
   if (m) {

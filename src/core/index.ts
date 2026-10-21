@@ -33,3 +33,8 @@ export { laneOrder } from './layout/order.ts';
 export { curve, edgeAt, extend, link, ribbonPath, type Point } from './layout/ribbons.ts';
 export { band, clipDomain, linear, quantile, sqrt, type Scale } from './layout/scale.ts';
 export * from './palette.ts';
+export { eraCount, eraFeatures, partition, segmentEras, type Segment } from './eras/segment.ts';
+export { SUMMARY_MAX_BYTES, ident, summarizeForEras, type EraFacts, type EraSummary } from './eras/summary.ts';
+export { heuristicEras } from './eras/heuristic.ts';
+export { IDENT, NOTE_MAX, TITLE_MAX, checkEras, clampText, parseEraSummary, parseNames } from './eras/validate.ts';
+export { ERA_MODEL, eraRequest } from './eras/prompt.ts';
