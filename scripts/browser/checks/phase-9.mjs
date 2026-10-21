@@ -61,7 +61,7 @@ export default async function phase9({ page, baseURL }) {
   assert(m.trackTop < m.chartTop, 'the track sits above the chart');
   const bands = await page.locator(`${CHART} [data-era-band]`).count();
   assert(bands === Math.floor(vite.eras.length / 2), `odd eras have background bands (got ${bands})`);
-  const prose = await page.locator('.rr-summary').innerText();
+  const prose = await page.locator('.rr-summary').textContent();
   assert(prose.includes(`${vite.eras.length} eras: ${vite.eras[0].title}`), 'the prose summary lists the eras');
   const footer = await page.locator('.rr-table tfoot').textContent();
   assert(vite.eras.every((e) => footer.includes(e.title)), 'the table has an era row');
@@ -163,7 +163,7 @@ export default async function phase9({ page, baseURL }) {
   expectAligned(after, express.eras ?? sample('express').eras, 'express after the swap');
   const cached = await page.evaluate(() => JSON.parse(localStorage.getItem('rr:agg:v1:expressjs/express'))?.aggregate?.eras);
   assert(cached?.length === after.eras.length && cached.every((e) => e.source === 'ai'), 'AI eras are cached with the aggregate');
-  assert((await page.locator('.rr-summary').innerText()).includes('Era names were written by AI.'), 'the prose summary says AI named the eras');
+  assert((await page.locator('.rr-summary').textContent()).includes('Era names were written by AI.'), 'the prose summary says AI named the eras');
   await runAxe(page, 'ai eras');
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '04-eras-ai-swap');

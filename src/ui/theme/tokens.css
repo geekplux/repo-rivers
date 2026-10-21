@@ -26,6 +26,13 @@
   --rr-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --rr-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
   --rr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Spacing scale (calm layout): every page-level gap is one of these steps. */
+  --rr-s1: 4px;
+  --rr-s2: 8px;
+  --rr-s3: 16px;
+  --rr-s4: 24px;
+  --rr-s5: 40px;
+  --rr-s6: 64px;
 }
 
 @media (prefers-color-scheme: dark) {
