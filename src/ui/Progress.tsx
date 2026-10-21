@@ -17,6 +17,7 @@ export function Progress({ repo, progress, fellBack, onCancel }: { repo: string;
         <svg width="100%" height="6" aria-hidden="true">
           <line className="rr-bar-track" x1="0" x2="100%" y1="3" y2="3" />
           {pct > 0 && <line className="rr-bar-fill" x1="0" x2={`${pct}%`} y1="3" y2="3" />}
+          <line className="rr-bar-end" x1="100%" x2="100%" y1="0" y2="6" />
         </svg>
       </div>
       <p className="rr-muted">

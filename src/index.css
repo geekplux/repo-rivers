@@ -103,6 +103,7 @@ button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight:
 .rr-bar { width: min(560px, 100%); }
 .rr-bar svg { display: block; overflow: visible; }
 .rr-bar-track { stroke: var(--rr-grid); stroke-width: 6; }
+.rr-bar-end { stroke: var(--rr-ink-2); stroke-width: 1; }
 .rr-bar-fill { stroke: var(--rr-ink); stroke-width: 6; stroke-dasharray: 10 4; animation: rr-flow 1.6s linear infinite; }
 @keyframes rr-flow { to { stroke-dashoffset: -28; } }
 .rr-actions { display: flex; flex-wrap: wrap; gap: 8px; }

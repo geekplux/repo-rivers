@@ -42,8 +42,11 @@ export function errorCopy(f: { code: FailureCode; via: Via; resetAt?: string }, 
   }
 }
 
-/** The readout while loading; it changes only at 25% steps, so the polite live region speaks a few times at most. */
+/**
+ * The readout while loading; it changes only at 25% steps (0% is not said), so the polite live region speaks a
+ * few times at most.
+ */
 export function loadingLine(repo: string, p: FetchProgress | null): string {
-  const quarter = p && p.total > 0 ? Math.min(100, Math.floor((p.done / p.total) * 4) * 25) : null;
-  return `Reading the history of ${repo}${quarter === null ? '' : ` · ${quarter}% of requests done`}`;
+  const quarter = p && p.total > 0 ? Math.min(100, Math.floor((p.done / p.total) * 4) * 25) : 0;
+  return `Reading the history of ${repo}${quarter === 0 ? '' : ` · ${quarter}% of requests done`}`;
 }

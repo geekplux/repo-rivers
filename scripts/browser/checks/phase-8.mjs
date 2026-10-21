@@ -105,7 +105,7 @@ export default async function phase8({ page, baseURL }) {
     assert((await anim()) === 'rr-flow', `dash flows without reduced motion (got ${await anim()})`);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert(/Reading the history of sveltejs\/svelte/.test(await announced(page)), 'progress is announced politely');
-    assert(await page.locator('.rr-card').getAttribute('aria-busy') === 'true', 'card is aria-busy while loading');
+    assert(await page.locator('.rr-frame').getAttribute('aria-busy') === 'true', 'chart frame is aria-busy while loading');
     await runAxe(page, 'loading');
     await shoot(page, '02-progress-desktop');
     await shoot(page, '03-progress-mobile', MOBILE);

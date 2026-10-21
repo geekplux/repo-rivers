@@ -6,8 +6,9 @@ export const PINNED_NOTE = 'Pinned: press Escape, or click or tap the background
  * The readout bar (docs/viz/rivers.md §6): the text shows at once; a polite live region repeats it after
  * 150 ms without changes, so moving quickly through the chart announces only where you stop. Nothing is
  * announced until `live` (the first user action); a change of `pinned` adds "Pinned" or "Released" once.
+ * `spoken` (default `text`) is what the live region says, when it should carry more than the visible line.
  */
-export function Readout({ text, pinned, live }: { text: string; pinned: boolean; live: boolean }) {
+export function Readout({ text, spoken = text, pinned, live }: { text: string; spoken?: string; pinned: boolean; live: boolean }) {
   const [said, setSaid] = useState('');
   const wasPinned = useRef(pinned);
   useEffect(() => {
@@ -18,10 +19,10 @@ export function Readout({ text, pinned, live }: { text: string; pinned: boolean;
     const t = setTimeout(() => {
       const flip = pinned === wasPinned.current ? '' : pinned ? 'Pinned' : 'Released';
       wasPinned.current = pinned;
-      setSaid(flip ? `${text}. ${flip}` : text);
+      setSaid(flip ? `${spoken}. ${flip}` : spoken);
     }, 150);
     return () => clearTimeout(t);
-  }, [text, pinned, live]);
+  }, [spoken, pinned, live]);
   return (
     <div className="rr-readout" data-testid="readout">
       <p aria-hidden="true">{text}</p>

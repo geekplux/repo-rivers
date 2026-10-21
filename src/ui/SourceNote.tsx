@@ -5,7 +5,8 @@ const MODE = { sampled: 'sampled', full: 'every commit', synthetic: 'synthetic' 
 
 /**
  * The "sampled" badge (PLAN §3 Partial data): a disclosure button whose panel lists the mode, the GitHub
- * requests used, the buckets truncated by the 300-file compare cap, and the aggregate's notes. Escape closes it.
+ * requests used, the buckets truncated by the 300-file compare cap, and the aggregate's notes. Escape, or focus
+ * or a press outside it, closes it.
  */
 export function SourceNote({ source, buckets, unit }: { source: SourceInfo; buckets: number; unit: string }) {
   const [open, setOpen] = useState(false);
@@ -20,13 +21,24 @@ export function SourceNote({ source, buckets, unit }: { source: SourceInfo; buck
       setOpen(false);
       button.current?.focus();
     };
+    // Focus or a press outside the badge and its panel closes it (Tab away, click elsewhere).
+    const onOutside = (e: Event) => {
+      if (e.target instanceof Node && !wrap.current?.contains(e.target)) setOpen(false);
+    };
     addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
+    addEventListener('focusin', onOutside);
+    addEventListener('pointerdown', onOutside);
+    return () => {
+      removeEventListener('keydown', onKey);
+      removeEventListener('focusin', onOutside);
+      removeEventListener('pointerdown', onOutside);
+    };
   }, [open]);
   return (
     <div className="rr-source" ref={wrap}>
-      <button ref={button} type="button" className="rr-badge" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
-        {MODE[source.mode]}<span aria-hidden="true"> {open ? '▴' : '▾'}</span><span className="rr-sr">: about this data</span>
+      <button ref={button} type="button" className="rr-badge" aria-label={`${MODE[source.mode]}: about this data`} aria-expanded={open}
+        aria-controls={id} onClick={() => setOpen(!open)}>
+        {MODE[source.mode]}<span aria-hidden="true"> {open ? '▴' : '▾'}</span>
       </button>
       <div id={id} className="rr-popover" hidden={!open}>
         <dl>

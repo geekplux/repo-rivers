@@ -28,7 +28,7 @@ export function RepoInput({ initial, onSubmit }: { initial: string; onSubmit: (r
           aria-invalid={error ? true : undefined} aria-describedby={error ? errorId : undefined} />
         <button type="submit" className="rr-primary">Draw rivers</button>
       </span>
-      {error && <p id={errorId} className="rr-field-error">{error}</p>}
+      {error && <p id={errorId} role="alert" className="rr-field-error">{error}</p>}
     </form>
   );
 }

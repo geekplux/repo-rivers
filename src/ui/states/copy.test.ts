@@ -37,9 +37,10 @@ describe('error copy (PLAN §3, F10)', () => {
 const at = (done: number) => loadingLine('o/n', { done, total: 51, label: '' });
 
 describe('loadingLine', () => {
-  it('changes only at 25% steps', () => {
+  it('changes only at 25% steps, and does not announce 0%', () => {
     expect(loadingLine('o/n', null)).toBe('Reading the history of o/n');
-    expect(at(1)).toBe('Reading the history of o/n · 0% of requests done');
+    expect(at(0)).toBe('Reading the history of o/n');
+    expect(at(1)).toBe('Reading the history of o/n');
     expect(at(12)).toBe(at(1));
     expect(at(13)).toBe('Reading the history of o/n · 25% of requests done');
     expect(at(51)).toBe('Reading the history of o/n · 100% of requests done');

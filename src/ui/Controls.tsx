@@ -9,16 +9,17 @@ const DEPTHS = ['auto', 1, 2, 3] as const;
 
 /**
  * Modules | Contributors, Depth auto/1/2/3 (modules only) and Include bots (contributors only), as native inputs;
- * a disabled control shows why in a visible hint linked with `aria-describedby`.
+ * a disabled control shows why in a visible hint linked with `aria-describedby`. `disabled` turns them all off
+ * (while a repo loads or failed to load, when there is no chart to change).
  */
-export function Controls({ value, onChange }: { value: ControlValue; onChange: (v: ControlValue) => void }) {
+export function Controls({ value, onChange, disabled = false }: { value: ControlValue; onChange: (v: ControlValue) => void; disabled?: boolean }) {
   const set = (patch: Partial<ControlValue>) => onChange({ ...value, ...patch });
   const modules = value.dimension === 'modules';
   const id = useId();
   const [depthHint, botsHint] = [`${id}depth`, `${id}bots`];
   return (
     <div className="rr-controls">
-      <fieldset className="rr-seg">
+      <fieldset className="rr-seg" disabled={disabled}>
         <legend>Rivers by</legend>
         {DIMENSIONS.map(([d, text]) => (
           <label key={d}>
@@ -28,7 +29,7 @@ export function Controls({ value, onChange }: { value: ControlValue; onChange: (
         ))}
       </fieldset>
       <div className="rr-ctl">
-        <fieldset className="rr-seg" disabled={!modules} aria-describedby={modules ? undefined : depthHint}>
+        <fieldset className="rr-seg" disabled={disabled || !modules} aria-describedby={modules ? undefined : depthHint}>
           <legend>Depth</legend>
           {DEPTHS.map((d) => (
             <label key={d}>
@@ -41,7 +42,7 @@ export function Controls({ value, onChange }: { value: ControlValue; onChange: (
       </div>
       <div className="rr-ctl">
         <label className="rr-check">
-          <input type="checkbox" checked={value.includeBots} disabled={modules} aria-describedby={modules ? botsHint : undefined}
+          <input type="checkbox" checked={value.includeBots} disabled={disabled || modules} aria-describedby={modules ? botsHint : undefined}
             onChange={(e) => set({ includeBots: e.target.checked })} />
           Include bots
         </label>
