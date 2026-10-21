@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 11 verified (PASS round 2); opening PR
+- Current phase: 12 (phase-12-deploy-prep), implementing
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -18,8 +18,8 @@ STATE: IN-PROGRESS
 | 8 | phase-8-paste-url | [#9](https://github.com/geekplux/repo-rivers/pull/9) | PR open (PASS) | 1 |
 | 9 | phase-9-era-annotations | [#10](https://github.com/geekplux/repo-rivers/pull/10) | PR open (PASS) | 2 |
 | 10 | phase-10-oss-docs | [#11](https://github.com/geekplux/repo-rivers/pull/11) | PR open (PASS) | 2 |
-| 11 | phase-11-gallery-launch | (opening) | verified PASS | 2 |
-| 12 | phase-12-deploy-prep | - | pending | 0 |
+| 11 | phase-11-gallery-launch | [#12](https://github.com/geekplux/repo-rivers/pull/12) | PR open (PASS) | 2 |
+| 12 | phase-12-deploy-prep | - | in progress | 0 |
 
 ## Carry-overs (scheduled into later phases)
 - P12: fix wrangler.dev.jsonc header comment (points to worker/test/wranglerConfig.test.ts; actual scripts/wrangler-config.test.ts); DEPLOY.md/README: recommend a public-repo-only (fine-grained, no private access) GITHUB_TOKEN for the Worker secret.
