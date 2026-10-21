@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 9 (phase-9-era-annotations), implementing
+- Current phase: 9 verified (PASS round 2); opening PR
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -16,13 +16,13 @@ STATE: IN-PROGRESS
 | 6 | phase-6-interaction-a11y | [#7](https://github.com/geekplux/repo-rivers/pull/7) | PR open (PASS) | 1 |
 | 7 | phase-7-worker-api | [#8](https://github.com/geekplux/repo-rivers/pull/8) | PR open (PASS) | 1 |
 | 8 | phase-8-paste-url | [#9](https://github.com/geekplux/repo-rivers/pull/9) | PR open (PASS) | 1 |
-| 9 | phase-9-era-annotations | - | in progress | 0 |
+| 9 | phase-9-era-annotations | (opening) | verified PASS | 2 |
 | 10 | phase-10-oss-docs | - | pending | 0 |
 | 11 | phase-11-gallery-launch | - | pending | 0 |
 | 12 | phase-12-deploy-prep | - | pending | 0 |
 
 ## Carry-overs (scheduled into later phases)
-- P12: DEPLOY.md/README: recommend a public-repo-only (fine-grained, no private access) GITHUB_TOKEN for the Worker secret.
+- P12: fix wrangler.dev.jsonc header comment (points to worker/test/wranglerConfig.test.ts; actual scripts/wrangler-config.test.ts); DEPLOY.md/README: recommend a public-repo-only (fine-grained, no private access) GITHUB_TOKEN for the Worker secret.
 
 - P10: good-first-issues: start-edge labels, adaptive gaps for <2 px rivers, 180 ms cross-fade on control change; browser-fallback network failure while online shown as 'offline' (should be 'GitHub not answering'); cancel during back/forward leaves stale ?repo=; real Worker 429 logs a console resource error.
 
@@ -30,4 +30,4 @@ STATE: IN-PROGRESS
 - After deploy (needs Sean): run `scripts/build-eras.ts` with Cloudflare account credentials to replace heuristic sample era names with AI-written ones (non-blocking).
 - Move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)
 
-Last updated: 2026-10-21 00:18 UTC
+Last updated: 2026-10-21 01:38 UTC
