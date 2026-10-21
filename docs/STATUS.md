@@ -2,7 +2,7 @@ STATE: IN-PROGRESS
 
 # Status
 
-- Current phase: 9 verified (PASS round 2); opening PR
+- Current phase: 10 (phase-10-oss-docs), implementing
 - Plan: docs/PLAN.md (12 phases), committed on main
 - Blockers: none
 
@@ -16,8 +16,8 @@ STATE: IN-PROGRESS
 | 6 | phase-6-interaction-a11y | [#7](https://github.com/geekplux/repo-rivers/pull/7) | PR open (PASS) | 1 |
 | 7 | phase-7-worker-api | [#8](https://github.com/geekplux/repo-rivers/pull/8) | PR open (PASS) | 1 |
 | 8 | phase-8-paste-url | [#9](https://github.com/geekplux/repo-rivers/pull/9) | PR open (PASS) | 1 |
-| 9 | phase-9-era-annotations | (opening) | verified PASS | 2 |
-| 10 | phase-10-oss-docs | - | pending | 0 |
+| 9 | phase-9-era-annotations | [#10](https://github.com/geekplux/repo-rivers/pull/10) | PR open (PASS) | 2 |
+| 10 | phase-10-oss-docs | - | in progress | 0 |
 | 11 | phase-11-gallery-launch | - | pending | 0 |
 | 12 | phase-12-deploy-prep | - | pending | 0 |
 
