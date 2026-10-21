@@ -126,8 +126,10 @@ export function App() {
         <a href="https://github.com/geekplux/repo-rivers">GitHub</a>
       </header>
       <main>
-        <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
-        <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
+        <div className="rr-intro">
+          <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
+          <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
+        </div>
         <div className="rr-inputs">
           <RepoInput initial={repoName} onSubmit={(ref) => (setActed(true), repo.load(ref))} />
           <SampleSwitcher value={rs.status === 'idle' ? sample.id : ''} onSelect={(id) => (repo.clear(), setSwitched(true), setActed(true), select(id))} />
@@ -136,11 +138,13 @@ export function App() {
           <div className="rr-card-head">
             <h2 id="rr-title" tabIndex={-1}>{title}</h2>
             {agg && !busy && (
-              <p className="rr-meta">
-                {repoName ? '' : `${agg.repo.owner}/${agg.repo.name} · `}{view?.metric} per {unit} · read {day.format(Date.parse(agg.generatedAt))}
-              </p>
+              <div className="rr-meta-row">
+                <p className="rr-meta">
+                  {repoName ? '' : `${agg.repo.owner}/${agg.repo.name} · `}{view?.metric} per {unit} · read {day.format(Date.parse(agg.generatedAt))}
+                </p>
+                <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />
+              </div>
             )}
-            {agg && !busy && <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />}
           </div>
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
@@ -175,10 +179,14 @@ export function App() {
           <Readout text={readout} spoken={failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : readout} pinned={active.pinned} live={acted} />
           <Controls value={options} onChange={change} disabled={busy} />
           {!busy && agg && view && notes && (
-            <>
-              <p id={summaryId} className="rr-summary">{describeView(agg, view, notes)} {describeEras(view, eras)}</p>
+            <div className="rr-more">
+              {/* Closed by default; the chart's aria-describedby still reads the summary (hidden text counts for descriptions). */}
+              <details className="rr-describe">
+                <summary>Read as text</summary>
+                <p id={summaryId} className="rr-summary">{describeView(agg, view, notes)} {describeEras(view, eras)}</p>
+              </details>
               <DataTable view={view} eras={eras} caption={`${view.metric} per ${unit} in ${agg.repo.owner}/${agg.repo.name}; rows are rivers, columns are ${unit}s`} />
-            </>
+            </div>
           )}
         </section>
       </main>

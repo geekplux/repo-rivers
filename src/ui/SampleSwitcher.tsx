@@ -21,11 +21,11 @@ export function useSampleParam(): [SampleEntry, (id: string) => void] {
   return [sample, select];
 }
 
-/** Sample chips (Vite · Svelte · Express): toggle buttons with `aria-pressed`. */
+/** Samples (Vite · Svelte · Express): quiet text toggle buttons with `aria-pressed`; the pressed one is bold and underlined. */
 export function SampleSwitcher({ value, onSelect }: { value: string; onSelect: (id: string) => void }) {
   return (
     <nav aria-label="Built-in samples" className="rr-chips">
-      <span className="rr-muted">Samples</span>
+      <span className="rr-muted">or open a sample</span>
       {samples.map((s) => (
         <button key={s.id} type="button" aria-pressed={s.id === value} onClick={() => onSelect(s.id)}>
           {s.title}

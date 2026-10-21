@@ -95,6 +95,9 @@ export default async function phase6({ page, baseURL }) {
   await runAxe(page, 'vite sample view');
   assert((await announced(page)) === '', 'nothing is announced on page load');
   assert((await page.locator(PLOT).getAttribute('role')) === 'application', 'the chart is role="application"');
+  // Depth and Include bots live under the "More options" disclosure (calm layout); open it once, it stays open.
+  assert(!(await page.getByRole('checkbox', { name: 'Include bots' }).isVisible()), 'fine-tuning controls start folded');
+  await page.locator('.rr-options summary').click();
   const botsHint = await page.getByRole('checkbox', { name: 'Include bots' }).evaluate((c) => document.getElementById(c.getAttribute('aria-describedby'))?.textContent);
   assert(botsHint === '(contributors only)', `disabled Include bots explains itself (${botsHint})`);
   const key = await page.locator('.rr-key').innerText();
@@ -245,12 +248,12 @@ export default async function phase6({ page, baseURL }) {
   // AC5/A4: the table, opened, with caption and scoped headers.
   await page.locator('.rr-table summary').click();
   assert(await page.locator('.rr-table caption').isVisible(), 'table caption visible');
-  assert((await page.locator('.rr-table th[scope="row"]').count()) === (await page.locator('path[data-river]').count()), 'one table row per river');
+  assert((await page.locator('.rr-table tbody th[scope="row"]').count()) === (await page.locator('path[data-river]').count()), 'one table row per river');
   await runAxe(page, 'express depth 2, table open');
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-key').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '07-table-open-desktop', DESKTOP);
   const describedBy = await page.locator(PLOT).getAttribute('aria-describedby');
-  const summary = await page.locator(`[id="${describedBy}"]`).innerText();
+  const summary = await page.locator(`[id="${describedBy}"]`).textContent(); // folded under "Read as text"
   assert(/The largest river is .+, with \d+% of all lines changed\. The busiest year was \d{4}/.test(summary), `summary linked via aria-describedby (${summary})`);
 
   // Mobile: Home/End on the scroll region, keyboard focus scrolls the bucket into view.
