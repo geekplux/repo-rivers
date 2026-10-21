@@ -20,6 +20,7 @@
     "types:worker": "wrangler types -c wrangler.jsonc",
     "test": "vitest run",
     "check:browser": "node scripts/browser/run.mjs",
+    "gallery": "node scripts/browser/run.mjs --gallery",
     "check:worker": "node scripts/worker-smoke.mjs",
     "samples:build": "node scripts/build-samples.ts",
     "eras:build": "node scripts/build-eras.ts"

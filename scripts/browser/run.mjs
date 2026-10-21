@@ -16,12 +16,13 @@ const MARKER = `--rr-harness=${process.pid}`; // ignored by Chrome; lets cleanup
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const argv = process.argv.slice(2);
+const gallery = argv.includes('--gallery'); // `pnpm gallery`: renders examples/, docs/social-preview.png, docs/hero.gif
 const phaseArg = argv.find((a) => a.startsWith('--phase='))?.slice(8) ?? argv[argv.indexOf('--phase') + 1];
-if (!argv.some((a) => a.startsWith('--phase')) || !/^\d+$/.test(phaseArg ?? '')) {
-  console.error('usage: pnpm check:browser --phase <n>');
+if (!gallery && (!argv.some((a) => a.startsWith('--phase')) || !/^\d+$/.test(phaseArg ?? ''))) {
+  console.error('usage: pnpm check:browser --phase <n> | node scripts/browser/run.mjs --gallery');
   process.exit(2);
 }
-const phase = Number(phaseArg);
+const phase = gallery ? null : Number(phaseArg);
 
 let server;
 let browser;
@@ -97,7 +98,7 @@ for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]
 }
 
 async function main() {
-  const checks = ['smoke', `phase-${phase}`].map((n) => join(ROOT, 'scripts/browser/checks', `${n}.mjs`));
+  const checks = ['smoke', gallery ? 'gallery' : `phase-${phase}`].map((n) => join(ROOT, 'scripts/browser/checks', `${n}.mjs`));
   for (const file of checks) if (!existsSync(file)) throw new Error(`missing check ${file}`);
   if (!existsSync(join(ROOT, 'dist/index.html'))) throw new Error('dist/ is missing: run `pnpm build` first');
   if (!(await portFree())) throw new Error(`port ${PORT} is already in use by another process (set CHECK_PORT to use a different port)`);
@@ -138,13 +139,13 @@ async function main() {
   page.on('console', (msg) => msg.type() === 'error' && !consoleAllowed(msg) && problems.push(`console error: ${msg.text()}`));
   page.on('pageerror', (err) => problems.push(`page error: ${err.message}`));
 
-  setScreenshotDir(join(ROOT, 'docs/screenshots', `phase-${phase}`));
+  if (!gallery) setScreenshotDir(join(ROOT, 'docs/screenshots', `phase-${phase}`));
   for (const file of checks) {
     console.log(`running ${file.slice(ROOT.length + 1)}`);
     await (await import(pathToFileURL(file).href)).default({ page, baseURL: BASE_URL, phase });
   }
   if (problems.length > 0) throw new Error(problems.join('\n'));
-  console.log(`phase ${phase}: all browser checks passed`);
+  console.log(gallery ? 'gallery: all assets written' : `phase ${phase}: all browser checks passed`);
 }
 
 let exitCode = 0;
