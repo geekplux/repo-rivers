@@ -2,7 +2,7 @@
 
 repo-rivers deploys as **one Cloudflare Worker**: it serves the built app from `dist/` (Workers static assets, with the headers in `public/_headers`) and answers `/api/*` (`/api/health`, `/api/repo/:owner/:name`, `/api/eras`). The deploy config is `wrangler.jsonc`. Local development uses `wrangler.dev.jsonc`, which is the same minus the `ai` binding, so `pnpm dev:worker` never contacts Cloudflare.
 
-Production (https://reporivers.geekplux.org) is deployed by **Cloudflare Workers Builds** (Git integration): every merge to `main` builds and deploys. There is no `deploy` script, and `pnpm run check:deploy` is a dry run that uploads nothing. The manual steps below are for forks and first-time setup.
+Production (https://reporivers.geekplux.com) is deployed by **Cloudflare Workers Builds** (Git integration): every merge to `main` builds and deploys. There is no `deploy` script, and `pnpm run check:deploy` is a dry run that uploads nothing. The manual steps below are for forks and first-time setup.
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ Wrangler prints the URL, by default `https://repo-rivers.<your-subdomain>.worker
 Smoke test:
 
 ```sh
-curl https://reporivers.geekplux.org/api/health   # {"ok":true,"ai":true,"token":false}  (token is true with the secret)
+curl https://reporivers.geekplux.com/api/health   # {"ok":true,"ai":true,"token":false}  (token is true with the secret)
 ```
 
 Then open the site and click through the Vite, Svelte and Express samples, paste a small public repo (for example `expressjs/cors`), and check that the era names arrive.

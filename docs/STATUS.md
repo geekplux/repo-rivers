@@ -1,10 +1,10 @@
 STATE: DONE
 
-repo-rivers is **shipped and live** at https://reporivers.geekplux.org. All 12 phases are merged to `main`. Cloudflare Workers Builds (Git integration) deploys `main` on every merge; nobody runs `wrangler deploy` by hand.
+repo-rivers is **shipped and live** at https://reporivers.geekplux.com. All 12 phases are merged to `main`. Cloudflare Workers Builds (Git integration) deploys `main` on every merge; nobody runs `wrangler deploy` by hand.
 
 # Status
 
-- Live: https://reporivers.geekplux.org (`/api/health` → `{"ok":true,"ai":true,"token":false}`)
+- Live: https://reporivers.geekplux.com (`/api/health` → `{"ok":true,"ai":true,"token":false}`)
 - Production runs **without** a `GITHUB_TOKEN` (decided by Sean): the Worker uses GitHub's unauthenticated limit, and the UI explains when GitHub's hourly limit is reached (with the reset time when GitHub sends one).
 - Plan: docs/PLAN.md (12 phases, all done)
 - Blockers: none
