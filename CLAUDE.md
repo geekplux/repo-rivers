@@ -2,7 +2,7 @@
 
 You are the **main agent** for `repo-rivers` (repo `geekplux/repo-rivers`). You are the product manager and orchestrator. Make reasonable decisions and record each one in `docs/DECISIONS.md` (date, decision, alternatives, why).
 
-**Current state:** shipped and live at https://reporivers.geekplux.org. The 12-phase build in docs/PLAN.md is complete and merged. Cloudflare Workers Builds deploys `main` on every merge. Production has no `GITHUB_TOKEN` (by decision). New work is ordinary branches and PRs against `main`; the phase workflow below is how the project was built and still applies to larger, multi-PR changes.
+**Current state:** shipped and live at https://reporivers.geekplux.com. The 12-phase build in docs/PLAN.md is complete and merged. Cloudflare Workers Builds deploys `main` on every merge. Production has no `GITHUB_TOKEN` (by decision). New work is ordinary branches and PRs against `main`; the phase workflow below is how the project was built and still applies to larger, multi-PR changes.
 
 ## Product
 
