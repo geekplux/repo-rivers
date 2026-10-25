@@ -10,7 +10,7 @@ const recordAnimations = () => {
   window.rrAnimated = [];
   const animate = Element.prototype.animate;
   Element.prototype.animate = function (frames, options) {
-    window.rrAnimated.push({ id: options?.id ?? '', ms: options?.duration, easing: options?.easing ?? 'linear' });
+    window.rrAnimated.push({ id: options?.id ?? '', ms: options?.duration, easing: options?.easing ?? 'linear', ghost: this.closest('.rr-ghost') !== null });
     return animate.call(this, frames, options);
   };
 };
@@ -60,6 +60,20 @@ async function expectMotion(page, baseURL) {
   await page.keyboard.press('ArrowLeft');
   await page.waitForTimeout(50);
   assert((await animated(page)).length === 0, 'moving between quarters of the same river runs nothing');
+  // R7 review: with a river pinned, a view switch animates only the live drawing; the fading copy is not the drawing.
+  await page.keyboard.press('Enter');
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  const during = await page.evaluate(() => ({
+    reveal: [...document.querySelectorAll('.rr-reveal')].map((g) => g.classList.contains('rr-ghost')),
+    ghost: [...document.querySelectorAll('.rr-ghost')].map((g) => g.getAttribute('class')),
+  }));
+  assert(during.reveal.length === 1 && !during.reveal[0] && during.ghost.every((c) => !/rr-reveal|rr-focusing/.test(c)), `only the live drawing is .rr-reveal during a crossfade (${JSON.stringify(during)})`);
+  await page.waitForTimeout(400);
+  log = await animated(page);
+  assert(log.filter((a) => a.id === 'rr-dash').every((a) => !a.ghost), `dash runs never land on the fading copy (${JSON.stringify(log)})`);
+  await page.locator('.rr-seg label', { hasText: 'Modules' }).click();
+  await page.waitForTimeout(400);
+  await animated(page);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
 
@@ -120,7 +134,31 @@ function contrast(a, b) {
 }
 const rgb = (css) => css.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
 
+/** Cumulative layout shift of a fresh load of `url` at `viewport` (no input), after the chart and 1.5 s. */
+async function cls(page, url, viewport) {
+  await page.setViewportSize(viewport);
+  await page.goto(url, { waitUntil: 'load' });
+  await page.locator(CHART).waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(1500);
+  return page.evaluate(() => window.rrShift);
+}
+
 export default async function phase5({ page, baseURL }) {
+  // R7 review: loading the page moves nothing (the fonts above the fold are preloaded; the chart head and the chart
+  // keep their heights while the sample arrives): CLS < 0.05 on / at 1440 and 390.
+  await page.addInitScript(() => {
+    window.rrShift = 0;
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries()) if (!e.hadRecentInput) window.rrShift += e.value;
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+  for (const viewport of [{ width: 1440, height: 900 }, MOBILE]) {
+    const shift = await cls(page, baseURL, viewport);
+    assert(shift < 0.05, `CLS on / at ${viewport.width} is < 0.05 (got ${shift.toFixed(4)})`);
+    console.log(`  CLS on / at ${viewport.width}: ${shift.toFixed(4)}`);
+  }
+  await page.setViewportSize(DESKTOP);
+
   // AC4 + reveal: with motion allowed, the mark fires < 1500 ms after navigation and the clip-path reveal runs.
   await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'light' });
   await open(page, baseURL, 'vitejs/vite');

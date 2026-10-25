@@ -23,7 +23,7 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
   const ref = useRef<HTMLDivElement>(null);
   useRenderedMark(aggregate);
   const { river: on, bucket } = active;
-  const { svgRef, waterRef, eraRef, eraNameRef } = useChartMotion(arrive, on, true);
+  const { waterRef, eraRef, eraNameRef } = useChartMotion(arrive, on, true);
   const col = bucket === null ? undefined : L.columns[bucket];
   const shape = L.rivers.find((r) => r.id === on);
   const { left, right, top, bottom } = L.plot;
@@ -49,7 +49,7 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
   }, [ruleY]);
   return (
     <div className="rr-stack" style={{ width }}>
-      <svg ref={svgRef} data-testid="river-chart" data-phone width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rr-chart" role="img"
+      <svg data-testid="river-chart" data-phone width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rr-chart" role="img"
         aria-label={chartLabel(aggregate, view)} aria-describedby={describedBy} {...pointer}>
         <defs><Hatch id={`${id}h`} /></defs>
         {selected && <rect x={0} y={yOf(selected.start)} width={width} height={yOf(selected.end + 1) - yOf(selected.start)} className="rr-era-band" data-era-band={activeEra} />}

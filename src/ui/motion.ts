@@ -83,7 +83,10 @@ export function playArrive(water: Element | null, eras: readonly (Element | null
   for (const e of eras) e?.animate(eraFadeFrames(), { id: ERA_FADE_ID, duration: ARRIVE_MS, fill: 'backwards' });
 }
 
-/** Runs the dashes of the focused river's transfers forward once (`.rr-xfer.rr-on` inside `root`). */
+/**
+ * Runs the dashes of the focused river's transfers forward once (`.rr-xfer.rr-on` inside `root`, the live drawing:
+ * never a crossfade's fading copy, which is its sibling).
+ */
 export function runDashes(root: Element | null): void {
   if (reducedMotion() || !root) return;
   for (const p of root.querySelectorAll('.rr-xfer.rr-on .rr-transfer')) p.animate(dashFrames(), { id: 'rr-dash', duration: DASH_MS, easing: EASE_OUT });
@@ -97,6 +100,10 @@ export function playCrossfade(live: Element, ghost: Element): () => void {
   for (const el of [ghost, ...ghost.querySelectorAll('*')]) {
     for (const a of Array.from(el.attributes)) if (a.name.startsWith('data-')) el.removeAttribute(a.name); // copied: removing edits the live map; not found by queries
   }
+  // The copy is no longer the drawing: `.rr-reveal` and `.rr-focusing` find only the live group; the copy keeps its
+  // look (faded rivers while a river was focused) through `rr-ghost-focusing`.
+  if (ghost.classList.contains('rr-focusing')) ghost.classList.add('rr-ghost-focusing');
+  ghost.classList.remove('rr-reveal', 'rr-focusing');
   ghost.classList.add('rr-ghost');
   live.parentNode?.insertBefore(ghost, live);
   const options = { duration: CROSSFADE_MS, easing: EASE_OUT };

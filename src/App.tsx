@@ -19,7 +19,7 @@ import { useRepo } from './ui/useRepo.ts';
 import { arriveKey, viewKey } from './ui/motion.ts';
 import { Legend, Readout } from './ui/Readout.tsx';
 import { PhoneChart } from './ui/PhoneChart.tsx';
-import { RiverChart } from './ui/RiverChart.tsx';
+import { cls, RiverChart } from './ui/RiverChart.tsx';
 import { RiverIndex } from './ui/RiverIndex.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
 import { EMPTY, useRiverFocus } from './ui/useRiverFocus.ts';
@@ -143,6 +143,7 @@ export function App() {
   const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;
   const drawn = !busy && agg && view && layout && view.rivers.length > 0;
+  const waiting = rs.status === 'idle' && !drawn && !(loaded && 'error' in loaded);
   const motion = { arrive: arriveKey(current?.id ?? '', arrivals), viewKey: viewKey(options) };
   // Phone: while a river (or an era) is pinned or has keyboard focus, the readout docks to the bottom of the viewport
   // (DESIGN §5); a plain hover never docks it.
@@ -170,17 +171,17 @@ export function App() {
           <div className="rr-card-head">
             <div>
               <h2 id="rr-title" tabIndex={-1}>{heading}</h2>
-              {agg && view && !busy && (
-                <div className="rr-meta">
-                  {metaLine(agg, view)} <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />
-                </div>
-              )}
+              {/* Always there (empty until the data arrives), so the head keeps its height: no layout shift. */}
+              <div className="rr-meta">
+                {agg && view && !busy && <>{metaLine(agg, view)} <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} /></>}
+              </div>
             </div>
             <Controls value={options} onChange={change} disabled={busy} />
           </div>
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
-          <div ref={frame} className="rr-frame" aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}>
+          {/* While the first sample loads, the frame keeps the chart's height (rr-waiting), so nothing below it jumps. */}
+          <div ref={frame} className={cls('rr-frame', waiting && 'rr-waiting')} aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}>
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {drawn && (flip ? (

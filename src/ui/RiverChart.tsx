@@ -103,7 +103,6 @@ export class Drawing extends Component<{ className: string; arrive?: string; vie
  * focus moves onto a river. Both do nothing under reduced motion.
  */
 export function useChartMotion(arrive: string | undefined, on: string | null, phone: boolean) {
-  const svgRef = useRef<SVGSVGElement>(null);
   const waterRef = useRef<SVGGElement>(null);
   const eraRef = useRef<SVGGElement>(null);
   const eraNameRef = useRef<SVGGElement>(null);
@@ -112,10 +111,10 @@ export function useChartMotion(arrive: string | undefined, on: string | null, ph
   }, [arrive, phone]);
   const was = useRef<string | null>(null);
   useLayoutEffect(() => {
-    if (runsDashes(was.current, on)) runDashes(svgRef.current);
+    if (runsDashes(was.current, on)) runDashes(waterRef.current);
     was.current = on;
   }, [on]);
-  return { svgRef, waterRef, eraRef, eraNameRef };
+  return { waterRef, eraRef, eraNameRef };
 }
 
 /**
@@ -192,7 +191,7 @@ export function RiverChart({ aggregate, view, layout: L, active, chart, svg, des
   useRenderedMark(aggregate);
 
   const { river: on, bucket } = active;
-  const { svgRef, waterRef, eraRef } = useChartMotion(arrive, on, false);
+  const { waterRef, eraRef } = useChartMotion(arrive, on, false);
   const col = bucket === null ? undefined : L.columns[bucket];
 
   const { repo, time } = aggregate;
@@ -211,7 +210,7 @@ export function RiverChart({ aggregate, view, layout: L, active, chart, svg, des
   const pointer = svg && { ...svg, onClick: (e: MouseEvent<Element>) => (ref.current?.focus({ preventScroll: true, focusVisible: false }), svg.onClick(e)) };
   return (
     <div className="rr-stack" style={{ width: L.width }}>
-      <svg ref={svgRef} data-testid="river-chart" data-static={!interactive || undefined} width={L.width} height={height} viewBox={`0 0 ${L.width} ${height}`}
+      <svg data-testid="river-chart" data-static={!interactive || undefined} width={L.width} height={height} viewBox={`0 0 ${L.width} ${height}`}
         className="rr-chart" role="img" aria-label={chartLabel(aggregate, view)} aria-describedby={describedBy} {...(interactive ? pointer : {})}>
         <defs><Hatch id={`${id}h`} /></defs>
         {selected && <rect x={selected.x0} y={8} width={selected.x1 - selected.x0} height={axisY - 8} className="rr-era-band" data-era-band={activeEra} />}

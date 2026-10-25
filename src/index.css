@@ -46,10 +46,13 @@ a { color: inherit; text-underline-offset: 3px; }
 /* Chart head (DESIGN §3): title and meta left; the controls flush with the column's right edge. */
 .rr-card-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 16px; }
 .rr-card h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
-.rr-meta { margin-top: 4px; font-size: 13px; line-height: 20px; color: var(--muted); }
+.rr-meta { min-height: 20px; margin-top: 4px; font-size: 13px; line-height: 20px; color: var(--muted); }
 /* 8 px of padding, taken back by the margin, so focus rings (2 px, offset 2) on the chart and era buttons are not
    clipped by the scroll box while the drawing keeps its place on the column. */
 .rr-frame { overflow-x: auto; min-height: 352px; padding: 8px; margin: -8px; }
+/* Until the chart is drawn, the frame holds its height: era band and top (92) + the plot, clamp(320, 0.45·W, 480),
+   + the axis room (44), W being the column's width (layoutRivers' default plot height). */
+.rr-frame.rr-waiting { min-height: calc(136px + clamp(320px, 0.45 * min(1200px, 100vw - 32px), 480px)); }
 /* The chart (DESIGN §4): no hue; two waters, a hatched "other", 0.5 rules, 13/16 text. */
 .rr-stack { position: relative; width: max-content; }
 .rr-chart { display: block; font-family: var(--rr-font); }
@@ -90,9 +93,9 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-survey { stroke: var(--ink); stroke-width: 0.5; stroke-dasharray: 2 3; }
 /* Focus (DESIGN §4): the focused river stays at full strength in water A, the others fade to 18 %, their names to
    45 % in ink; a 0.5 ink rule marks the bucket and a dot the river's centre. 250 ms ease-out; instant when reduced. */
-.rr-focusing .rr-river:not(.rr-on), .rr-focusing .rr-xfer:not(.rr-on) { opacity: 0.18; }
-.rr-focusing .rr-lab:not(.rr-on) { opacity: 0.45; }
-.rr-focusing .rr-lab:not(.rr-on) .rr-on-water, .rr-focusing .rr-lab:not(.rr-on) .rr-label-muted { fill: var(--ink); }
+:is(.rr-focusing, .rr-ghost-focusing) :is(.rr-river, .rr-xfer):not(.rr-on) { opacity: 0.18; }
+:is(.rr-focusing, .rr-ghost-focusing) .rr-lab:not(.rr-on) { opacity: 0.45; }
+:is(.rr-focusing, .rr-ghost-focusing) .rr-lab:not(.rr-on) :is(.rr-on-water, .rr-label-muted) { fill: var(--ink); }
 .rr-cursor { stroke: var(--ink); stroke-width: 0.5; pointer-events: none; }
 .rr-dot { fill: var(--ground); stroke: var(--ink); stroke-width: 1.5; }
 /* Motion (DESIGN §6) runs from ui/motion.ts with the Web Animations API: the arrive reveal of .rr-reveal, the era
@@ -246,6 +249,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-card-head { display: block; }
   /* The phone chart is as wide as the column and grows down the page: nothing scrolls sideways. */
   .rr-frame { overflow: visible; }
+  .rr-frame.rr-waiting { min-height: 100svh; } /* the phone chart runs at least a screen down the page */
   .rr-controls { justify-content: space-between; margin-top: 16px; }
   /* Rivers keeps name | sparkline 100×20 | share; eras keep a 104px range column. */
   .rr-sec { margin-top: 80px; }
