@@ -131,6 +131,8 @@ export function App() {
   // After a sample switch or a drawn repo, the live region names it until the first movement in the new chart.
   const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;
+  // The chart is on screen: only then is the frame a scroll region (a sample still loading has no chart yet).
+  const drawn = !busy && agg && view && layout && view.rivers.length > 0;
   useEffect(() => {
     // On mobile, an era tapped or focused in the track shows its note in the readout: bring it on screen.
     if (!mobile || era === null) return;
@@ -171,12 +173,12 @@ export function App() {
           </div>
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
-          {mobile && !busy && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
+          {mobile && drawn && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
           <div ref={frame} className="rr-frame" aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}
-            {...(mobile && !busy && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0, onKeyDown: scrollEnds })}>
+            {...(mobile && drawn && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0, onKeyDown: scrollEnds })}>
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
-            {!busy && agg && view && layout && view.rivers.length > 0 && (
+            {drawn && (
               <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={eraOn && !active.pinned ? EMPTY : active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
                 eras={eras} activeEra={era} onEra={setEra} />
             )}

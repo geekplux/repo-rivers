@@ -123,6 +123,7 @@ export default async function phase9({ page, baseURL }) {
   await page.setViewportSize(MOBILE);
   await page.reload({ waitUntil: 'load' }); // a fresh chart, without the keyboard run's focus state
   await page.waitForFunction(() => document.querySelector('.rr-frame')?.getAttribute('role') === 'region');
+  await page.locator(CHART).waitFor({ state: 'visible' });
   const mm = await measure(page, vite.time.starts.length);
   expectAligned(mm, vite.eras, 'vite mobile');
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
