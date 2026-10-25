@@ -20,7 +20,7 @@ export interface ThemePalette {
   focus: string;
 }
 
-/** Light and dark chrome; tokens.test.ts checks the CSS aliases against these. */
+/** Light and dark chrome; tokens.test.ts checks the CSS roles against these. */
 export const PALETTES: Readonly<Record<Theme, ThemePalette>> = {
   light: { background: '#FBFDFF', ink: '#113264', secondary: '#60646C', graticule: '#ACD8FC', focus: '#0090FF' },
   dark: { background: '#111927', ink: '#C2E6FF', secondary: '#B0B4BA', graticule: '#004074', focus: '#0090FF' },

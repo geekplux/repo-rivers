@@ -63,12 +63,12 @@ describe('theme tokens', () => {
     expect(Object.fromEntries(Object.keys(ROLES).map((role) => [role, resolve(theme, role)]))).toEqual(want);
   });
 
-  it.each(['light', 'dark'] as const)('%s: the --rr-* aliases equal PALETTES; no river hues are left', (theme) => {
+  it.each(['light', 'dark'] as const)('%s: PALETTES equals the roles; no river hues or old --rr-* colour aliases are left', (theme) => {
     const p = PALETTES[theme];
-    const want = { bg: p.background, ink: p.ink, 'ink-2': p.secondary, grid: p.graticule, focus: p.focus };
-    const got = Object.fromEntries(Object.keys(want).map((k) => [k, resolve(theme, `rr-${k}`).toUpperCase()]));
+    const want = { ground: p.background, ink: p.ink, muted: p.secondary, hair: p.graticule, focus: p.focus };
+    const got = Object.fromEntries(Object.keys(want).map((k) => [k, resolve(theme, k).toUpperCase()]));
     expect(got).toEqual(want);
-    expect(css).not.toMatch(/--rr-river/);
+    expect(css).not.toMatch(/--rr-(river|bg|ink|grid|focus|display|body|mono)\b/);
   });
 
   it.each(['light', 'dark'] as const)('%s: river fills (water A, water B, the hatch) ≥ 3:1 against ground', (theme) => {

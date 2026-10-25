@@ -2,7 +2,7 @@
  * "Cyanotype" design tokens (docs/redesign/DESIGN.md §2): Radix Colors 3.0 blue and slate, light and dark, and the
  * semantic roles built on them. The dark set applies when the system is dark and no light choice is stored
  * (`data-theme` on <html>, set by public/theme.js before first paint) or when dark is chosen. Print is always light:
- * both dark blocks are screen-only. tokens.test.ts checks the scales, the roles, the --rr-* aliases and the river contrast.
+ * both dark blocks are screen-only. tokens.test.ts checks the scales, the roles (against PALETTES) and the river contrast.
  */
 @font-face {
   font-family: 'Alegreya Sans';
@@ -83,18 +83,7 @@
   --field: #ffffff;
   --focus: var(--blue-9);
 
-  /* Older names, kept as aliases of the roles until each component moves over. */
-  --rr-bg: var(--ground);
-  --rr-ink: var(--ink);
-  --rr-ink-2: var(--muted);
-  --rr-grid: var(--hair);
-  --rr-focus: var(--focus);
-
   --rr-font: 'Alegreya Sans', ui-sans-serif, system-ui, sans-serif;
-  --rr-display: var(--rr-font);
-  --rr-body: var(--rr-font);
-  --rr-mono: var(--rr-font);
-  --rr-ease: cubic-bezier(0.22, 1, 0.36, 1);
   /* Spacing steps (DESIGN §2). */
   --rr-s1: 4px;
   --rr-s2: 8px;

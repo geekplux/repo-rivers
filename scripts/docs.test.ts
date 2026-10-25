@@ -104,7 +104,7 @@ describe('docs/EXTENDING.md examples', () => {
 
   it('every CSS custom property it mentions exists in tokens.css', () => {
     const tokens = read('src/ui/theme/tokens.css');
-    const named = [...new Set([...doc.matchAll(/--rr-[\w-]+/g)].map((m) => m[0]))].filter((t) => !t.endsWith('-'));
+    const named = [...new Set([...doc.matchAll(/`(--[a-z][\w-]*)`|(--rr-[\w-]+)/g)].map((m) => m[1] ?? m[2]!))].filter((t) => !t.endsWith('-'));
     expect(named.filter((t) => !tokens.includes(`${t}:`))).toEqual([]);
   });
 
