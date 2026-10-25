@@ -20,21 +20,33 @@ a { color: inherit; text-underline-offset: 3px; }
   .rr-nav a:hover, .rr-icon:hover { color: var(--ink); }
 }
 .rr-num { font-variant-numeric: lining-nums tabular-nums; }
-.rr-intro { margin: var(--rr-s4) 0; }
-.rr-hero { font: 500 clamp(26px, 3.4vw, 36px)/1.15 var(--rr-display); letter-spacing: -0.01em; margin: 0 0 var(--rr-s2); }
-.rr-lede { color: var(--rr-ink-2); margin: 0; max-width: 72ch; }
+/* Hero (DESIGN §3): h1, then one row: field, Draw and the samples sentence. */
+.rr-intro { padding-top: 104px; }
+.rr-hero { font: 500 56px/60px var(--rr-font); letter-spacing: -0.025em; margin: 0 0 0 -3px; max-width: 880px; text-wrap: balance; }
+.rr-hero i { font-weight: 400; }
 .rr-muted { color: var(--rr-ink-2); fill: var(--rr-ink-2); }
-.rr-chips { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s1) var(--rr-s3); font-size: 14px; }
-/* Quiet text toggles: the pressed sample is bold and underlined (not colour alone). */
-.rr-chips button { font: inherit; padding: var(--rr-s1) 0; border: 0; background: none; color: var(--rr-ink-2); cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 6px; }
-.rr-chips button:hover { color: var(--rr-ink); text-decoration-color: currentColor; text-decoration-thickness: 1px; }
-.rr-chips button[aria-pressed='true'] { color: var(--rr-ink); font-weight: 500; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+.rr-go { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 40px; }
+.rr-repo { display: contents; }
+.rr-repo input { box-sizing: border-box; width: 440px; height: 48px; padding: 0 16px; border: 0.5px solid var(--line); border-radius: 6px;
+  background: var(--field); color: var(--ink); font: inherit; }
+.rr-repo input::placeholder { color: var(--muted); opacity: 1; }
+.rr-repo input[aria-invalid='true'] { border-color: var(--ink); border-style: dashed; }
+.rr-field-error { order: 1; flex-basis: 100%; margin: 0; font-size: 13px; line-height: 20px; color: var(--ink); }
+.rr-btn { height: 48px; padding: 0 24px; border: 0; border-radius: 6px; background: var(--solid); color: var(--on-solid); font: 500 16px/24px var(--rr-font); cursor: pointer; }
+.rr-or { margin-left: 16px; color: var(--muted); }
+/* Sample names: ink with a 0.5 underline, the current one 1.5 (not colour alone); the hit area reaches 44 tall. */
+.rr-or button { position: relative; padding: 0 0 1px; border: 0; border-bottom: 0.5px solid var(--line); background: none; color: var(--ink); font: inherit; line-height: 18px; cursor: pointer; }
+.rr-or button::after { content: ''; position: absolute; inset: -13px -2px; }
+.rr-or button[aria-pressed='true'] { padding-bottom: 0; border-bottom: 1.5px solid var(--ink); }
+@media (hover: hover) {
+  .rr-or button:hover { border-bottom-color: var(--ink); }
+}
 /* The chart is the page's focal point: no frame around it, just space. */
-.rr-card { margin-top: var(--rr-s5); }
-.rr-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s2) var(--rr-s3); margin-bottom: var(--rr-s3); }
+.rr-card { margin-top: 104px; }
+/* Chart head (DESIGN §3): title and meta left; the controls flush with the column's right edge. */
+.rr-card-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 16px; }
 .rr-card h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
-.rr-meta-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s1) var(--rr-s3); }
-.rr-meta { font: 14px var(--rr-mono); color: var(--rr-ink-2); margin: 0; font-variant-numeric: tabular-nums; }
+.rr-meta { margin-top: 4px; font-size: 13px; line-height: 20px; color: var(--muted); }
 .rr-caption { font-size: 14px; margin: 0 0 4px; }
 .rr-frame { overflow-x: auto; min-height: 352px; }
 .rr-chart { display: block; font: 12px var(--rr-mono); font-variant-numeric: tabular-nums; }
@@ -96,27 +108,32 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-readout p { margin: 0; font: 14px/1.5 var(--rr-mono); font-variant-numeric: tabular-nums; }
 .rr-readout .rr-note { font-family: var(--rr-body); }
 .rr-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.rr-controls { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s3) var(--rr-s5); margin: var(--rr-s4) 0 0; font-size: 14px; }
-.rr-seg { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rr-s1); border: 0; margin: 0; padding: 0; }
-.rr-seg legend { float: left; margin-right: var(--rr-s2); color: var(--rr-ink-2); }
-/* Quiet segments: the checked one gets a soft fill, weight and a check mark (not colour alone). */
-.rr-seg label { position: relative; padding: var(--rr-s1) 10px; border-radius: 4px; color: var(--rr-ink-2); cursor: pointer; }
-.rr-seg label:hover { color: var(--rr-ink); }
-.rr-seg input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: inherit; }
-.rr-seg label:has(:checked) { background: var(--rr-grid); color: var(--rr-ink); font-weight: 500; }
-.rr-seg label:has(:checked)::before { content: '✓ ' / ''; }
-.rr-seg label:has(:focus-visible) { outline: 2px solid var(--rr-focus); outline-offset: 2px; }
-.rr-seg:disabled { opacity: 0.55; }
-.rr-seg:disabled label { cursor: default; }
-.rr-check { display: inline-flex; align-items: center; gap: 6px; }
-.rr-check:has(:disabled) { opacity: 0.55; }
-.rr-ctl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.rr-hint { color: var(--rr-ink-2); }
-.rr-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--rr-ink); }
-.rr-options summary, .rr-more summary { cursor: pointer; width: fit-content; color: var(--rr-ink-2); text-underline-offset: 4px; }
-.rr-options summary:hover, .rr-more summary:hover { color: var(--rr-ink); text-decoration: underline; }
-.rr-options[open] > summary, .rr-more details[open] > summary { color: var(--rr-ink); }
-.rr-options-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rr-s3) var(--rr-s5); margin-top: var(--rr-s3); }
+.rr-controls { display: flex; align-items: center; gap: 16px; }
+.rr-sel { display: flex; align-items: center; gap: 6px; height: 36px; color: var(--muted); }
+.rr-sel-box { position: relative; display: flex; align-items: center; margin-right: -4px; color: var(--ink); }
+.rr-sel select { appearance: none; field-sizing: content; height: 44px; margin: -4px 0; padding: 0 20px 0 4px; border: 0; border-radius: 3px; background: none; color: inherit; font: 500 16px/24px var(--rr-font); cursor: pointer; }
+.rr-sel svg { position: absolute; right: 4px; pointer-events: none; }
+.rr-sel select:focus-visible { outline-offset: 0; }
+.rr-check { position: relative; display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--muted); cursor: pointer; }
+.rr-check input { appearance: none; flex: none; width: 16px; height: 16px; margin: 0; border: 0.75px solid currentColor; border-radius: 3px; background: var(--field); cursor: inherit; }
+.rr-check input:checked { border-color: var(--solid); background: var(--solid); }
+.rr-check svg { position: absolute; left: 0; color: var(--on-solid); pointer-events: none; visibility: hidden; }
+.rr-check input:checked + svg { visibility: visible; }
+.rr-check:has(:checked) { color: var(--ink); }
+/* Segmented control: 36 tall, 6 outside, 3 inside the 3 px padding; each radio's hit area reaches 44 tall. */
+.rr-seg { box-sizing: border-box; display: flex; height: 36px; padding: 3px; border: 0.5px solid var(--line); border-radius: 6px; }
+.rr-seg label { position: relative; display: flex; align-items: center; padding: 0 14px; border-radius: 3px; color: var(--muted); cursor: pointer; }
+.rr-seg input { position: absolute; inset: -7px 0; width: 100%; height: calc(100% + 14px); margin: 0; opacity: 0; cursor: inherit; }
+.rr-seg label:has(:checked) { background: var(--band); color: var(--ink); font-weight: 500; }
+.rr-seg label:has(:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rr-controls :disabled { cursor: default; }
+.rr-controls:has(:disabled) { opacity: 0.55; }
+@media (hover: hover) {
+  .rr-seg label:hover { color: var(--ink); }
+}
+.rr-more summary { cursor: pointer; width: fit-content; color: var(--rr-ink-2); text-underline-offset: 4px; }
+.rr-more summary:hover { color: var(--rr-ink); text-decoration: underline; }
+.rr-more details[open] > summary { color: var(--rr-ink); }
 .rr-more { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s2) var(--rr-s5); margin-top: var(--rr-s5); font-size: 14px; }
 .rr-more details[open] { flex-basis: 100%; }
 .rr-summary { max-width: 68ch; margin: var(--rr-s3) 0 0; font-size: 16px; }
@@ -128,41 +145,33 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-table caption { text-align: left; font: 14px var(--rr-body); color: var(--rr-ink-2); padding-bottom: 6px; }
 .rr-table th, .rr-table td { padding: 3px 8px; border-bottom: 1px solid var(--rr-grid); text-align: right; white-space: nowrap; }
 .rr-table th[scope='row'] { text-align: left; position: sticky; left: 0; background: var(--rr-bg); }
-/* Paste-a-URL flow (phase 8): input, progress, error states, source badge. */
-.rr-inputs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rr-s3) var(--rr-s5); }
-.rr-inputs .rr-chips { padding-bottom: 6px; }
-.rr-repo { display: grid; gap: var(--rr-s2); width: min(560px, 100%); font-size: 14px; }
-.rr-repo label { color: var(--rr-ink-2); }
-.rr-repo-row { display: flex; gap: 8px; }
-.rr-repo input { flex: 1; min-width: 0; font: 16px var(--rr-mono); padding: 7px 10px; border: 1px solid var(--rr-ink-2); border-radius: 4px; background: var(--rr-bg); color: var(--rr-ink); }
-.rr-repo input::placeholder { color: var(--rr-ink-2); opacity: 1; }
-.rr-repo input[aria-invalid='true'] { border-width: 2px; border-style: dashed; }
-.rr-field-error { margin: 0; padding-left: 8px; border-left: 3px solid var(--rr-ink); color: var(--rr-ink); }
-button.rr-primary, .rr-state button, .rr-badge { font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid var(--rr-ink); border-radius: 4px; background: none; color: var(--rr-ink); cursor: pointer; }
-button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight: 500; }
-.rr-state { display: grid; align-content: center; justify-items: start; gap: 10px; min-height: 320px; padding: 0 4px;
-  background: repeating-linear-gradient(90deg, transparent 0 119px, var(--rr-grid) 119px 120px); }
-.rr-state > * { margin: 0; max-width: 64ch; background: var(--rr-bg); }
-.rr-state h3 { font: 500 20px/1.2 var(--rr-display); }
-.rr-progress-line { font: 16px var(--rr-mono); font-variant-numeric: tabular-nums; }
-.rr-bar { width: min(560px, 100%); }
-.rr-bar svg { display: block; overflow: visible; }
-.rr-bar-track { stroke: var(--rr-grid); stroke-width: 6; }
-.rr-bar-end { stroke: var(--rr-ink-2); stroke-width: 1; }
-.rr-bar-fill { stroke: var(--rr-ink); stroke-width: 6; stroke-dasharray: 10 4; animation: rr-flow 1.6s linear infinite; }
-@keyframes rr-flow { to { stroke-dashoffset: -28; } }
-.rr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.rr-card-head .rr-source { position: relative; }
-/* The data-source note is a quiet text disclosure, not a chip. */
-.rr-card-head .rr-badge { padding: 0; border: 0; border-radius: 0; font: 14px var(--rr-mono); color: var(--rr-ink-2); text-decoration: underline dotted; text-underline-offset: 4px; }
-.rr-card-head .rr-badge:hover, .rr-card-head .rr-badge[aria-expanded='true'] { color: var(--rr-ink); }
-.rr-popover { position: absolute; z-index: 2; top: calc(100% + 6px); left: 0; width: min(420px, 80vw); padding: 10px 14px; border: 1px solid var(--rr-ink-2); border-radius: 6px; background: var(--rr-bg); font-size: 14px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.15); }
+/* Loading and error panels, source popover, notices (DESIGN §7): 0.5-bordered, radius 6, no shadow. */
+.rr-state { box-sizing: border-box; max-width: 580px; padding: 24px; border: 0.5px solid var(--line); border-radius: 6px; }
+.rr-state h3, .rr-state-title { margin: 0; font: 500 16px/24px var(--rr-font); }
+.rr-state p:not([class]), .rr-progress-line { margin: 6px 0 16px; color: var(--muted); }
+.rr-progress-line { font-variant-numeric: lining-nums tabular-nums; }
+.rr-bar svg { display: block; }
+.rr-bar-track { stroke: var(--line); stroke-width: 0.5; }
+.rr-bar-fill { stroke: var(--ink); stroke-width: 2; }
+.rr-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
+.rr-progress .rr-actions { margin-top: 16px; }
+.rr-state button { height: 44px; padding: 0 16px; border: 0.5px solid var(--line); border-radius: 6px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+.rr-state button.rr-primary { border-color: var(--solid); background: var(--solid); color: var(--on-solid); font-weight: 500; }
+.rr-source { position: relative; display: inline-block; }
+/* "Estimated from n of m commits": a quiet dashed-underline button; the hit area reaches 44 tall. */
+.rr-badge { position: relative; padding: 0; border: 0; border-bottom: 0.5px dashed var(--muted); background: none; color: var(--muted); font: inherit; line-height: 16px; cursor: pointer; }
+.rr-badge::after { content: ''; position: absolute; inset: -14px -2px; }
+.rr-badge[aria-expanded='true'] { color: var(--ink); border-bottom-color: var(--ink); }
+@media (hover: hover) {
+  .rr-badge:hover { color: var(--ink); border-bottom-color: var(--ink); }
+}
+.rr-popover { position: absolute; z-index: 2; top: calc(100% + 8px); left: 0; width: min(420px, 80vw); box-sizing: border-box; padding: 12px 16px; border: 0.5px solid var(--line); border-radius: 6px; background: var(--ground); color: var(--ink); font-size: 13px; line-height: 20px; }
 .rr-popover[hidden] { display: none; }
 .rr-popover dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 8px; }
-.rr-popover dt { color: var(--rr-ink-2); }
-.rr-popover dd { margin: 0; font-family: var(--rr-mono); font-variant-numeric: tabular-nums; }
+.rr-popover dt { color: var(--muted); }
+.rr-popover dd { margin: 0; font-variant-numeric: lining-nums tabular-nums; }
 .rr-popover ul { margin: 0; padding-left: 18px; }
-.rr-notice { font-size: 14px; padding: 6px 10px; border-left: 3px solid var(--rr-ink-2); margin: 4px 0 8px; }
+.rr-notice { margin: 0 0 16px; padding: 12px 16px; border: 0.5px solid var(--line); border-radius: 6px; font-size: 13px; line-height: 20px; }
 .rr-card h2:focus { outline: none; }
 .rr-card h2:focus-visible { outline: 2px solid var(--rr-focus); }
 /* Footer (DESIGN §3): a 0.5 rule across the page, then 520 | 680 columns of 13/20 muted text. */
@@ -182,11 +191,15 @@ button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight:
   .rr-made { gap: 8px 16px; margin-top: 6px; }
   .rr-footer .rr-wrap { display: block; }
   .rr-footer .rr-wrap > div + div { margin-top: 24px; }
-  .rr-intro { margin-top: var(--rr-s3); }
+  .rr-intro { padding-top: 40px; }
+  .rr-hero { font-size: 32px; line-height: 36px; }
+  .rr-go { gap: 8px; margin-top: 24px; }
+  .rr-repo input { flex: 1; width: auto; min-width: 0; }
+  .rr-btn { padding: 0 20px; }
+  .rr-or { flex-basis: 100%; margin: 4px 0 0; }
+  .rr-card { margin-top: 64px; }
   .rr-card-head { display: block; }
-  .rr-meta-row { margin-top: var(--rr-s2); }
-  .rr-inputs .rr-chips { padding-bottom: 0; }
-  .rr-controls { gap: var(--rr-s3) var(--rr-s4); }
+  .rr-controls { justify-content: space-between; margin-top: 16px; }
 }
 /* ?embed=social (phase 11): a fixed 1280×640 card for the social preview and gallery. */
 .rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 28px 48px 0; overflow: hidden; }

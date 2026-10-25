@@ -9,6 +9,7 @@ import { DataTable } from './ui/DataTable.tsx';
 import { EraTrack } from './ui/EraTrack.tsx';
 import { Progress } from './ui/Progress.tsx';
 import { REPO_INPUT_ID, RepoInput } from './ui/RepoInput.tsx';
+import { metaLine } from './ui/headMeta.ts';
 import { FallbackNotice, SourceNote } from './ui/SourceNote.tsx';
 import { ErrorState } from './ui/states/ErrorState.tsx';
 import { errorCopy, loadingLine, type ErrorAction } from './ui/states/copy.ts';
@@ -32,7 +33,6 @@ const MADE = [
   ['Reasontrail', 'https://reasontrail.geekplux.com'],
   ['markvis', 'https://github.com/geekplux/markvis'],
 ] as const;
-const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** Home/End scroll the mobile chart region to its ends (when the region itself has focus). */
 function scrollEnds(e: KeyboardEvent<HTMLDivElement>) {
@@ -87,7 +87,9 @@ export function App() {
   };
   const focus = useRiverFocus(layout, view?.rivers ?? [], current?.id ?? '');
   const title = repoName || (findSample(loaded?.id ?? '') ?? sample).title;
-  useEffect(() => void (document.title = `${title}, Repo Rivers`), [title]);
+  // The chart head names the repository as owner/name, for samples too (the sample's title until it has loaded).
+  const heading = repoName || (agg ? `${agg.repo.owner}/${agg.repo.name}` : title);
+  useEffect(() => void (document.title = `${heading}, Repo Rivers`), [heading]);
   const [status, setStatus] = useState(rs.status);
   if (status !== rs.status) {
     setStatus(rs.status);
@@ -142,24 +144,23 @@ export function App() {
       </header>
       <main className="rr-wrap">
         <div className="rr-intro">
-          <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
-          <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
-        </div>
-        <div className="rr-inputs">
-          <RepoInput initial={repoName} onSubmit={(ref) => (setActed(true), repo.load(ref))} />
-          <SampleSwitcher value={rs.status === 'idle' ? sample.id : ''} onSelect={(id) => (repo.clear(), setSwitched(true), setActed(true), select(id))} />
+          <h1 className="rr-hero">A repository’s history, <i>drawn as rivers</i></h1>
+          <div className="rr-go">
+            <RepoInput initial={repoName} onSubmit={(ref) => (setActed(true), repo.load(ref))} />
+            <SampleSwitcher value={rs.status === 'idle' ? sample.id : ''} onSelect={(id) => (repo.clear(), setSwitched(true), setActed(true), select(id))} />
+          </div>
         </div>
         <section className="rr-card" aria-labelledby="rr-title">
           <div className="rr-card-head">
-            <h2 id="rr-title" tabIndex={-1}>{title}</h2>
-            {agg && !busy && (
-              <div className="rr-meta-row">
-                <p className="rr-meta">
-                  {repoName ? '' : `${agg.repo.owner}/${agg.repo.name}, `}{view?.metric} per {unit}, read {day.format(Date.parse(agg.generatedAt))}
-                </p>
-                <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />
-              </div>
-            )}
+            <div>
+              <h2 id="rr-title" tabIndex={-1}>{heading}</h2>
+              {agg && view && !busy && (
+                <div className="rr-meta">
+                  {metaLine(agg, view)} <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />
+                </div>
+              )}
+            </div>
+            <Controls value={options} onChange={change} disabled={busy} />
           </div>
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
@@ -192,7 +193,6 @@ export function App() {
             </p>
           )}
           <Readout text={readout} spoken={failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : readout} pinned={active.pinned} live={acted} />
-          <Controls value={options} onChange={change} disabled={busy} />
           {!busy && agg && view && notes && (
             <div className="rr-more">
               {/* Closed by default; the chart's aria-describedby still reads the summary (hidden text counts for descriptions). */}

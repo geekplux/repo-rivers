@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { SourceInfo } from '../core/schema.ts';
+import { sourceLabel } from './headMeta.ts';
 
 const MODE = { sampled: 'sampled', full: 'every commit', synthetic: 'synthetic' } as const;
 
 /**
- * The "sampled" badge (PLAN §3 Partial data): a disclosure button whose panel lists the mode, the GitHub
+ * The source note (PLAN §3 Partial data): a dashed-underline disclosure button in the chart head's meta line,
+ * "Estimated from n of m commits" (docs/redesign/DESIGN.md §3), whose panel lists the mode, the GitHub
  * requests used, the buckets truncated by the 300-file compare cap, and the aggregate's notes. Escape, or focus
  * or a press outside it, closes it.
  */
@@ -36,9 +38,8 @@ export function SourceNote({ source, buckets, unit }: { source: SourceInfo; buck
   }, [open]);
   return (
     <div className="rr-source" ref={wrap}>
-      <button ref={button} type="button" className="rr-badge" aria-label={`${MODE[source.mode]}: about this data`} aria-expanded={open}
-        aria-controls={id} onClick={() => setOpen(!open)}>
-        {MODE[source.mode]}<span aria-hidden="true"> {open ? '▴' : '▾'}</span>
+      <button ref={button} type="button" className="rr-badge" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+        {sourceLabel(source)}
       </button>
       <div id={id} className="rr-popover" hidden={!open}>
         <dl>
@@ -61,7 +62,7 @@ export function SourceNote({ source, buckets, unit }: { source: SourceInfo; buck
 export function FallbackNotice({ automatic }: { automatic: boolean }) {
   return (
     <p className="rr-notice" data-testid="fallback-notice">
-      {automatic ? 'The repo rivers service didn’t answer, so your browser reads GitHub directly' : 'Your browser read GitHub directly'}, using
+      {automatic ? 'The Repo Rivers service didn’t answer, so your browser reads GitHub directly' : 'Your browser read GitHub directly'}, using
       your own quota of 60 requests an hour. The result is kept in this browser only.
     </p>
   );
