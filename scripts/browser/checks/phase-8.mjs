@@ -97,7 +97,7 @@ export default async function phase8({ page, baseURL }) {
     // AC1 + AC6: paste a /tree/ URL → progress "n of m" (static dashes under reduced motion) → chart → ?repo=.
     await submit(page, 'https://github.com/sveltejs/svelte/tree/main');
     const progress = page.locator('[data-testid="progress"]');
-    await progress.getByText('Reading history · 18 of 51 requests').waitFor({ timeout: 10_000 });
+    await progress.getByText('Reading sveltejs/svelte: 18 of 51 requests').waitFor({ timeout: 10_000 });
     assert(!(await input.getAttribute('aria-describedby')), 'the inline error is gone after a valid submit');
     const bar = await page.locator('[role="progressbar"]').evaluate((el) => ({ now: el.getAttribute('aria-valuenow'), max: el.getAttribute('aria-valuemax'), label: el.getAttribute('aria-label') }));
     assert(bar.now === '18' && bar.max === '51' && /sveltejs\/svelte/.test(bar.label), `determinate, labelled progressbar (got ${JSON.stringify(bar)})`);
@@ -192,7 +192,7 @@ export default async function phase8({ page, baseURL }) {
     allowConsoleError(/ERR_INTERNET_DISCONNECTED|ERR_FAILED.*api\.github\.com\/repos\/down/);
     await page.route('**/api/repo/down/both', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>repo rivers</title>' }));
     await page.route('https://api.github.com/repos/down/**', (r) => r.abort('internetdisconnected'));
-    await expectError(page, 'down/both', 'The repo rivers service isn’t answering', ['Try again', 'Show a sample instead']);
+    await expectError(page, 'down/both', 'The Repo Rivers service isn’t answering', ['Try again', 'Show a sample instead']);
 
     // AC4: an unreachable Worker (here: the SPA fallback page) → automatic browser fallback with a notice.
     await page.evaluate(() => localStorage.clear());

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FailureCode } from '../../data/loadRepo.ts';
-import { errorCopy, loadingLine, resetTime } from './copy.ts';
+import { errorCopy, loadingLine, progressLine, resetTime } from './copy.ts';
 
 const CODES: FailureCode[] = ['not_found', 'rate_limited', 'busy', 'empty', 'too_little', 'offline', 'unavailable', 'upstream'];
 
@@ -40,6 +40,16 @@ describe('error copy (PLAN §3, F10)', () => {
     expect(busy.body).toContain('try again in a minute');
     expect(busy.actions.map((a) => a.id)).toEqual(['retry', 'sample']);
   });
+
+  it('writes the name as Repo Rivers and uses no middle dot', () => {
+    for (const code of CODES) {
+      const c = errorCopy({ code, via: 'worker' }, 'o/n');
+      const text = [c.title, c.body, ...c.actions.map((a) => a.label)].join(' ');
+      expect(text).not.toMatch(/repo rivers/);
+      expect(text).not.toContain('·');
+    }
+    expect(errorCopy({ code: 'unavailable', via: 'worker' }, 'o/n').title).toBe('The Repo Rivers service isn’t answering');
+  });
 });
 
 const at = (done: number) => loadingLine('o/n', { done, total: 51, label: '' });
@@ -50,7 +60,15 @@ describe('loadingLine', () => {
     expect(at(0)).toBe('Reading the history of o/n');
     expect(at(1)).toBe('Reading the history of o/n');
     expect(at(12)).toBe(at(1));
-    expect(at(13)).toBe('Reading the history of o/n · 25% of requests done');
-    expect(at(51)).toBe('Reading the history of o/n · 100% of requests done');
+    expect(at(13)).toBe('Reading the history of o/n: 25% of requests done');
+    expect(at(51)).toBe('Reading the history of o/n: 100% of requests done');
+  });
+});
+
+describe('progressLine', () => {
+  it('names the repo and the request count', () => {
+    expect(progressLine('o/n', null)).toBe('Reading o/n');
+    expect(progressLine('o/n', { done: 18, total: 51, label: '' })).toBe('Reading o/n: 18 of 51 requests');
+    expect(progressLine('o/n', { done: 60, total: 51, label: '' })).toBe('Reading o/n: 60 of 60 requests');
   });
 });
