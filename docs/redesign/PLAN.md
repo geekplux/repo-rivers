@@ -4,8 +4,8 @@ Spec: [DESIGN.md](DESIGN.md). Target boards: `target/`. Approved by Sean on 2026
 
 ## Process
 
-- One phase = one PR, stacked: R1 is based on `claude/project-thread-ydyqut` (PR #18, the site-wide Workers AI daily
-  cap), each later phase on the previous phase's branch. Branches: R1 `claude/project-thread-6b8r1b`, later
+- One phase = one PR, stacked: R1 is based on `main` (which includes PR #18, the site-wide Workers AI daily cap),
+  each later phase on the previous phase's branch. Branches: R1 `claude/project-thread-6b8r1b`, later
   `claude/project-thread-6b8r1b-<n>-<slug>`. PRs are opened ready for review and joined into one native GitHub stack.
 - Each phase: implementer builds and commits; verifier reviews (lint, typecheck, tests, build, browser check of the
   touched flows, acceptance list below, the design boards); implementer fixes; second review; final fixes. Exactly two
