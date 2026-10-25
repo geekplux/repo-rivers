@@ -3,10 +3,9 @@ import { tones, type Tone } from '../tones.ts';
 import { tagsBot } from '../summary.ts';
 import type { RiverView } from '../view.ts';
 import { MOUTH_ROOM, riverNameWidth } from './guides.ts';
-import { LABEL_HEIGHT, placeLabels, type PlacedLabel } from './labels.ts';
 import { laneOrder } from './order.ts';
-import { extend, link, ribbonPath, type Point } from './ribbons.ts';
-import { placeRiverNames, type Box, type RiverName } from './riverNames.ts';
+import { link, ribbonPath, type Point } from './ribbons.ts';
+import { LABEL_HEIGHT, placeRiverNames, type Box, type RiverName } from './riverNames.ts';
 import { band, clipDomain, linear, sqrt } from './scale.ts';
 
 /** Default horizontal inset of the plot inside the SVG (room for a focus ring drawn at the SVG edge). */
@@ -17,9 +16,9 @@ const strokeOf = (files: number): number => 1 + sqrt(100, 5)(Math.min(files, 100
 
 /** Inputs besides the view. All lengths are CSS px at the real container width (never viewBox-scaled). */
 export interface LayoutOptions {
-  /** Container width; on mobile the chart is `max(width, 720, 28·B)` wide inside a scroll region. */
+  /** Container width (the phone passes its time length, about 56 px per bucket, and draws it transposed). */
   width: number;
-  /** Plot height `H`; default `clamp(0.45·W, 320, 480)`, 360 on mobile. */
+  /** Plot height `H`; default `clamp(0.45·W, 320, 480)`. */
   height?: number;
   /** Gap between consecutive non-zero rivers (3; the redesign draws 2). */
   gap?: number;
@@ -31,10 +30,8 @@ export interface LayoutOptions {
   labelRoom?: number;
   /** `'linear'` (default, with outlier clipping) or `'sqrt'` of the column total (shares stay exact). */
   scale?: 'linear' | 'sqrt';
-  /** Minimum band thickness for an inside label (18 = 14 px box + 2 px padding each side). */
-  labelMinThickness?: number;
-  /** Phone layout (until R6): no mouth room, the phone label placement with inside labels every 360 px. */
-  mobile?: boolean;
+  /** Phone names (`placeRiverNames` with `phone`): only straight names in a smoothed run, for the transposed chart. */
+  phone?: boolean;
   /** When the data was read (`generatedAt`); marks a partial last bucket. */
   asOf?: string;
   /** Buckets whose values are estimates (`source.truncatedBuckets`). */
@@ -102,12 +99,12 @@ const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', y
  * two tones and greedy direct labels. Pure and deterministic (same input, same output).
  */
 export function layoutRivers(view: RiverView, o: LayoutOptions): RiverLayout {
-  const { gap = 3, mobile = false, measure = riverNameWidth, top: pad = 8, inset = INSET } = o;
-  const gutter = mobile ? 0 : (o.labelRoom ?? MOUTH_ROOM) - inset;
+  const { gap = 3, phone = false, measure = riverNameWidth, top: pad = 8, inset = INSET } = o;
+  const gutter = Math.max(0, (o.labelRoom ?? MOUTH_ROOM) - inset);
   const lanes = laneOrder(view.rivers, view.transfers);
   const B = view.buckets.length;
-  const width = mobile ? Math.max(o.width, 720, 28 * B) : o.width;
-  const H = o.height ?? (mobile ? 360 : Math.min(480, Math.max(320, 0.45 * width)));
+  const width = o.width;
+  const H = o.height ?? Math.min(480, Math.max(320, 0.45 * width));
   const totals = view.buckets.map((_, i) => lanes.reduce((s, r) => s + (r.values[i] ?? 0), 0));
   const max = Math.max(0, ...totals);
   const { domain, clipped } = o.scale === 'sqrt' ? { domain: max, clipped: [] } : clipDomain(totals);
@@ -176,18 +173,10 @@ export function layoutRivers(view: RiverView, o: LayoutOptions): RiverLayout {
 
   const text = (r: (typeof lanes)[number]): string => (tagsBot(r) ? `${r.label} bot` : r.label);
   const obstacles = markers.flatMap((m) => [m.box, m.mark]);
-  const labels = mobile
-    ? phoneLabels(placeLabels({
-      bands: lanes.map((r, j) => ({
-        id: r.id, text: text(r), total: r.total, other: r.kind === 'other', values: r.values, top: extend(tops[j]!), bottom: extend(bots[j]!),
-      })),
-      xs, plot, bucketWidth: w, measure, window: 360, minThickness: o.labelMinThickness ?? 18,
-      obstacles: [...obstacles, ...(partial ? [partial.box] : [])],
-    }))
-    : placeRiverNames({
-      rivers: lanes.map((r, j) => ({ id: r.id, text: text(r), top: tops[j]!, bottom: bots[j]!, thickness: thick[j]! })),
-      plot, bucketWidth: w, measure, limit: width - inset, transfers: transfers.filter((t) => t.alwaysVisible), obstacles,
-    });
+  const labels = placeRiverNames({
+    rivers: lanes.map((r, j) => ({ id: r.id, text: text(r), top: tops[j]!, bottom: bots[j]!, thickness: thick[j]! })),
+    plot, bucketWidth: w, measure, limit: width - inset, transfers: transfers.filter((t) => t.alwaysVisible), obstacles, phone,
+  });
   const tone = tones(lanes);
   const rivers = lanes.map((r, j): RiverShape => ({
     id: r.id, label: r.label, kind: r.kind, bot: r.bot, tone: tone[j]!,
@@ -198,16 +187,6 @@ export function layoutRivers(view: RiverView, o: LayoutOptions): RiverLayout {
     width, height: plot.bottom + 30, plot, bucketWidth: w, domain, unit, columns, rivers, transfers,
     labels, clipped: markers, partial, estimated,
   };
-}
-
-/** The phone placement's labels as river names: inside labels are level, edge labels and callouts peak names. */
-function phoneLabels({ placed, dropped }: { placed: PlacedLabel[]; dropped: string[] }): RiverLayout['labels'] {
-  const names = placed.map((p): RiverName => ({
-    id: p.id, text: p.text, kind: p.kind === 'inside' ? 'level' : 'peak', x: p.x, y: p.y + LABEL_HEIGHT / 2, angle: 0, anchor: 'start',
-    box: { x: p.x, y: p.y, width: p.width, height: p.height },
-    ...(p.leader ? { leader: `M${p.leader[0]},${p.leader[1]}L${p.leader[2]},${p.leader[3]}` } : {}),
-  }));
-  return { names, dropped };
 }
 
 /** The `asOf` survey line when it falls inside the last bucket (the value there is not extrapolated). */

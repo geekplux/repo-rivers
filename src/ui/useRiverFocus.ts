@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import type { RiverLayout } from '../core/layout/layout.ts';
-import { edgeAt, extend } from '../core/layout/ribbons.ts';
+import { edgeAt, extend, type Point } from '../core/layout/ribbons.ts';
+import { toLayout, type Flip } from '../core/layout/transpose.ts';
 import type { River } from '../core/view.ts';
 
 /** The chart's roving focus: the active river (by id), the active bucket, and whether it is pinned. */
@@ -22,8 +23,15 @@ export function reconcile(s: FocusState, lanes: readonly string[], buckets: numb
   return { river, bucket, pinned: s.pinned && river === s.river };
 }
 
-/** Keyboard map (A3); Enter/Space in the empty state pins the start spot. Returns the next state, or null when the key is not the chart's. */
-export function stepFocus(s: FocusState, key: string, lanes: readonly string[], buckets: number, start: Spot): FocusState | null {
+/** On the phone time runs down the page: Up and Down move along time, Left and Right between rivers. */
+const PHONE_KEYS: Record<string, string> = { ArrowUp: 'ArrowLeft', ArrowDown: 'ArrowRight', ArrowLeft: 'ArrowUp', ArrowRight: 'ArrowDown' };
+
+/**
+ * Keyboard map (A3); Enter/Space in the empty state pins the start spot. Returns the next state, or null when the
+ * key is not the chart's. `transposed` (the phone chart) swaps the arrows' axes.
+ */
+export function stepFocus(s: FocusState, input: string, lanes: readonly string[], buckets: number, start: Spot, transposed = false): FocusState | null {
+  const key = transposed ? (PHONE_KEYS[input] ?? input) : input;
   const empty = s.river === null && s.bucket === null;
   const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
   if (empty && arrows.includes(key)) return { ...start, pinned: false };
@@ -77,16 +85,19 @@ export function hitTest(L: RiverLayout, x: number, y: number): Spot | null {
   return { river: best?.id ?? null, bucket };
 }
 
-const local = (e: MouseEvent<Element>): [number, number] => {
+/** The pointer in layout coordinates: SVG-local CSS px, transposed back on the phone. */
+const local = (e: MouseEvent<Element>, flip: Flip | null): Point => {
   const r = e.currentTarget.getBoundingClientRect();
-  return [e.clientX - r.left, e.clientY - r.top];
+  const p: Point = [e.clientX - r.left, e.clientY - r.top];
+  return flip ? toLayout(flip, p) : p;
 };
 
 /**
  * Roving focus for the river chart: keyboard state, hover (ignored while pinned) and click-to-pin. Resets when
- * `resetKey` (the dataset) changes; keeps the bucket when the layout changes (dimension, depth, bots).
+ * `resetKey` (the dataset) changes; keeps the bucket when the layout changes (dimension, depth, bots). `flip` is
+ * the phone chart's transposition (pointer positions map back through it, the arrows swap axes).
  */
-export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], resetKey: string) {
+export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], resetKey: string, flip: Flip | null = null) {
   const [state, setState] = useState<FocusState>(EMPTY);
   const [hover, setHover] = useState<Spot | null>(null);
   const [key, setKey] = useState(resetKey);
@@ -106,7 +117,7 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
   const chart = {
     onFocus: () => active.river === null && active.bucket === null && setState({ ...start, pinned: false }),
     onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
-      const next = stepFocus(active, e.key, lanes, B, start);
+      const next = stepFocus(active, e.key, lanes, B, start, flip !== null);
       if (!next) return;
       e.preventDefault();
       setHover(null);
@@ -114,10 +125,10 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
     },
   };
   const svg = {
-    onPointerMove: (e: MouseEvent<Element>) => L && !kept.pinned && setHover(hitTest(L, ...local(e))),
+    onPointerMove: (e: MouseEvent<Element>) => L && !kept.pinned && setHover(hitTest(L, ...local(e, flip))),
     onPointerLeave: () => setHover(null),
     onClick: (e: MouseEvent<Element>) => {
-      const hit = L && hitTest(L, ...local(e));
+      const hit = L && hitTest(L, ...local(e, flip));
       setHover(null);
       if (!hit?.river || (kept.pinned && kept.river === hit.river)) setState(EMPTY);
       else setState({ ...hit, pinned: true });

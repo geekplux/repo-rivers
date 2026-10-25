@@ -1,5 +1,5 @@
 /** Pure geometry for the chart's overlay: the floating label of a dropped river while it is focused. */
-import { LABEL_HEIGHT, hits, type Box } from '../core/layout/labels.ts';
+import { LABEL_HEIGHT, hits, type Box } from '../core/layout/riverNames.ts';
 import type { RiverLayout, RiverShape } from '../core/layout/layout.ts';
 
 const CHAR = 7.4; // 12 px mono

@@ -46,7 +46,7 @@ export function SocialCard() {
           Paste a URL or open a sample; no account, no key.
         </p>
         {agg && view && layout && (
-          <RiverChart aggregate={agg} view={view} layout={layout} mobile={false} active={EMPTY} describedBy={summaryId} eras={eras} interactive={false} />
+          <RiverChart aggregate={agg} view={view} layout={layout} active={EMPTY} describedBy={summaryId} eras={eras} interactive={false} />
         )}
         {agg && view && layout && (
           <p id={summaryId} className="rr-sr">{describeView(agg, view, caveats(agg, view, layout.clipped))} {describeEras(view, eras)}</p>

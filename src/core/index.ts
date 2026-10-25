@@ -43,10 +43,8 @@ export {
   type RiverShape,
   type TransferShape,
 } from './layout/layout.ts';
-/** The phone chart's label placement (until R6). */
-export { LABEL_HEIGHT, placeLabels, type LabelBand, type LabelInput, type PlacedLabel } from './layout/labels.ts';
-/** River names on the desktop chart: slanted in course, level, at the mouth, above the peak. */
-export { placeRiverNames, type Box, type NameInput, type NameKind, type NameRiver, type RiverName } from './layout/riverNames.ts';
+/** River names: on the desktop slanted in course, level, at the mouth, above the peak; on the phone along a run. */
+export { LABEL_HEIGHT, hits, placeRiverNames, type Box, type NameInput, type NameKind, type NameRiver, type RiverName } from './layout/riverNames.ts';
 /** Stable lane order. */
 export { laneOrder } from './layout/order.ts';
 /** Ribbon path helpers (mid-x cubic Béziers). */

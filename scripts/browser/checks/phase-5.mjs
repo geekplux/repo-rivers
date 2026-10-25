@@ -125,21 +125,47 @@ export default async function phase5({ page, baseURL }) {
   assert(still[0] === 'none' && still[1] === 'none', `no reveal under reduced motion (${still})`);
   await shoot(page, '06-reduced-motion-desktop', DESKTOP);
 
-  // S4 / mobile: labelled, focusable scroll region; >= 12 px labels; >= 2 labels in the first view and per full 360 px window.
+  // R6 / DESIGN §5: the phone chart runs down the page (time top to bottom), no horizontal scroll anywhere; names
+  // only inside a run, reading downward; a tap focuses a river and docks the readout, Escape releases it.
   await page.setViewportSize(MOBILE);
-  const region = page.locator('[role="region"][aria-label][tabindex="0"]');
-  await region.waitFor({ state: 'visible' });
-  assert(await region.evaluate((el) => el.scrollWidth > el.clientWidth), 'the chart region scrolls sideways');
-  assert(await page.getByText('Scroll for later years').isVisible(), 'scroll caption visible');
-  const labels = await expectLabels(page, 'vite mobile');
-  const view = await region.evaluate((el) => el.getBoundingClientRect().width);
-  assert(labels.filter((l) => l.id && l.sx + l.sw <= view).length >= 2, '>= 2 labels in the first mobile viewport');
-  const { width } = await readChart(page);
-  for (let lo = 0; lo + 360 <= width; lo += 360) {
-    const n = labels.filter((l) => l.id && l.sx >= lo && l.sx + l.sw <= lo + 360).length;
-    assert(n >= 2, `>= 2 labels in mobile window ${lo}-${lo + 360} (got ${n})`);
-  }
-  await tabTo(page, '[role="region"]');
+  await page.locator(`${CHART}[data-phone]`).waitFor({ state: 'visible' });
+  const phone = await page.evaluate((sel) => {
+    const svg = document.querySelector(sel);
+    const r = svg.getBoundingClientRect();
+    return {
+      scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      region: document.querySelectorAll('[role="region"]').length + document.querySelectorAll('.rr-caption').length,
+      w: r.width, h: r.height, left: r.left,
+      names: [...svg.querySelectorAll('text[data-label-for]')].map((t) => t.getAttribute('transform') ?? ''),
+    };
+  }, CHART);
+  assert(phone.scroll <= 0 && phone.region === 0, `phone: no horizontal scroll and no scroll region (overflow ${phone.scroll}, regions ${phone.region})`);
+  assert(phone.h > phone.w && phone.left === 16 && phone.w === MOBILE.width - 32, `phone: the chart is the column's width and taller than wide (${phone.w}x${phone.h} at ${phone.left})`);
+  assert(phone.names.length >= 1 && phone.names.every((t) => t.startsWith('rotate(90.0')), `phone: names read downward (${phone.names})`);
+  const phoneLabels = (await readChart(page)).labels.filter((l) => l.id);
+  const crossed = phoneLabels.flatMap((a, k) => phoneLabels.slice(k + 1).filter((b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
+  assert(crossed.length === 0 && phoneLabels.every((l) => l.size >= 12), 'phone: names do not overlap and are >= 12 px');
+  const docked = () => page.locator('[data-testid="readout"]').evaluate((r) => ({ on: r.dataset.docked === 'true', pos: getComputedStyle(r).position, bottom: Math.round(r.getBoundingClientRect().bottom), h: r.getBoundingClientRect().height, pad: parseFloat(getComputedStyle(document.body).paddingBottom) }));
+  const big = (await readChart(page)).rivers.toSorted((a, b) => b.total - a.total)[0].id;
+  await page.evaluate((sel) => scrollTo(0, document.querySelector(sel).getBoundingClientRect().top + scrollY - 100), CHART);
+  // A point on the largest river inside the viewport (the overlays let pointers through to the drawing).
+  const box = await page.evaluate(({ sel, id }) => {
+    const L = document.querySelector(sel).getBoundingClientRect();
+    for (let y = Math.max(L.top, 0) + 40; y < innerHeight - 120; y += 6) {
+      for (let x = L.left + 40; x < L.right - 30; x += 3) if (document.elementFromPoint(x, y)?.dataset?.river === id) return { x, y };
+    }
+    return null;
+  }, { sel: CHART, id: big });
+  assert(box, `phone: found a point on ${big}`);
+  await page.mouse.click(box.x, box.y);
+  await page.waitForFunction(() => document.querySelector('[data-testid="readout"]').dataset.docked === 'true', null, { timeout: 2000 });
+  const on = await docked();
+  assert(on.pos === 'fixed' && on.bottom === MOBILE.height && on.h >= 72 && on.pad >= on.h, `phone: a tap docks the readout to the viewport bottom and pads the page (${JSON.stringify(on)})`);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('[data-testid="readout"]').dataset.docked, null, { timeout: 2000 });
+  const off = await docked();
+  assert(off.pos !== 'fixed' && off.pad === 0, `phone: Escape releases the river and the readout returns to the page (${JSON.stringify(off)})`);
   await shoot(page, '02-vite-mobile', MOBILE);
   // R4 review: switching dimension on the phone leaves no name behind (every name belongs to a drawn river).
   await open(page, `${baseURL}?sample=express`, 'expressjs/express');

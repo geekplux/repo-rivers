@@ -66,3 +66,51 @@ export function yearTicks(buckets: readonly { start: string }[], left: number, b
   }
   return [];
 }
+
+/**
+ * The phone chart's geometry (DESIGN §5, gen.mjs `phoneChart()` at 390): year labels at the column's left edge, the
+ * cross axis from x 34 of the chart (page 50) to 24 short of its right edge (page 350 at 390), time from y 24 at
+ * about 56 px per bucket, 24 px below the last bucket.
+ */
+export const PHONE = { left: 34, right: 24, top: 24, bottom: 24, step: 56 } as const;
+
+/** The layout size for a phone chart `width` wide: time length (`width` of the layout) and cross axis (its `height`). */
+export function phoneSize(width: number, buckets: number): { length: number; cross: number; height: number } {
+  const length = PHONE.step * buckets;
+  return { length, cross: Math.max(120, width - PHONE.left - PHONE.right), height: PHONE.top + length + PHONE.bottom };
+}
+
+/** Era names on the phone: 13 px Alegreya Sans 500, about 6.5 px per character. */
+export const phoneEraWidth = (s: string): number => 6.5 * s.length;
+
+/** One line of `text` inside `max` px, words dropped from the end behind an ellipsis when it is too long. */
+export function fitLine(text: string, max: number, measure: (s: string) => number): string {
+  if (measure(text) <= max) return text;
+  const words = text.split(/\s+/);
+  while (words.length > 1 && measure(`${words.join(' ')}…`) > max) words.pop();
+  return `${words.join(' ')}…`;
+}
+
+/** A phone guide: a year label (`y` its baseline) or an era (`y` its rule, `nameY` the name's baseline under it). */
+export interface PhoneGuides {
+  years: { y: number; text: string }[];
+  eras: { y: number; nameY: number; text: string; width: number }[];
+}
+
+/**
+ * Year labels and era rules down the phone chart: years at each year start (baseline 4 below it), every era a rule
+ * at its start with its name on one line under it, right-aligned at the chart's right edge and kept clear of the
+ * year column. `top` is the page y of the first bucket's start, `bw` the px per bucket, `width` the chart's width.
+ */
+export function phoneGuides(buckets: readonly { start: string }[], eras: readonly Pick<Era, 'start' | 'title'>[], top: number, bw: number, width: number,
+  measure: (s: string) => number = phoneEraWidth): PhoneGuides {
+  const years = yearTicks(buckets, 0, bw).map((t) => ({ y: top + t.x + 4, text: t.text }));
+  return {
+    years,
+    eras: eras.map((e) => {
+      const y = top + e.start * bw;
+      const text = fitLine(e.title, width - 48, measure);
+      return { y, nameY: y + 18, text, width: measure(text) };
+    }),
+  };
+}

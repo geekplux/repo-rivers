@@ -106,3 +106,16 @@ describe('pickRiver (the Rivers table)', () => {
     expect(pickRiver({ river: r.id, bucket: 2, pinned: false }, r)).toEqual({ river: r.id, bucket: 2, pinned: true });
   });
 });
+
+const down = (s: FocusState, ...keys: string[]): FocusState => keys.reduce((acc, k) => stepFocus(acc, k, lanes, B, start, true) ?? acc, s);
+describe('stepFocus on the phone (time runs down)', () => {
+  it('moves along time with Up and Down and between rivers with Left and Right', () => {
+    const s = { river: lanes[1]!, bucket: 5, pinned: false };
+    expect(down(s, 'ArrowDown')).toEqual({ ...s, bucket: 6 });
+    expect(down(s, 'ArrowUp')).toEqual({ ...s, bucket: 4 });
+    expect(down(s, 'ArrowRight')).toEqual({ ...s, river: lanes[2] });
+    expect(down(s, 'ArrowLeft')).toEqual({ ...s, river: lanes[0] });
+    expect(down(s, 'End', 'Enter')).toEqual({ ...s, bucket: B - 1, pinned: true });
+    expect(down(s, 'Escape')).toEqual(EMPTY);
+  });
+});

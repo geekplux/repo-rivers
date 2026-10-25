@@ -292,27 +292,30 @@ export default async function phase6({ page, baseURL }) {
   const summary = await page.locator(`[id="${describedBy}"]`).textContent(); // never shown, read through aria-describedby
   assert(/The largest river is .+, with \d+% of all lines changed\. The busiest year was \d{4}/.test(summary), `summary linked via aria-describedby (${summary})`);
 
-  // Mobile: Home/End on the scroll region, keyboard focus scrolls the bucket into view.
+  // R6 phone: Tab reaches the chart; Up and Down move along time (the rule moves down the page), Left and Right
+  // between rivers; a focused river docks the readout to the viewport bottom; Escape releases it back into the page.
   await open(page, baseURL, 'vitejs/vite');
   await page.setViewportSize(MOBILE);
-  const region = page.locator('.rr-frame[role="region"]');
-  await tabTo(page, '.rr-frame[role="region"]');
-  await page.keyboard.press('End');
-  const end = await region.evaluate((el) => [el.scrollLeft, el.scrollWidth - el.clientWidth]);
-  assert(end[0] > 0 && Math.abs(end[0] - end[1]) <= 1, `End scrolls the chart region to the end (${end})`);
-  await page.keyboard.press('Home');
-  assert((await region.evaluate((el) => el.scrollLeft)) === 0, 'Home scrolls back');
-  await page.keyboard.press('Tab');
-  assert(await page.evaluate((sel) => document.activeElement.matches(sel), PLOT), 'Tab moves into the chart');
-  for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowRight');
-  const seen = await page.evaluate(() => {
-    const r = document.querySelector('.rr-frame').getBoundingClientRect();
-    const c = document.querySelector('.rr-cursor').getBoundingClientRect();
-    return c.x >= r.x && c.x <= r.x + r.width;
-  });
-  assert(seen, 'the keyboard bucket stays inside the mobile scroll region');
+  await page.locator(`${CHART}[data-phone]`).waitFor({ state: 'visible' });
+  await tabTo(page, PLOT);
+  const first = await state(page);
+  assert(first.river && first.bucket !== '', `phone: Tab focuses the chart at the start spot (${JSON.stringify(first)})`);
+  const ruleY = () => page.locator('.rr-cursor').evaluate((l) => l.getBoundingClientRect().y);
+  const y0 = await ruleY();
+  await page.keyboard.press('ArrowDown');
+  const down = await state(page);
+  assert(Number(down.bucket) === Number(first.bucket) + 1 && down.river === first.river && (await ruleY()) > y0, 'phone: ArrowDown moves one bucket later, down the page');
+  await page.keyboard.press('ArrowRight');
+  assert((await state(page)).river !== first.river && Number((await state(page)).bucket) === Number(first.bucket) + 1, 'phone: ArrowRight changes river');
+  const dock = await page.locator('[data-testid="readout"]').evaluate((r) => [r.dataset.docked, getComputedStyle(r).position, Math.round(r.getBoundingClientRect().bottom)]);
+  assert(dock[0] === 'true' && dock[1] === 'fixed' && dock[2] === MOBILE.height, `phone: the readout docks while a river is focused (${dock})`);
+  await page.keyboard.press('Enter');
+  assert((await state(page)).pinned, 'phone: Enter pins');
   await runAxe(page, 'mobile');
   await shoot(page, '08-mobile-focus', MOBILE);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  assert((await state(page)).river === '' && !(await page.locator('[data-testid="readout"]').evaluate((r) => r.dataset.docked)), 'phone: Escape clears and undocks');
   await page.setViewportSize(DESKTOP);
 
   // A5 / DESIGN §6: with motion allowed the fade is 250 ms ease-out; reduced motion makes it instant.

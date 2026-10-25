@@ -119,21 +119,33 @@ export default async function phase9({ page, baseURL }) {
   await shoot(page, '03-era-focus-desktop');
   await page.evaluate(() => document.activeElement.blur());
 
-  // Mobile: the era band scrolls with the chart and keeps its alignment (the phone layout is redone in R6).
+  // R6 phone: a full-width rule at each era start (time runs down, 56 px per bucket from y 24) with the era name
+  // right-aligned under it; the era buttons sit over the names (>= 44 px); focusing one docks its note in the readout.
   await page.setViewportSize(MOBILE);
   await page.reload({ waitUntil: 'load' }); // a fresh chart, without the keyboard run's focus state
-  await page.waitForFunction(() => document.querySelector('.rr-frame')?.getAttribute('role') === 'region');
-  await page.locator(CHART).waitFor({ state: 'visible' });
-  const mm = await measure(page, vite.time.starts.length);
-  expectAligned(mm, vite.eras, 'vite mobile');
+  await page.locator(`${CHART}[data-phone]`).waitFor({ state: 'visible' });
+  const pm = await page.evaluate(([chart, track]) => {
+    const svg = document.querySelector(chart);
+    const W = svg.getBoundingClientRect().width;
+    return {
+      W,
+      rules: [...svg.querySelectorAll('line[data-era-mark]')].map((l) => [Number(l.getAttribute('y1')), Number(l.getAttribute('x1')), Number(l.getAttribute('x2'))]),
+      names: [...svg.querySelectorAll('text.rr-phone-era')].map((t) => ({ text: t.textContent, x: Number(t.getAttribute('x')), anchor: t.getAttribute('text-anchor'), size: getComputedStyle(t).fontSize, weight: getComputedStyle(t).fontWeight, halo: getComputedStyle(t).strokeWidth })),
+      buttons: [...document.querySelectorAll(`${track} .rr-era`)].map((b) => b.getBoundingClientRect().height),
+    };
+  }, [CHART, TRACK]);
+  assert(pm.rules.length === vite.eras.length && vite.eras.every((e, i) => Math.abs(pm.rules[i][0] - (24 + 56 * e.start)) <= 0.5 && pm.rules[i][1] === 0 && pm.rules[i][2] === pm.W),
+    `phone: a full-width rule at each era start (${JSON.stringify(pm.rules)})`);
+  assert(pm.names.every((n, i) => n.text === vite.eras[i].title && n.x === pm.W && n.anchor === 'end' && n.size === '13px' && n.weight === '500' && n.halo === '6px'),
+    `phone: era names right-aligned, 13/500 with a 6 px halo (${JSON.stringify(pm.names)})`);
+  assert(pm.buttons.length === vite.eras.length && pm.buttons.every((h) => h >= 44), `phone: era buttons are >= 44 px tall (${pm.buttons})`);
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '02-eras-mobile', MOBILE);
-  // Mobile: an era focused with the readout off-screen scrolls the readout into view.
-  await page.evaluate((t) => scrollTo(0, document.querySelector(t).getBoundingClientRect().top + scrollY - innerHeight + 80), TRACK);
-  const offscreen = await page.locator('[data-testid="readout"]').evaluate((r) => r.getBoundingClientRect().top >= innerHeight);
-  await page.locator(`${TRACK} .rr-era`).first().evaluate((b) => b.focus({ preventScroll: true }));
-  await page.waitForFunction(() => { const r = document.querySelector('[data-testid="readout"]').getBoundingClientRect(); return r.top >= -1 && r.bottom <= innerHeight + 1; }, null, { timeout: 3000 });
-  assert(offscreen && (await readout(page)).startsWith(vite.eras[0].title), 'mobile: focusing an era brings the readout on screen');
+  await page.locator(`${TRACK} .rr-era`).first().focus();
+  await page.waitForFunction(() => document.querySelector('[data-testid="readout"]').dataset.docked === 'true', null, { timeout: 3000 });
+  const docked = await page.locator('[data-testid="readout"]').evaluate((r) => r.getBoundingClientRect().bottom <= innerHeight + 1 && r.getBoundingClientRect().top >= 0);
+  assert(docked && (await readout(page)).startsWith(vite.eras[0].title) && (await page.locator(`${CHART} [data-era-band]`).count()) === 1,
+    'phone: focusing an era bands it and docks its note on screen');
   await page.evaluate(() => document.activeElement.blur());
   await page.setViewportSize(DESKTOP);
 

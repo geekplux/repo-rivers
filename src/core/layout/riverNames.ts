@@ -10,6 +10,13 @@ import type { Point } from './ribbons.ts';
 /** An axis-aligned box in CSS px. */
 export interface Box { x: number; y: number; width: number; height: number }
 
+/** Height of a small label box in px (13 px text plus padding): the clipped column's `↑ 224K` and the float label. */
+export const LABEL_HEIGHT = 14;
+
+/** True if the boxes overlap or come closer than a 2 px margin. */
+export const hits = (a: Box, b: Box): boolean =>
+  a.x < b.x + b.width + 2 && b.x < a.x + a.width + 2 && a.y < b.y + b.height + 2 && b.y < a.y + a.height + 2;
+
 /** Where a name went: `course` (slanted, inside), `level` (horizontal, inside), `mouth` (gutter), `peak` (above). */
 export type NameKind = 'course' | 'level' | 'mouth' | 'peak';
 
@@ -52,6 +59,11 @@ export interface NameInput {
   transfers: readonly { start: Point; end: Point }[];
   /** Other marks to keep clear of (the clipped column's break mark and its text). */
   obstacles?: readonly Box[];
+  /**
+   * The phone chart (DESIGN §5), laid out with time along x and drawn transposed: a name only where a smoothed run
+   * fits it, straight along the river (slope 0, so it reads downward once transposed); no level, mouth or peak names.
+   */
+  phone?: boolean;
 }
 
 /** Thinnest bucket that holds a name inside (13 px text and 2 px of water each side). */
@@ -83,11 +95,13 @@ export function placeRiverNames(input: NameInput): { names: RiverName[]; dropped
   const put = (name: RiverName): void => void (taken.push(name.box), names.push(name));
   const rest: NameRiver[] = [];
 
+  const maxSlope = input.phone ? 0 : MAX_SLOPE;
   for (const r of rivers) {
-    const name = inside(r) ?? level(r);
+    const name = inside(r) ?? (input.phone ? undefined : level(r));
     if (name) put(name);
     else rest.push(r);
   }
+  if (input.phone) return { names, dropped: rest.map((r) => r.id) };
 
   // Rivers that reach the present: names stacked down the gutter, each with a leader curve from the river's end.
   let last = -Infinity;
@@ -159,7 +173,7 @@ export function placeRiverNames(input: NameInput): { names: RiverName[]; dropped
     const my = pts.reduce((s, p) => s + p[1], 0) / pts.length;
     const sxx = pts.reduce((s, p) => s + (p[0] - mx) ** 2, 0);
     const sxy = pts.reduce((s, p) => s + (p[0] - mx) * (p[1] - my), 0);
-    const slope = Math.max(-MAX_SLOPE, Math.min(MAX_SLOPE, sxx ? sxy / sxx : 0));
+    const slope = Math.max(-maxSlope, Math.min(maxSlope, sxx ? sxy / sxx : 0));
     const y = (x: number): number => my + slope * (x - mx);
     const box = span(x0, x0 + w, Math.min(y(x0), y(x0 + w)) - 9, Math.max(y(x0), y(x0 + w)) + 9);
     if (!contains(r, x0, w, y) || !free(box)) return undefined;

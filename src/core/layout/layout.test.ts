@@ -5,9 +5,8 @@ import svelte from '../../samples/svelte.json';
 import vite from '../../samples/vite.json';
 import { parseAggregate, type RepoAggregate } from '../schema.ts';
 import { selectView, type River, type RiverView, type ViewOptions } from '../view.ts';
-import { LABEL_HEIGHT, hits } from './labels.ts';
 import { layoutRivers, type LayoutOptions, type RiverLayout } from './layout.ts';
-import type { Box } from './riverNames.ts';
+import { LABEL_HEIGHT, type Box } from './riverNames.ts';
 import { clipDomain } from './scale.ts';
 
 // Acceptance criteria L1–L13 of docs/viz/rivers.md §10. Each check collects violations and asserts the list is empty.
@@ -191,23 +190,6 @@ describe('layout against the spec numbers', () => {
     expect(missing).toEqual([]);
   });
 
-  it('L9 (amended) mobile: every full 360 px window holds ≥ 2 whole labels; callout leaders miss other labels', () => {
-    const thin = CASES.filter((c) => c.name !== 'demo').flatMap(({ name, dimension }) => {
-      const agg = AGG[name]!;
-      const L = lay(name, { dimension }, { width: 358, height: undefined, mobile: true });
-      const placed = L.labels.names;
-      const leader = (p: (typeof placed)[number]) => p.leader!.slice(1).split('L').flatMap((pt) => pt.split(',').map(Number));
-      const crossed = placed.filter((p) => p.leader).flatMap((p) => placed.filter((q) => q !== p && [0, 0.25, 0.5, 0.75, 1].some((t) => {
-        const [x1, y1, x2, y2] = leader(p) as [number, number, number, number];
-        return hits({ x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1), width: 0, height: 0 }, q.box);
-      })));
-      const windows = Array.from({ length: Math.floor(L.plot.right / 360) }, (_, k) => k * 360);
-      const few = windows.filter((lo) => placed.filter((p) => p.box.x >= lo && p.box.x + p.box.width <= lo + 360).length < 2);
-      return [...few.map((lo) => `${agg.repo.name} ${dimension} window ${lo}`), ...crossed.map((q) => `${name} leader crosses ${q.id}`)];
-    });
-    expect(thin).toEqual([]);
-  });
-
   it('S2 the Svelte break mark has reserved space above the plot and a full-height column beside it', () => {
     const s = get('svelte', 'modules');
     expect(s.plot.top).toBe(30);
@@ -217,7 +199,7 @@ describe('layout against the spec numbers', () => {
   });
 
   it('reserves a 4 px inset for the focus ring: plot, names and axis stay inside it', () => {
-    const bad = [...CASES, ...CASES.map(({ name, dimension }) => ({ name: `${name} mobile`, dimension, L: lay(name, { dimension }, { width: 358, height: undefined, mobile: true }) }))]
+    const bad = CASES
       .flatMap(({ name, dimension, L }) => {
         const out = L.labels.names.filter((p) => p.box.x < 4 || p.box.x + p.box.width > L.width - 4).map((p) => p.id);
         const ok = L.plot.left === 4 && L.plot.right <= L.width - 4 && L.height === L.plot.bottom + 30;

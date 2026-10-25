@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hits } from '../core/layout/labels.ts';
+import { hits } from '../core/layout/riverNames.ts';
 import { layoutRivers } from '../core/layout/layout.ts';
 import { parseAggregate } from '../core/schema.ts';
 import { selectView } from '../core/view.ts';

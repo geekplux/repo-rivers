@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { plain, type LegendItem, type Rich } from '../core/summary.ts';
 
 export const PINNED_NOTE = 'Pinned: press Escape, or click or tap the background, to release.';
@@ -7,11 +7,29 @@ export const PINNED_NOTE = 'Pinned: press Escape, or click or tap the background
  * The readout under the chart (DESIGN §4): the text shows at once, river names in italic and numbers bold; a
  * polite live region repeats it after 150 ms without changes, so moving quickly through the chart announces only
  * where you stop. Nothing is announced until `live` (the first user action); a change of `pinned` adds "Pinned"
- * or "Released" once. `spoken` (default the text) is what the live region says.
+ * or "Released" once. `spoken` (default the text) is what the live region says. `docked` (the phone, while a river
+ * or era is focused) fixes it to the bottom of the viewport; the page gets as much bottom padding, so nothing
+ * hides behind it.
  */
-export function Readout({ text, spoken = typeof text === 'string' ? text : plain(text), pinned, live }: { text: Rich | string; spoken?: string; pinned: boolean; live: boolean }) {
+export function Readout({ text, spoken = typeof text === 'string' ? text : plain(text), pinned, live, docked = false }: {
+  text: Rich | string; spoken?: string; pinned: boolean; live: boolean; docked?: boolean;
+}) {
   const [said, setSaid] = useState('');
   const wasPinned = useRef(pinned);
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!docked || !el) return;
+    const root = document.documentElement;
+    const ro = new ResizeObserver(() => root.style.setProperty('--rr-dock', `${el.offsetHeight}px`));
+    ro.observe(el);
+    root.classList.add('rr-docked');
+    return () => {
+      ro.disconnect();
+      root.classList.remove('rr-docked');
+      root.style.removeProperty('--rr-dock');
+    };
+  }, [docked]);
   useEffect(() => {
     if (!live) {
       wasPinned.current = pinned;
@@ -25,9 +43,9 @@ export function Readout({ text, spoken = typeof text === 'string' ? text : plain
     return () => clearTimeout(t);
   }, [spoken, pinned, live]);
   return (
-    <div className="rr-readout" data-testid="readout">
+    <div ref={ref} className={docked ? 'rr-readout rr-dock' : 'rr-readout'} data-testid="readout" data-docked={docked || undefined}>
       <p aria-hidden="true">{typeof text === 'string' ? text : text.map((t, i) => (typeof t === 'string' ? t : 'i' in t ? <i key={i}>{t.i}</i> : 'b' in t ? <b key={i}>{t.b}</b> : <span key={i} className="rr-muted">{t.m}</span>))}</p>
-      {pinned && <p aria-hidden="true" className="rr-muted rr-note">{PINNED_NOTE}</p>}
+      {pinned && !docked && <p aria-hidden="true" className="rr-muted rr-note">{PINNED_NOTE}</p>}
       <p className="rr-sr" aria-live="polite" aria-atomic="true">{said}</p>
     </div>
   );

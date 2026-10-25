@@ -1,7 +1,8 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
-import { ERA_BAND, MOUTH_ROOM } from './core/layout/guides.ts';
+import { ERA_BAND, MOUTH_ROOM, PHONE, phoneSize } from './core/layout/guides.ts';
+import { flipOf } from './core/layout/transpose.ts';
 import { caveats, describeEras, describeView, eraLine, focusReadout, idleReadout, legendItems, plain, readoutCaveats, type Rich } from './core/summary.ts';
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
@@ -16,6 +17,7 @@ import { errorCopy, loadingLine, type ErrorAction } from './ui/states/copy.ts';
 import { useEras } from './ui/useEras.ts';
 import { useRepo } from './ui/useRepo.ts';
 import { Legend, Readout } from './ui/Readout.tsx';
+import { PhoneChart } from './ui/PhoneChart.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
 import { RiverIndex } from './ui/RiverIndex.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
@@ -35,13 +37,6 @@ const MADE = [
   ['markvis', 'https://github.com/geekplux/markvis'],
 ] as const;
 
-/** Home/End scroll the mobile chart region to its ends (when the region itself has focus). */
-function scrollEnds(e: KeyboardEvent<HTMLDivElement>) {
-  if (e.target !== e.currentTarget || (e.key !== 'Home' && e.key !== 'End')) return;
-  e.preventDefault();
-  e.currentTarget.scrollLeft = e.key === 'Home' ? 0 : e.currentTarget.scrollWidth;
-}
-
 export function App() {
   const [sample, select] = useSampleParam();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -50,7 +45,6 @@ export function App() {
   const [frame, width] = useWidth<HTMLDivElement>();
   const mobile = useMedia('(max-width: 640px)');
   const measure = useNameMeasure();
-  const still = useMedia('(prefers-reduced-motion: reduce)');
   const summaryId = useId();
   const repo = useRepo();
   const rs = repo.state;
@@ -77,10 +71,16 @@ export function App() {
   const layout = useMemo(() => {
     if (!agg || !view || width <= 0) return null;
     const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
+    const common = { gap: 2, measure, asOf: agg.generatedAt, truncatedBuckets, inset: 0 };
+    if (mobile) {
+      // Phone (DESIGN §5): laid out with time along x, about 56 px per bucket, and drawn transposed (time runs down).
+      const size = phoneSize(width, view.buckets.length);
+      return layoutRivers(view, { ...common, width: size.length, height: size.cross, top: 0, labelRoom: 0, phone: true });
+    }
     // Desktop (DESIGN §4): the plot flush with the column's left edge, a fixed room right of it for river names.
-    const desk = mobile ? {} : { inset: 0, labelRoom: MOUTH_ROOM };
-    return layoutRivers(view, { width, mobile, gap: 2, top: banded ? ERA_BAND + 8 : 8, measure, asOf: agg.generatedAt, truncatedBuckets, ...desk });
+    return layoutRivers(view, { ...common, width, top: banded ? ERA_BAND + 8 : 8, labelRoom: MOUTH_ROOM });
   }, [agg, view, width, mobile, banded, measure]);
+  const flip = useMemo(() => (mobile && layout ? flipOf(layout, PHONE.left, PHONE.top) : null), [mobile, layout]);
   const [era, setEra] = useState<number | null>(null);
   const eraOn = era === null ? undefined : eras[era];
   const [acted, setActed] = useState(false); // the live readout stays quiet until the first user action
@@ -88,7 +88,7 @@ export function App() {
     setOptions(next);
     setActed(true);
   };
-  const focus = useRiverFocus(layout, view?.rivers ?? [], current?.id ?? '');
+  const focus = useRiverFocus(layout, view?.rivers ?? [], current?.id ?? '', flip);
   const shownSample = findSample(loaded?.id ?? '') ?? sample;
   const title = repoName || shownSample.title;
   // The chart head names the repository as owner/name, for samples too (from the registry, before the JSON loads).
@@ -133,15 +133,9 @@ export function App() {
   // After a sample switch or a drawn repo, the live region names it until the first movement in the new chart.
   const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;
-  // The chart is on screen: only then is the frame a scroll region (a sample still loading has no chart yet).
   const drawn = !busy && agg && view && layout && view.rivers.length > 0;
-  useEffect(() => {
-    // On mobile, an era tapped or focused in the track shows its note in the readout: bring it on screen.
-    if (!mobile || era === null) return;
-    const el = document.querySelector('[data-testid="readout"]');
-    const r = el?.getBoundingClientRect();
-    if (r && (r.top < 0 || r.bottom > innerHeight)) el!.scrollIntoView({ block: 'nearest', behavior: still ? 'instant' : 'smooth' });
-  }, [era, mobile, still]);
+  // Phone: while a river (or an era) is focused, the readout docks to the bottom of the viewport (DESIGN §5).
+  const docked = Boolean(mobile && drawn && (active.river !== null || eraOn));
   return (
     <>
       <header className="rr-header">
@@ -175,19 +169,20 @@ export function App() {
           </div>
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
-          {mobile && drawn && <p className="rr-muted rr-caption">Scroll for later years <span aria-hidden="true">→</span></p>}
-          <div ref={frame} className="rr-frame" aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}
-            {...(mobile && drawn && { role: 'region', 'aria-label': 'River chart, scrolls sideways', tabIndex: 0, onKeyDown: scrollEnds })}>
+          <div ref={frame} className="rr-frame" aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}>
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
-            {drawn && (
-              <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
+            {drawn && (flip ? (
+              <PhoneChart aggregate={agg} view={view} layout={layout} width={width} flip={flip} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
                 eras={eras} activeEra={era} onEra={setEra} />
-            )}
+            ) : (
+              <RiverChart aggregate={agg} view={view} layout={layout} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
+                eras={eras} activeEra={era} onEra={setEra} />
+            ))}
             {!busy && view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
           </div>
           <div className="rr-under">
-            <Readout text={readout} spoken={spoken} pinned={active.pinned} live={acted} />
+            <Readout text={readout} spoken={spoken} pinned={active.pinned} live={acted} docked={docked} />
             {!busy && layout && view && unit && (
               <Legend items={legendItems({
                 unit, estimated: layout.estimated.length > 0, partial: layout.partial !== null, moved: layout.transfers.length > 0,

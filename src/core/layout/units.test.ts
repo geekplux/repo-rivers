@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { River } from '../view.ts';
-import { hits } from './labels.ts';
+import { hits } from './riverNames.ts';
 import { laneOrder } from './order.ts';
 import { edgeAt, link, ribbonPath } from './ribbons.ts';
 import { band, linear, quantile, sqrt } from './scale.ts';

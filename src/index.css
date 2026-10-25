@@ -47,7 +47,6 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-card-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 16px; }
 .rr-card h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
 .rr-meta { margin-top: 4px; font-size: 13px; line-height: 20px; color: var(--muted); }
-.rr-caption { font-size: 14px; margin: 0 0 4px; }
 /* 8 px of padding, taken back by the margin, so focus rings (2 px, offset 2) on the chart and era buttons are not
    clipped by the scroll box while the drawing keeps its place on the column. */
 .rr-frame { overflow-x: auto; min-height: 352px; padding: 8px; margin: -8px; }
@@ -59,6 +58,8 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-chart .rr-era-name { font-size: 16px; font-weight: 500; fill: var(--ink); }
 .rr-era-range, .rr-tick { fill: var(--muted); font-variant-numeric: lining-nums tabular-nums; }
 .rr-era-band { fill: var(--band); }
+/* Phone era names (DESIGN §5): 13/500 ink on a 6 px ground halo, right-aligned at the column's edge. */
+.rr-chart .rr-phone-era { font-weight: 500; fill: var(--ink); paint-order: stroke; stroke: var(--ground); stroke-width: 6px; stroke-linejoin: round; }
 .rr-river { transition: opacity 250ms ease-out; }
 .rr-tone-0, .rr-river.rr-on:not(.rr-other) { fill: var(--water-a); }
 .rr-tone-1 { fill: var(--water-b); }
@@ -104,6 +105,12 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-readout p { margin: 0; font-size: 16px; line-height: 24px; }
 .rr-readout b { font-weight: 500; font-variant-numeric: lining-nums tabular-nums; }
 .rr-readout .rr-note { font-size: 13px; line-height: 20px; color: var(--muted); }
+/* Phone: docked to the bottom of the viewport while a river or era is focused; the page pads by its height. */
+.rr-readout.rr-dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; box-sizing: border-box; min-height: calc(72px + env(safe-area-inset-bottom));
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--ground); border-top: 0.5px solid var(--line);
+}
+html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
 .rr-legend { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 20px; color: var(--muted); }
 .rr-legend li { display: flex; align-items: center; gap: 6px; }
 .rr-legend svg { display: block; }
@@ -232,6 +239,8 @@ a { color: inherit; text-underline-offset: 3px; }
   .rr-or { flex-basis: 100%; margin: 4px 0 0; }
   .rr-card { margin-top: 64px; }
   .rr-card-head { display: block; }
+  /* The phone chart is as wide as the column and grows down the page: nothing scrolls sideways. */
+  .rr-frame { overflow: visible; }
   .rr-controls { justify-content: space-between; margin-top: 16px; }
   /* Rivers keeps name | sparkline 100×20 | share; eras keep a 104px range column. */
   .rr-sec { margin-top: 80px; }
