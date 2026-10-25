@@ -71,10 +71,9 @@ export async function erasRoute(request: Request, env: ErasEnv): Promise<Respons
       // corrupt entry: name again
     }
   }
-  const spend = env.AI ? await takeBudget(env.RIVERS_KV, dailyCap(env.DAILY_AI_CAP)) : null;
-  const eras = env.AI && spend ? await nameWithAi(env.AI, summary) : null;
+  const allowed = env.AI ? await takeBudget(env.RIVERS_KV, dailyCap(env.DAILY_AI_CAP)) : false;
+  const eras = env.AI && allowed ? await nameWithAi(env.AI, summary) : null;
   if (!eras) return json({ eras: heuristicEras(summary), source: 'heuristic' });
-  await spend?.();
   await env.RIVERS_KV?.put(key, JSON.stringify(eras), { expirationTtl: ERAS_TTL_SECONDS }).catch(() => console.error('KV write failed'));
   return json({ eras, source: 'ai' });
 }

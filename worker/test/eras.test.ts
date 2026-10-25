@@ -81,7 +81,7 @@ describe('POST /api/eras', () => {
     const { res, body } = await post({ RIVERS_KV: kv, AI: fakeAi(answer) });
     expect(res.status).toBe(200);
     expect(body).toEqual({ eras: heuristicEras(SUMMARY), source: 'heuristic' });
-    expect(kv.puts).toHaveLength(0);
+    expect(kv.puts.filter((p) => p.key.startsWith('eras:'))).toHaveLength(0);
   });
 
   it('makes no AI call without a RIVERS_KV binding (PR Previews have nowhere to count the budget)', async () => {
@@ -102,10 +102,10 @@ describe('POST /api/eras', () => {
     expect(ai.run).toHaveBeenCalledTimes(1);
   });
 
-  it('does not spend budget on a failed AI call, and DAILY_AI_CAP "0" switches AI off', async () => {
+  it('counts a failed AI call too (it is billed all the same), and DAILY_AI_CAP "0" switches AI off', async () => {
     const kv = fakeKv();
     expect((await post({ AI: fakeAi(() => ({ response: 'not json' })), RIVERS_KV: kv })).body.source).toBe('heuristic');
-    expect(kv.data.get(budgetKey(new Date()))).toBeUndefined();
+    expect(kv.data.get(budgetKey(new Date()))).toBe('1');
     const ai = fakeAi(() => ({ response: { eras: names() } }));
     expect((await post({ AI: ai, RIVERS_KV: kv, DAILY_AI_CAP: '0' })).body.source).toBe('heuristic');
     expect(ai.run).not.toHaveBeenCalled();
