@@ -3,7 +3,6 @@ import demo from '../../../tests/fixtures/demo.json';
 import express from '../../samples/express.json';
 import svelte from '../../samples/svelte.json';
 import vite from '../../samples/vite.json';
-import { OTHER_COLOR } from '../palette.ts';
 import { parseAggregate, type RepoAggregate } from '../schema.ts';
 import { selectView, type River, type RiverView, type ViewOptions } from '../view.ts';
 import { LABEL_HEIGHT, hits } from './labels.ts';
@@ -129,10 +128,13 @@ describe.each(CASES)('$name $dimension at 1104×440', ({ name, dimension, L }) =
     expect(placed.filter((p) => p.x < 0 || p.x + p.width > L.width)).toEqual([]);
   });
 
-  it('L10 consecutive non-zero lanes never share a hue; only "other" is grey', () => {
-    const clash = L.columns.flatMap((_, i) => live(i).slice(1).filter((r, j) => r.color === live(i)[j]!.color));
-    expect(clash).toEqual([]);
-    expect(L.rivers.filter((r) => (r.color === OTHER_COLOR) !== (r.kind === 'other'))).toEqual([]);
+  it('L10 two tones: at most half of the touching columns share a tone; "other" is tone 1 (hatched)', () => {
+    const pairs = L.columns.flatMap((_, i) => {
+      const on = live(i).filter((r) => r.kind !== 'other');
+      return on.slice(1).map((r, k) => [on[k]!, r] as const);
+    });
+    expect(pairs.filter(([a, b]) => a.tone === b.tone).length).toBeLessThanOrEqual(pairs.length / 2);
+    expect(L.rivers.filter((r) => r.kind === 'other' && r.tone !== 1)).toEqual([]);
   });
 });
 
@@ -220,24 +222,19 @@ describe('layout against the spec numbers', () => {
     expect(bad).toEqual([]);
   });
 
-  it('L10 hues are sticky across a depth change unless a touching river holds that hue', () => {
-    for (const name of SAMPLES) {
-      const before = lay(name, { dimension: 'modules', depth: 2 });
-      const previousColors = Object.fromEntries(before.rivers.map((r) => [r.id, r.color]));
-      const L = lay(name, { dimension: 'modules', depth: 1 }, { previousColors });
-      const view = selectView(AGG[name]!, { dimension: 'modules', depth: 1 });
-      const touching = (j: number): number[] => view.buckets.flatMap((_, i) => {
-        const on = L.rivers.flatMap((r, n) => ((view.rivers.find((x) => x.id === r.id)!.values[i] ?? 0) > 0 ? [n] : []));
-        const k = on.indexOf(j);
-        return k < 0 ? [] : [on[k - 1], on[k + 1]].filter((n) => n !== undefined);
-      });
-      const lost = L.rivers.filter((r, j) => {
-        const hue = previousColors[r.id];
-        return hue !== undefined && r.color !== hue && !touching(j).some((n) => L.rivers[n]!.color === hue);
-      });
-      expect(lost).toEqual([]);
-      expect(L.rivers.filter((r) => r.kind !== 'other' && r.color === previousColors[r.id]).length).toBeGreaterThan(0);
-    }
+  it('the desktop options: era band on top, plot flush left, a fixed mouth-label room and 2 px gaps', () => {
+    const agg = AGG.vite!;
+    const view = selectView(agg, { dimension: 'modules' });
+    const L = layoutRivers(view, { width: 1200, gap: 2, top: 84, inset: 0, labelRoom: 140, asOf: agg.generatedAt });
+    expect(L.plot).toMatchObject({ left: 0, right: 1060, top: 84, bottom: 84 + 480 });
+    expect(L.width).toBe(1200);
+    const gaps = L.columns.flatMap((_, i) => {
+      const on = L.rivers.filter((r) => r.thickness[i]! > 0);
+      return on.slice(1).map((r, k) => r.edges.top[i]! - on[k]!.edges.bottom[i]!);
+    });
+    expect(gaps.every((g) => Math.abs(g - 2) < 1e-6)).toBe(true);
+    const gutter = L.labels.placed.filter((p) => p.kind === 'gutter');
+    expect(gutter.every((p) => p.x >= 1060 && p.x + p.width <= 1200)).toBe(true);
   });
 
   it('L11 the partial-bucket marker sits inside the last bucket; estimated runs follow truncatedBuckets', () => {
@@ -275,7 +272,7 @@ describe('layout against the spec numbers', () => {
   it('L13 demo path strings are stable', () => {
     for (const dimension of DIMS) {
       const L = get('demo', dimension);
-      expect({ rivers: L.rivers.map((r) => [r.id, r.color, r.path]), transfers: L.transfers.map((t) => t.path) }).toMatchSnapshot(dimension);
+      expect({ rivers: L.rivers.map((r) => [r.id, r.tone, r.path]), transfers: L.transfers.map((t) => t.path) }).toMatchSnapshot(dimension);
     }
   });
 });
