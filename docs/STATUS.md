@@ -36,7 +36,7 @@ A stack of seven PRs that redesigns the whole page (spec: docs/redesign/DESIGN.m
 | R4 River names | claude/project-thread-6b8r1b-4-labels | [#23](https://github.com/geekplux/repo-rivers/pull/23) | Open, ready for review |
 | R5 Rivers and Eras | claude/project-thread-6b8r1b-5-index | [#24](https://github.com/geekplux/repo-rivers/pull/24) | Open, ready for review |
 | R6 Phone | claude/project-thread-6b8r1b-6-phone | [#25](https://github.com/geekplux/repo-rivers/pull/25) | Open, ready for review |
-| R7 Motion and polish | claude/project-thread-6b8r1b-7-polish | (this PR) | In review |
+| R7 Motion and polish | claude/project-thread-6b8r1b-7-polish | [#26](https://github.com/geekplux/repo-rivers/pull/26) | Open, ready for review |
 
 ## Open items
 - Enable GitHub private vulnerability reporting in the repo settings (SECURITY.md and CODE_OF_CONDUCT.md link to it).

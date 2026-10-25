@@ -8,7 +8,7 @@ disagree, the boards win; where the boards and accessibility disagree, accessibi
 
 ## 1. Rules (owner's, binding)
 
-Implemented in: every phase, R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) to R7 (this PR).
+Implemented in: every phase, R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) to R7 [#26](https://github.com/geekplux/repo-rivers/pull/26).
 
 1. No middle dot `·` as a separator anywhere in UI copy, titles or meta. 2. No redundant explanatory text.
 3. Copy is clear, plain, no coined words. 4. All colours from Radix Colors (radix-ui.com/colors), 12-step usage
@@ -22,7 +22,7 @@ first paint; print is always light.
 
 ## 2. Tokens
 
-Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (tokens, font, theme button); the R1 aliases were removed in R7 (this PR).
+Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (tokens, font, theme button); the R1 aliases were removed in R7 [#26](https://github.com/geekplux/repo-rivers/pull/26).
 
 Radix 3.0 `blue` and `slate`, light and dark scales (values in `target/gen.mjs`, object `R`).
 
@@ -137,7 +137,7 @@ Implemented in: R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) and R5
 
 ## 6. Motion (V2Motion)
 
-Implemented in: R7 (this PR): `src/ui/motion.ts`.
+Implemented in: R7 [#26](https://github.com/geekplux/repo-rivers/pull/26): `src/ui/motion.ts`.
 
 Arrive: clip reveal left to right (top to bottom on the phone), 900 ms ease-out, once per load and after choosing a
 sample or drawing a repo; era names fade in over the last 250 ms. Focus: fades 250 ms ease-out; the readout changes at
@@ -147,7 +147,7 @@ Contributors: crossfade 250 ms. Theme: instant. While a repo loads, the axis lin
 
 ## 7. States and system (V2System)
 
-Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (logo, favicon, title), R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) (loading and error panels), R7 (this PR) (loading line motion, social card).
+Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (logo, favicon, title), R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) (loading and error panels), R7 [#26](https://github.com/geekplux/repo-rivers/pull/26) (loading line motion, social card).
 
 Loading: panel with "Reading owner/name: 18 of 51 requests" and a 2px ink progress line on a 0.5 line track.
 Errors keep their existing copy and actions, restyled as 0.5-bordered panels with a solid primary and a 0.5-bordered
