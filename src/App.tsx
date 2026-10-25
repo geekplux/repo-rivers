@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
 import { ERA_BAND, MOUTH_ROOM, PHONE, phoneSize } from './core/layout/guides.ts';
@@ -159,7 +159,8 @@ export function App() {
           </nav>
         </div>
       </header>
-      <main className="rr-wrap">
+      {/* While the first sample loads, main is at least a screen tall, so the footer never shows and then moves. */}
+      <main className={cls('rr-wrap', waiting && 'rr-waiting')}>
         <div className="rr-intro">
           <h1 className="rr-hero">A repository’s history, <i>drawn as rivers</i></h1>
           <div className="rr-go">
@@ -181,7 +182,7 @@ export function App() {
           {rs.status === 'done' && rs.via === 'browser' && <FallbackNotice automatic={rs.fellBack} />}
           {loaded && 'error' in loaded && <p role="alert">Could not load this sample: {loaded.error}</p>}
           {/* While the first sample loads, the frame keeps the chart's height (rr-waiting), so nothing below it jumps. */}
-          <div ref={frame} className={cls('rr-frame', waiting && 'rr-waiting')} aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}>
+          <div ref={frame} className={cls('rr-frame', waiting && 'rr-waiting')} style={waiting ? { '--rr-head': `${sample.head ?? 0}px` } as CSSProperties : undefined} aria-busy={rs.status === 'loading' || (rs.status === 'idle' && loaded?.id !== sample.id)}>
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {drawn && (flip ? (

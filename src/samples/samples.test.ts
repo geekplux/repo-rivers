@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { heuristicEras } from '../core/eras/heuristic.ts';
 import { summarizeForEras } from '../core/eras/summary.ts';
+import { ERA_BAND, MOUTH_ROOM } from '../core/layout/guides.ts';
+import { layoutRivers } from '../core/layout/layout.ts';
 import { parseAggregate } from '../core/schema.ts';
+import { selectView } from '../core/view.ts';
 import { samples } from './index.ts';
 
 const MAX_BYTES = 50 * 1024;
@@ -15,6 +18,13 @@ describe.each(samples.map((s) => s.id))('built-in sample %s', (id) => {
     expect(new TextEncoder().encode(raw).length).toBeLessThanOrEqual(MAX_BYTES);
     expect(agg.repo.name).toBe(id);
     expect(`${agg.repo.owner}/${agg.repo.name}`).toBe(samples.find((s) => s.id === id)!.repo);
+  });
+
+  it('declares the room above its plot in the default view (`head`), which the page holds while it loads', () => {
+    const view = selectView(agg, { dimension: 'modules', depth: 'auto', includeBots: false });
+    const top = ERA_BAND + 8;
+    const L = layoutRivers(view, { width: 1200, top, labelRoom: MOUTH_ROOM, gap: 2, inset: 0, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets });
+    expect(L.plot.top - top).toBe(samples.find((s) => s.id === id)!.head ?? 0);
   });
 
   it('ships heuristic eras offline, matching the deterministic segments (pnpm eras:build)', () => {

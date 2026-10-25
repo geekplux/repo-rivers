@@ -145,17 +145,20 @@ async function cls(page, url, viewport) {
 
 export default async function phase5({ page, baseURL }) {
   // R7 review: loading the page moves nothing (the fonts above the fold are preloaded; the chart head and the chart
-  // keep their heights while the sample arrives): CLS < 0.05 on / at 1440 and 390.
+  // keep their heights while the sample arrives, and the footer stays below the fold): CLS < 0.05.
   await page.addInitScript(() => {
     window.rrShift = 0;
     new PerformanceObserver((list) => {
       for (const e of list.getEntries()) if (!e.hadRecentInput) window.rrShift += e.value;
     }).observe({ type: 'layout-shift', buffered: true });
   });
-  for (const viewport of [{ width: 1440, height: 900 }, MOBILE]) {
-    const shift = await cls(page, baseURL, viewport);
-    assert(shift < 0.05, `CLS on / at ${viewport.width} is < 0.05 (got ${shift.toFixed(4)})`);
-    console.log(`  CLS on / at ${viewport.width}: ${shift.toFixed(4)}`);
+  // 768: the head's controls row must not depend on the meta line; 1440×1600: the frame's bottom and the footer
+  // are on screen while the sample loads (Svelte also needs the room for its clipped column's label).
+  for (const [q, viewport] of [['', { width: 1440, height: 900 }], ['', { width: 768, height: 1024 }], ['', MOBILE], ['?sample=svelte', { width: 1440, height: 1600 }]]) {
+    const shift = await cls(page, `${baseURL}${q}`, viewport);
+    const where = `${q || '/'} at ${viewport.width}×${viewport.height}`;
+    assert(shift < 0.05, `CLS on ${where} is < 0.05 (got ${shift.toFixed(4)})`);
+    console.log(`  CLS on ${where}: ${shift.toFixed(4)}`);
   }
   await page.setViewportSize(DESKTOP);
 

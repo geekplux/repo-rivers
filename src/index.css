@@ -51,8 +51,10 @@ a { color: inherit; text-underline-offset: 3px; }
    clipped by the scroll box while the drawing keeps its place on the column. */
 .rr-frame { overflow-x: auto; min-height: 352px; padding: 8px; margin: -8px; }
 /* Until the chart is drawn, the frame holds its height: era band and top (92) + the plot, clamp(320, 0.45·W, 480),
-   + the axis room (44), W being the column's width (layoutRivers' default plot height). */
-.rr-frame.rr-waiting { min-height: calc(136px + clamp(320px, 0.45 * min(1200px, 100vw - 32px), 480px)); }
+   + the axis room (44), W being the column's width (layoutRivers' default plot height), + the sample's `head`
+   (room for a clipped column's label, from the sample registry). */
+.rr-frame.rr-waiting { min-height: calc(136px + var(--rr-head, 0px) + clamp(320px, 0.45 * min(1200px, 100vw - 32px), 480px)); }
+main.rr-waiting { min-height: 100vh; }
 /* The chart (DESIGN §4): no hue; two waters, a hatched "other", 0.5 rules, 13/16 text. */
 .rr-stack { position: relative; width: max-content; }
 .rr-chart { display: block; font-family: var(--rr-font); }
@@ -183,6 +185,9 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-index tbody tr:hover .rr-rname { text-decoration: underline; text-decoration-thickness: 0.5px; text-underline-offset: 3px; }
 }
 @media (max-width: 1024px) {
+  /* The controls take their own row below the title and meta, whatever the meta line's length: the head's height
+     never depends on text that arrives with the data (no layout shift). */
+  .rr-card-head > .rr-controls { flex-basis: 100%; }
   .rr-sec { display: block; }
   .rr-sec h2.rr-at-head, .rr-sec h2.rr-at-row { margin: 0 0 12px; }
 }
