@@ -74,7 +74,7 @@ Keep it current so an outside monitor can read progress. **The first line is alw
 - Accessibility: never rely on color alone; palettes must pass color-vision-deficiency checks (protanopia, deuteranopia, tritanopia); keyboard-operable; reduced motion respected.
 - No decorative 3D.
 - Nothing finance-related (no prices, trading, crypto, payments features or sample data).
-- Never mention Sean's employer anywhere (code, docs, commits, PRs).
+- No company names in project content, samples, docs, commits or PRs, apart from tools, services and cited sources.
 
 ## GitHub token limitation
 The `gh` token on this box has `repo` scope but **not `workflow` scope**, so pushes that add or change files under `.github/workflows/` are rejected. Do not commit anything under `.github/workflows/`. Put CI definitions in `ci/github-workflow.yml` (same content) and list "move ci/github-workflow.yml to .github/workflows/ (needs workflow scope)" under follow-ups in `docs/STATUS.md`. This is not a blocker.
