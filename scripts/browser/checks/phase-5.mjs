@@ -40,9 +40,10 @@ async function expectTransfer(page, key) {
     dash: getComputedStyle(el).strokeDasharray,
     width: Number.parseFloat(getComputedStyle(el).strokeWidth),
     head: Number(el.parentElement.querySelector('path.rr-arrow')?.dataset.arrow ?? 0),
+    casing: el.parentElement.querySelector('path.rr-halo') !== null,
   }));
-  // Arrowhead length max(7, 2·width + 2) keeps the head visible on wide transfers.
-  assert(style.dash !== 'none' && style.head >= Math.max(7, 2 * style.width + 2) - 0.01, `transfer ${key} is dashed with an arrowhead`);
+  // DESIGN §4: a ground casing, a `6 3` dash at most 3.5 px wide and a 7 px arrowhead (twice the widest dash).
+  assert(style.dash === '6px, 3px' && style.width <= 3.5 && style.head === 7 && style.casing, `transfer ${key} is dashed with an arrowhead (${JSON.stringify(style)})`);
 }
 
 const lum = (rgb) => rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
@@ -99,18 +100,18 @@ export default async function phase5({ page, baseURL }) {
   await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
   assert((await page.getByRole('button', { name: 'Svelte' }).getAttribute('aria-pressed')) === 'true', '?sample=svelte selects the Svelte chip');
 
-  // AC6 / S7: dark theme with the dark palette, estimated rule and partial marker.
+  // AC6 / S7: dark theme with the dark waters (no hue: Radix blue 12 and 11), estimated rule and partial marker.
   await page.emulateMedia({ colorScheme: 'dark' });
   await open(page, baseURL, 'vitejs/vite');
   await page.waitForTimeout(REVEAL_MS);
   const dark = await page.evaluate(() => ({
     bg: getComputedStyle(document.body).backgroundColor,
-    fill: getComputedStyle(document.querySelector('path[data-river]')).fill,
+    fills: [...new Set([...document.querySelectorAll('path[data-river]:not(.rr-other)')].map((p) => getComputedStyle(p).fill))],
     estimated: document.querySelectorAll('[data-estimated]').length,
     partial: document.querySelectorAll('[data-partial]').length,
   }));
   assert(dark.bg === 'rgb(17, 25, 39)', `dark background is Radix blue 2 (${dark.bg})`);
-  assert(['rgb(224, 174, 96)', 'rgb(151, 213, 251)', 'rgb(60, 196, 148)', 'rgb(228, 213, 12)', 'rgb(6, 152, 244)', 'rgb(227, 106, 28)', 'rgb(210, 127, 173)', 'rgb(70, 142, 140)'].includes(dark.fill), `dark river fill (${dark.fill})`);
+  assert(dark.fills.toSorted().join() === 'rgb(112, 184, 255),rgb(194, 230, 255)', `dark river fills are water A and B (${dark.fills})`);
   assert(dark.estimated > 0 && dark.partial === 1, 'estimated rule and partial marker present');
   await shoot(page, '05-dark-desktop', DESKTOP);
   await page.emulateMedia({ colorScheme: 'light' });

@@ -17,34 +17,49 @@ const lum = (rgb) => rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c 
 const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].toSorted((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 const rgb = (css) => css.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
 
-/** Geometry of the track and chart: bracket edges vs. bucket boundaries (from the axis line), titles, chart top. */
+/**
+ * Geometry of the era band (DESIGN §4): each era's rule (x, from the SVG) vs. bucket boundaries (from the axis
+ * line), its name lines and range, the buttons over them, and where the plot starts.
+ */
 const measure = (page, buckets) => page.evaluate(([chart, track, B]) => {
   const svg = document.querySelector(chart);
   const box = svg.getBoundingClientRect();
-  const axis = [...svg.querySelectorAll('.rr-axis line.rr-grid')].find((l) => l.getAttribute('y1') === l.getAttribute('y2'));
+  const axis = svg.querySelector('.rr-axis-line');
   const [left, right] = [Number(axis.getAttribute('x1')), Number(axis.getAttribute('x2'))];
   const w = (right - left) / B;
-  const eras = [...document.querySelectorAll(`${track} .rr-era`)].map((b) => {
-    const r = b.querySelector('.rr-era-bracket').getBoundingClientRect();
-    const t = b.querySelector('.rr-era-title');
-    return { x0: r.left - box.x, x1: r.right - box.x, title: t.textContent, source: b.dataset.source, font: getComputedStyle(t).fontFamily, style: getComputedStyle(t).fontStyle, color: getComputedStyle(t).color };
+  const buttons = [...document.querySelectorAll(`${track} .rr-era`)];
+  const eras = [...svg.querySelectorAll('[data-era-mark]')].map((g, i) => {
+    const names = [...g.querySelectorAll('text.rr-era-name')];
+    const t = names[0];
+    return {
+      x0: Number(g.querySelector('line').getAttribute('x1')), textX: Math.min(...names.map((n) => Number(n.getAttribute('x')))),
+      title: names.map((n) => n.textContent).join(' '), range: g.querySelector('.rr-era-range').textContent,
+      bottom: Math.max(...[...g.querySelectorAll('text')].map((n) => n.getBoundingClientRect().bottom)) - box.y,
+      source: buttons[i]?.dataset.source, font: getComputedStyle(t).fontFamily, size: getComputedStyle(t).fontSize, color: getComputedStyle(t).fill,
+    };
   });
-  const trackBox = document.querySelector(track).getBoundingClientRect();
-  return { left, w, eras, chartTop: box.top + scrollY, trackTop: trackBox.top + scrollY, trackHeight: trackBox.height, ai: document.querySelector(`${track} .rr-era-ai`)?.textContent ?? null };
+  const plotTop = Math.min(...[...svg.querySelectorAll('path[data-river]')].map((p) => p.getBoundingClientRect().top)) - box.y;
+  return { left, w, eras, buttons: buttons.length, plotTop, chartTop: box.top + scrollY, legend: document.querySelector('.rr-legend')?.textContent ?? '' };
 }, [CHART, TRACK, buckets]);
 
-/** S9: every bracket starts/ends within 1 px of its bucket boundary ± 3 px. */
+/** S9 / DESIGN §4: every era's rule and name sit within 1 px of its first bucket's left edge. */
 function expectAligned(m, eras, what) {
+  assert(m.eras.length === eras.length, `${what}: ${eras.length} eras drawn (got ${m.eras.length})`);
   eras.forEach((e, i) => {
-    const want = [m.left + e.start * m.w + 3, m.left + (e.end + 1) * m.w - 3];
-    const got = [m.eras[i].x0, m.eras[i].x1];
-    assert(Math.abs(got[0] - want[0]) <= 1 && Math.abs(got[1] - want[1]) <= 1, `${what}: era ${i} bracket ${got} vs bucket edges ${want}`);
+    const want = m.left + e.start * m.w;
+    const got = [m.eras[i].x0, m.eras[i].textX];
+    assert(got.every((x) => Math.abs(x - want) <= 1), `${what}: era ${i} rule and name at ${got} vs bucket edge ${want}`);
   });
 }
+/** An era note as the UI writes it (summary.ts `eraNote`). */
+const asSentence = (note) => {
+  const t = note.trim().replace(/; /g, ', ');
+  return t ? `${t.charAt(0).toUpperCase()}${t.slice(1)}${/[.!?]$/.test(t) ? '' : '.'}` : '';
+};
 
 export default async function phase9({ page, baseURL }) {
   const bg = rgb(await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
-  // AC4 + AC5: the default sample (Vite) ships heuristic eras; brackets aligned, italic Alegreya Sans, ≥ 4.5:1, no AI label.
+  // AC4 + AC5: the default sample (Vite) ships heuristic eras; rules aligned, 16 px Alegreya Sans, ≥ 4.5:1, no AI label.
   await page.goto(baseURL, { waitUntil: 'load' });
   await page.locator(TRACK).waitFor({ state: 'visible', timeout: 10_000 });
   await page.evaluate(() => document.fonts.ready);
@@ -52,15 +67,16 @@ export default async function phase9({ page, baseURL }) {
   const m = await measure(page, vite.time.starts.length);
   assert(m.eras.length === vite.eras.length && m.eras.length >= 3 && m.eras.length <= 6, `3-6 eras drawn (got ${m.eras.length})`);
   expectAligned(m, vite.eras, 'vite desktop');
-  assert(m.eras.every((e, i) => e.title === vite.eras[i].title && e.source === 'heuristic'), 'the sample shows its shipped heuristic titles');
-  assert(m.ai === null, '"named by AI" is absent for heuristic names');
-  assert(m.eras.every((e) => /Alegreya Sans/.test(e.font) && e.style === 'italic'), `titles in italic Alegreya Sans (got ${m.eras[0].font} ${m.eras[0].style})`);
+  assert(m.eras.every((e, i) => e.title === vite.eras[i].title && e.source === 'heuristic'), `the sample shows its shipped heuristic titles (${m.eras.map((e) => e.title)})`);
+  assert(m.eras.every((e) => /^Q\d \d{4}( to Q\d \d{4})?$/.test(e.range)), `ranges read "Q2 2020 to Q1 2021" (${m.eras.map((e) => e.range)})`);
+  assert(m.buttons === vite.eras.length, 'one button per era');
+  assert(!m.legend.includes('AI'), '"era names by AI" is absent for heuristic names');
+  assert(m.eras.every((e) => /Alegreya Sans/.test(e.font) && e.size === '16px'), `names in 16 px Alegreya Sans (got ${m.eras[0].font} ${m.eras[0].size})`);
   const ratio = Math.min(...m.eras.map((e) => contrast(rgb(e.color), bg)));
-  assert(ratio >= 4.5, `bracket title contrast ≥ 4.5:1 (got ${ratio.toFixed(2)})`);
-  assert(m.trackHeight === 48 || m.trackHeight === 72, `track height reserved at 48 or 72 px (got ${m.trackHeight})`);
-  assert(m.trackTop < m.chartTop, 'the track sits above the chart');
+  assert(ratio >= 4.5, `era name contrast ≥ 4.5:1 (got ${ratio.toFixed(2)})`);
+  assert(m.eras.every((e) => e.bottom <= m.plotTop), `era names sit in the band above the plot (${m.eras.map((e) => e.bottom)} vs ${m.plotTop})`);
   const bands = await page.locator(`${CHART} [data-era-band]`).count();
-  assert(bands === Math.floor(vite.eras.length / 2), `odd eras have background bands (got ${bands})`);
+  assert(bands === 0, `no era band until an era is selected (got ${bands})`);
   const prose = await page.locator('.rr-summary').textContent();
   assert(prose.includes(`${vite.eras.length} eras: ${vite.eras[0].title}`), 'the prose summary lists the eras');
   const footer = await page.locator('.rr-table tfoot').textContent();
@@ -74,46 +90,41 @@ export default async function phase9({ page, baseURL }) {
   await page.keyboard.press('Tab');
   assert(await page.evaluate(() => document.activeElement?.dataset.era === '0'), 'Tab from the chart reaches the first era');
   const line = await readout(page);
-  assert(line.startsWith(`${vite.eras[0].title} · Q2 2020–`) && line.endsWith(vite.eras[0].note), `readout shows the era (got "${line}")`);
+  assert(line === `${vite.eras[0].title}, ${m.eras[0].range}. ${asSentence(vite.eras[0].note)}`, `readout shows the era (got "${line}")`);
   const sr = await page.evaluate(() => {
     const b = document.activeElement;
     return { label: b.getAttribute('aria-label'), note: document.getElementById(b.getAttribute('aria-describedby') ?? '')?.textContent };
   });
-  assert(sr.label.startsWith(`${vite.eras[0].title}, Q2 2020–`) && !sr.label.includes(vite.eras[0].note), `the era button’s name is its title and dates (got "${sr.label}")`);
-  assert(sr.note === vite.eras[0].note, `the era button’s description is its note (got "${sr.note}")`);
+  assert(sr.label === `${vite.eras[0].title}, ${m.eras[0].range}`, `the era button’s name is its title and dates (got "${sr.label}")`);
+  assert(sr.note === asSentence(vite.eras[0].note), `the era button’s description is its note (got "${sr.note}")`);
   for (let i = 1; i < vite.eras.length; i++) {
     await page.keyboard.press('Tab');
     assert(await page.evaluate((n) => document.activeElement?.dataset.era === String(n), i), `Tab reaches era ${i}`);
   }
   await page.keyboard.press('Shift+Tab');
-  const active = await page.locator(`${CHART} [data-era-band].rr-on`).count();
+  const active = await page.locator(`${CHART} [data-era-band]`).count();
   assert(active === 1, 'the focused era’s band is highlighted');
-  // The focus indicator is a 2 px rule under the whole visible title plus the bracket, never a box crossing titles.
+  // The focus indicator is the 2 px focus ring around the era's own name, never over a neighbour's button.
   const ring = await page.evaluate(() => {
     const b = document.activeElement;
-    const t = b.querySelector('.rr-era-title');
-    const r = t.getBoundingClientRect();
-    const hit = [...document.querySelectorAll('.rr-era-title')].filter((o) => o !== t).some((o) => {
+    const r = b.getBoundingClientRect();
+    const hit = [...document.querySelectorAll('.rr-era')].filter((o) => o !== b).some((o) => {
       const q = o.getBoundingClientRect();
-      return q.left < r.right && r.left < q.right && q.top < r.bottom && r.top < q.bottom;
+      return q.left < r.right && r.left < q.right;
     });
-    const s = getComputedStyle(t);
-    return { outline: getComputedStyle(b).outlineStyle, rule: s.borderBottomWidth, ruleStyle: s.borderBottomStyle, bracket: getComputedStyle(b.querySelector('.rr-era-bracket')).borderTopWidth, hit };
+    return { outline: getComputedStyle(b).outlineStyle, width: getComputedStyle(b).outlineWidth, hit };
   });
-  assert(ring.outline === 'none' && ring.rule === '2px' && ring.ruleStyle === 'solid' && ring.bracket === '2px' && !ring.hit,
-    `era focus: a 2 px rule under the title and a 2 px bracket, not over another title (got ${JSON.stringify(ring)})`);
+  assert(ring.outline === 'solid' && ring.width === '2px' && !ring.hit, `era focus: a 2 px ring over the era's own name (got ${JSON.stringify(ring)})`);
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '03-era-focus-desktop');
   await page.evaluate(() => document.activeElement.blur());
 
-  // Mobile: the track scrolls with the chart and keeps its alignment.
+  // Mobile: the era band scrolls with the chart and keeps its alignment (the phone layout is redone in R6).
   await page.setViewportSize(MOBILE);
   await page.reload({ waitUntil: 'load' }); // a fresh chart, without the keyboard run's focus state
   await page.waitForFunction(() => document.querySelector('.rr-frame')?.getAttribute('role') === 'region');
   const mm = await measure(page, vite.time.starts.length);
   expectAligned(mm, vite.eras, 'vite mobile');
-  const size = await page.locator(`${TRACK} .rr-era-title`).first().evaluate((t) => getComputedStyle(t).fontSize);
-  assert(size === '14px', `mobile titles at 14 px (got ${size})`);
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '02-eras-mobile', MOBILE);
   // Mobile: an era focused with the readout off-screen scrolls the readout into view.
@@ -147,19 +158,19 @@ export default async function phase9({ page, baseURL }) {
   });
   await page.locator('#rr-repo').fill('expressjs/express');
   await page.locator('#rr-repo').press('Enter');
-  await page.locator(`${CHART}[aria-label="River chart of expressjs/express"]`).waitFor({ state: 'visible', timeout: 10_000 });
+  await page.locator(`${CHART}[aria-label^="River chart of expressjs/express:"]`).waitFor({ state: 'visible', timeout: 10_000 });
   await page.locator(TRACK).waitFor({ state: 'visible' });
   const B = express.time.starts.length;
   const before = await measure(page, B);
-  assert(before.eras.every((e) => e.source === 'heuristic') && before.ai === null, 'heuristic names render immediately');
+  assert(before.eras.every((e) => e.source === 'heuristic') && !before.legend.includes('AI'), 'heuristic names render immediately');
   release();
-  await page.locator(`${TRACK} .rr-era-ai`).waitFor({ state: 'visible', timeout: 10_000 });
+  await page.locator(`${TRACK} .rr-era[data-source="ai"]`).first().waitFor({ state: 'attached', timeout: 10_000 });
   const after = await measure(page, B);
   assert(asked === 1, `exactly one /api/eras request (got ${asked})`);
   assert(after.eras.every((e) => e.source === 'ai') && after.eras[0].title === 'Callbacks and routers', 'AI names swapped in');
-  assert(after.ai === 'named by AI', '"named by AI" appears with AI names');
-  assert(after.chartTop === before.chartTop && after.trackHeight === before.trackHeight, `no layout shift: chart top ${before.chartTop} → ${after.chartTop}`);
-  assert(JSON.stringify(after.eras.map((e) => [e.x0, e.x1])) === JSON.stringify(before.eras.map((e) => [e.x0, e.x1])), 'brackets unchanged by the swap');
+  assert(after.legend.includes('era names by AI'), '"era names by AI" appears in the legend with AI names');
+  assert(after.chartTop === before.chartTop && after.plotTop === before.plotTop, `no layout shift: chart top ${before.chartTop} → ${after.chartTop}`);
+  assert(JSON.stringify(after.eras.map((e) => e.x0)) === JSON.stringify(before.eras.map((e) => e.x0)), 'era rules unchanged by the swap');
   expectAligned(after, express.eras ?? sample('express').eras, 'express after the swap');
   const cached = await page.evaluate(() => JSON.parse(localStorage.getItem('rr:agg:v1:expressjs/express'))?.aggregate?.eras);
   assert(cached?.length === after.eras.length && cached.every((e) => e.source === 'ai'), 'AI eras are cached with the aggregate');
@@ -169,7 +180,7 @@ export default async function phase9({ page, baseURL }) {
   await shoot(page, '04-eras-ai-swap');
   // Reload: from the browser cache, AI names at once and no request.
   await page.reload({ waitUntil: 'load' });
-  await page.locator(`${TRACK} .rr-era-ai`).waitFor({ state: 'visible', timeout: 10_000 });
+  await page.locator(`${TRACK} .rr-era[data-source="ai"]`).first().waitFor({ state: 'attached', timeout: 10_000 });
   assert(asked === 1, 'a reload uses the cached AI names (no /api/eras request)');
 
   // O3: /api/eras answers 503 → the heuristic names stay, silently.
@@ -181,14 +192,14 @@ export default async function phase9({ page, baseURL }) {
   const answered = page.waitForResponse('**/api/eras', { timeout: 10_000 });
   await page.locator('#rr-repo').fill('sveltejs/svelte');
   await page.locator('#rr-repo').press('Enter');
-  await page.locator(`${CHART}[aria-label="River chart of sveltejs/svelte"]`).waitFor({ state: 'visible', timeout: 10_000 });
+  await page.locator(`${CHART}[aria-label^="River chart of sveltejs/svelte:"]`).waitFor({ state: 'visible', timeout: 10_000 });
   await page.waitForFunction(() => document.querySelector('[data-testid="era-track"]'));
   await answered;
   await sleep(200);
   const fb = await measure(page, sample('svelte').time.starts.length);
   assert(failed === 1, `one /api/eras attempt (got ${failed})`);
   assert(fb.eras.length === sample('svelte').eras.length && fb.eras.every((e, i) => e.source === 'heuristic' && e.title === sample('svelte').eras[i].title), 'heuristic names stay after a 503');
-  assert(fb.ai === null, 'no "named by AI" label after the fallback');
+  assert(!fb.legend.includes('AI'), 'no "era names by AI" after the fallback');
   assert(!(await page.locator('[role="alert"]').count()), 'no error is shown');
   await runAxe(page, 'heuristic fallback');
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));

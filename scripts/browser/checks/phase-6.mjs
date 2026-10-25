@@ -14,6 +14,8 @@ async function open(page, url, repo) {
 const state = (page) => page.locator(PLOT).evaluate((g) => ({ river: g.dataset.active, bucket: g.dataset.bucket, pinned: g.dataset.pinned === 'true' }));
 const readout = (page) => page.locator('[data-testid="readout"] p[aria-hidden]').first().innerText();
 const announced = async (page) => (await sleep(250), page.locator('[data-testid="readout"] [aria-live="polite"]').innerText());
+/** The river named by a focus readout (`*name*, Q2 2023: …`; a bot reads `name bot`). */
+const nameOf = (text) => text.split(', ')[0];
 
 /** A viewport point inside river `id` (centre of its inside label, checked with isPointInFill), or of any river. */
 const pointIn = (page, id) => page.evaluate(([sel, rid]) => {
@@ -30,17 +32,18 @@ const pointIn = (page, id) => page.evaluate(([sel, rid]) => {
   return null;
 }, [CHART, id]);
 
-/** A viewport point in the plot but on no river (for background clicks). */
-const emptyPoint = (page) => page.evaluate((sel) => {
+/** A viewport point in the plot (4 px under its top, below the era band) but on no river (for background clicks). */
+const emptyPoint = (page) => page.evaluate(([sel, plot]) => {
   const svg = document.querySelector(sel);
   const box = svg.getBoundingClientRect();
+  const y = document.querySelector(plot).getBoundingClientRect().top - box.y + 12;
   const paths = [...svg.querySelectorAll('path[data-river]')];
   for (let x = 20; x < box.width - 20; x += 10) {
-    const pt = new DOMPoint(x, 12);
-    if (!paths.some((p) => p.isPointInFill(pt) || p.isPointInStroke(pt))) return { x: box.x + x, y: box.y + 12 };
+    const pt = new DOMPoint(x, y);
+    if (!paths.some((p) => p.isPointInFill(pt) || p.isPointInStroke(pt))) return { x: box.x + x, y: box.y + y };
   }
   return null;
-}, CHART);
+}, [CHART, PLOT]);
 
 /** The view-model value for `river` (row header) and bucket column `bucket`, read from the data table. */
 const tableValue = (page, label, bucket) => page.evaluate(([l, b]) => {
@@ -53,7 +56,7 @@ const lum = (rgb) => rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c 
 const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].toSorted((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 const rgb = (css) => css.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
 
-/** S8: others at 0.18, the active river outlined, its transfers shown at full opacity. */
+/** S8 / DESIGN §4: others at 0.18, the active river at full strength in water A, its transfers in ink at full opacity. */
 async function expectHighlight(page, id) {
   const s = await page.evaluate(([sel, rid]) => {
     const svg = document.querySelector(sel);
@@ -62,28 +65,29 @@ async function expectHighlight(page, id) {
     const paths = [...svg.querySelectorAll('path[data-river]')];
     const on = paths.find((p) => p.dataset.river === rid);
     const mine = [...svg.querySelectorAll('[data-transfer]')].filter((t) => t.dataset.transfer.split('→').includes(rid));
+    const waterA = svg.querySelector('path.rr-tone-0:not(.rr-on)') ?? on;
     return {
       others: [...new Set(paths.filter((p) => p !== on).map(op))],
-      on: op(on), stroke: getComputedStyle(on).stroke, width: getComputedStyle(on).strokeWidth,
-      transfers: mine.map(op),
+      on: op(on), other: on.classList.contains('rr-other'), fill: getComputedStyle(on).fill, waterA: getComputedStyle(waterA).fill,
+      transfers: mine.map(op), ink: mine.map((t) => getComputedStyle(t.querySelector('.rr-transfer')).stroke === getComputedStyle(svg.querySelector('.rr-cursor')).stroke),
       label: [...svg.querySelectorAll(`text[data-label-for="${CSS.escape(rid)}"], text[data-float]`)].map((t) => op(t.parentElement)),
     };
   }, [CHART, id]);
   assert(s.others.length === 1 && Math.abs(s.others[0] - 0.18) < 1e-6, `${id}: other rivers at 0.18 (got ${s.others})`);
-  assert(s.on === 1 && s.width === '1.5px' && s.stroke !== 'none', `${id}: active river outlined at full opacity (${JSON.stringify(s)})`);
-  assert(s.transfers.every((o) => o === 1), `${id}: its transfers at full opacity (${s.transfers})`);
+  assert(s.on === 1 && (s.other || s.fill === s.waterA), `${id}: active river at full strength in water A (${JSON.stringify(s)})`);
+  assert(s.transfers.every((o) => o === 1) && s.ink.every(Boolean), `${id}: its transfers in ink at full opacity (${s.transfers}, ${s.ink})`);
   assert(s.label.length > 0 && s.label.every((o) => o === 1), `${id}: its label at full opacity (${s.label})`);
   return s;
 }
 
-/** S8: readout text follows the §6 template and its numbers equal the view model (the table). */
+/** S8 / DESIGN §4: `name, Q2 2023: 7,732 lines changed, 21% of the quarter.`, numbers equal to the view model (the table). */
 async function expectReadout(page, label, bucket, unit) {
   const text = await readout(page);
-  const [name, b, value, share] = text.split(' · ');
+  const [, name, b, value, share] = text.match(/^(.+?), (.+?): (no [^.]+|[\d,]+ [^,]+)(?:, (<1|\d+)% of the \w+)?\./) ?? [];
   const expected = await tableValue(page, label, bucket);
   assert(name === label && b === (await bucketLabel(page, bucket)), `readout names ${label} at ${b} (${text})`);
   assert(expected === '0' ? value.startsWith('no ') : value.startsWith(`${expected} `), `readout value equals the view model (${value} vs ${expected})`);
-  assert(expected === '0' || new RegExp(`^(<1|\\d+)% of the ${unit}$`).test(share), `readout share (${share})`);
+  assert(expected === '0' || (share !== undefined && text.includes(`% of the ${unit}.`)), `readout share (${share})`);
   return text;
 }
 
@@ -98,10 +102,10 @@ export default async function phase6({ page, baseURL }) {
   // The chart head shows the one control that applies: Folder depth for Modules, Include bots for Contributors.
   assert(await page.getByLabel('Folder depth').isVisible(), 'Modules shows Folder depth');
   assert((await page.getByRole('checkbox', { name: 'Include bots' }).count()) === 0, 'Modules shows no Include bots');
-  const key = await page.locator('.rr-key').innerText();
-  assert(key.includes('estimated from sampled commits') && key.includes('partial'), `text key under the chart (${key})`);
+  const key = await page.locator('.rr-legend').innerText();
+  assert(key.includes('estimated') && key.includes('quarter in progress') && key.includes('files moved'), `legend under the chart (${key})`);
   const idle = await readout(page);
-  assert(/^vitejs\/vite · .+–.+ · 27 quarters · \d+ rivers by lines changed\. Hover, tap or Tab into the chart\.$/.test(idle), `idle readout (${idle})`);
+  assert(/^packages\/vite carries \d+% of all lines changed, and [\d,]+ files moved between modules\.$/.test(idle), `idle readout (${idle})`);
 
   // AC2: hover dims the others to 0.18 and reveals the river's transfers.
   await frameCard(page);
@@ -136,16 +140,16 @@ export default async function phase6({ page, baseURL }) {
   // AC1: keyboard-only walk.
   await tabTo(page, PLOT);
   const ring = await page.evaluate(() => {
-    const r = document.querySelector('.rr-ring');
-    return { vis: getComputedStyle(r).visibility, stroke: getComputedStyle(r).stroke, bg: getComputedStyle(document.body).backgroundColor };
+    const r = getComputedStyle(document.activeElement);
+    return { style: r.outlineStyle, width: r.outlineWidth, color: r.outlineColor, bg: getComputedStyle(document.body).backgroundColor };
   });
-  assert(ring.vis === 'visible' && contrast(rgb(ring.stroke), rgb(ring.bg)) >= 3, `focus ring visible and >= 3:1 (${JSON.stringify(ring)})`);
+  assert(ring.style === 'solid' && ring.width === '2px' && contrast(rgb(ring.color), rgb(ring.bg)) >= 3, `focus ring visible and >= 3:1 (${JSON.stringify(ring)})`);
   await frameCard(page);
   const rules = await page.evaluate(() => [...document.querySelectorAll('[data-estimated]')].map((el) => {
     const r = el.getBoundingClientRect();
     // Along the rule only its dots (or bare background between them) may be topmost: nothing, the ring included, covers it.
     const top = Array.from({ length: Math.floor(r.width / 2) }, (_, k) => document.elementFromPoint(r.x + 1 + 2 * k, r.y + r.height / 2));
-    const covered = top.filter((e) => !e?.matches('[data-estimated], svg.rr-chart')).map((e) => e?.getAttribute('class'));
+    const covered = top.filter((e) => !e?.matches('[data-estimated], svg.rr-chart, .rr-axis-line')).map((e) => e?.getAttribute('class'));
     return { dots: top.filter((e) => e?.matches('[data-estimated]')).length, covered: [...new Set(covered)] };
   }));
   assert(rules.length > 0 && rules.every((r) => r.dots > 0 && r.covered.length === 0), `the estimated rule stays visible while the chart has focus (${JSON.stringify(rules)})`);
@@ -167,13 +171,13 @@ export default async function phase6({ page, baseURL }) {
   for (let i = 0; i < lanes.length; i++) {
     s = await state(page);
     assert(s.river === lanes[i], `Down walks lane ${i} (${s.river} vs ${lanes[i]})`);
-    named.push((await readout(page)).split(' · ')[0]);
+    named.push(nameOf(await readout(page)));
     await page.keyboard.press('ArrowDown');
   }
   assert(rows.every((r) => named.includes(r)), `AC7: the readout names every river (${rows.filter((r) => !named.includes(r))} missing)`);
   for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowUp');
   s = await state(page);
-  const label = (await readout(page)).split(' · ')[0];
+  const label = nameOf(await readout(page));
   await expectReadout(page, label, Number(s.bucket), 'quarter');
   assert((await announced(page)) === (await readout(page)), 'the readout is announced through the polite live region');
   await page.keyboard.press('Enter');
@@ -206,20 +210,20 @@ export default async function phase6({ page, baseURL }) {
   await frameCard(page);
   await shoot(page, '04-contributors-desktop', DESKTOP);
 
-  // AC4: Include bots toggles the bot rivers, dotted outline and " · bot".
+  // AC4: Include bots toggles the bot rivers, their dotted outline and "bot" after the name.
   assert((await page.locator('path.rr-bot').count()) === 0, 'bots hidden by default');
   await page.getByRole('checkbox', { name: 'Include bots' }).check();
   const bot = page.locator('path.rr-bot').first();
   await bot.waitFor();
   const dots = await bot.evaluate((p) => [getComputedStyle(p).strokeDasharray, getComputedStyle(p).stroke]);
   assert(dots[0] !== 'none' && dots[1] !== 'none', `bot river has a dotted outline (${dots})`);
-  assert(await page.locator('.rr-table tbody th', { hasText: ' · bot' }).count() > 0, 'bot rivers carry " · bot"');
-  assert((await page.locator('.rr-key').innerText()).includes('dotted outline: bot'), 'key explains the dotted outline');
+  assert(await page.locator('.rr-table tbody th .rr-muted', { hasText: /^bot$/ }).count() > 0, 'bot rivers carry "bot"');
+  assert((await page.locator('.rr-legend').innerText()).includes('bot'), 'the legend explains the dotted outline');
   await runAxe(page, 'contributors with bots');
   const botId = await bot.getAttribute('data-river');
   await page.locator(PLOT).focus();
   for (let i = 0; i < 12 && (await state(page)).river !== botId; i++) await page.keyboard.press('ArrowDown');
-  assert((await state(page)).river === botId && (await readout(page)).endsWith(' · bot'), `the bot river reads " · bot" (${await readout(page)})`);
+  assert((await state(page)).river === botId && / bot, /.test(await readout(page)), `the bot river reads "bot" after its name (${await readout(page)})`);
   await frameCard(page);
   await shoot(page, '06-bots-on-desktop', DESKTOP);
   await shootCvd(page, '10-bots', DESKTOP, ['deuteranopia']);
@@ -248,7 +252,7 @@ export default async function phase6({ page, baseURL }) {
   assert(await page.locator('.rr-table caption').isVisible(), 'table caption visible');
   assert((await page.locator('.rr-table tbody th[scope="row"]').count()) === (await page.locator('path[data-river]').count()), 'one table row per river');
   await runAxe(page, 'express depth 2, table open');
-  await page.evaluate(() => scrollTo(0, document.querySelector('.rr-key').getBoundingClientRect().top + scrollY - 8));
+  await page.evaluate(() => scrollTo(0, document.querySelector('.rr-legend').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '07-table-open-desktop', DESKTOP);
   const describedBy = await page.locator(PLOT).getAttribute('aria-describedby');
   const summary = await page.locator(`[id="${describedBy}"]`).textContent(); // folded under "Read as text"
@@ -277,9 +281,11 @@ export default async function phase6({ page, baseURL }) {
   await shoot(page, '08-mobile-focus', MOBILE);
   await page.setViewportSize(DESKTOP);
 
-  // A5: with motion allowed dimming is a 120 ms transition; reduced motion makes it instant.
+  // A5 / DESIGN §6: with motion allowed the fade is 250 ms ease-out; reduced motion makes it instant.
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const t = await page.locator('path[data-river]').first().evaluate((p) => getComputedStyle(p).transitionDuration);
-  assert(t === '0.12s', `dim transition 120 ms (${t})`);
+  const t = await page.locator('path[data-river]').first().evaluate((p) => [getComputedStyle(p).transitionDuration, getComputedStyle(p).transitionTimingFunction]);
+  assert(t[0] === '0.25s' && t[1] === 'ease-out', `fade 250 ms ease-out (${t})`);
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  const still = await page.locator('path[data-river]').first().evaluate((p) => getComputedStyle(p).transitionDuration);
+  assert(still === '0s', `no fade under reduced motion (${still})`);
 }

@@ -40,7 +40,7 @@ async function submit(page, text) {
 }
 const readout = (page) => page.locator('[data-testid="readout"] p[aria-hidden]').first().innerText();
 const announced = async (page) => (await sleep(300), page.locator('[data-testid="readout"] [aria-live="polite"]').innerText());
-const chartOf = (page, repo) => page.locator(`${CHART}[aria-label="River chart of ${repo}"]`).waitFor({ state: 'visible', timeout: 10_000 });
+const chartOf = (page, repo) => page.locator(`${CHART}[aria-label^="River chart of ${repo}:"]`).waitFor({ state: 'visible', timeout: 10_000 });
 
 /** Shows an error state for `repo` (Worker answer `answer`), checks its copy and actions, runs axe. */
 async function expectError(page, repo, title, actions, shot) {

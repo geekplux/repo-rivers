@@ -18,7 +18,7 @@ export default async function phase11({ page, baseURL }) {
       wordmark: document.querySelector('.rr-wordmark')?.textContent,
       pitch: pitch?.textContent,
       pitchSize: parseFloat(getComputedStyle(pitch).fontSize),
-      eras: document.querySelectorAll('[data-testid="era-track"] .rr-era').length,
+      eras: document.querySelectorAll('[data-era-mark]').length,
       labels: document.querySelectorAll('[data-label-for]').length,
       title: document.title,
       app: document.querySelectorAll('#rr-repo, .rr-controls').length,
