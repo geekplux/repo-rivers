@@ -44,7 +44,7 @@ function expectAligned(m, eras, what) {
 
 export default async function phase9({ page, baseURL }) {
   const bg = rgb(await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
-  // AC4 + AC5: the default sample (Vite) ships heuristic eras; brackets aligned, italic Fraunces, ≥ 4.5:1, no AI label.
+  // AC4 + AC5: the default sample (Vite) ships heuristic eras; brackets aligned, italic Alegreya Sans, ≥ 4.5:1, no AI label.
   await page.goto(baseURL, { waitUntil: 'load' });
   await page.locator(TRACK).waitFor({ state: 'visible', timeout: 10_000 });
   await page.evaluate(() => document.fonts.ready);
@@ -54,7 +54,7 @@ export default async function phase9({ page, baseURL }) {
   expectAligned(m, vite.eras, 'vite desktop');
   assert(m.eras.every((e, i) => e.title === vite.eras[i].title && e.source === 'heuristic'), 'the sample shows its shipped heuristic titles');
   assert(m.ai === null, '"named by AI" is absent for heuristic names');
-  assert(m.eras.every((e) => /Fraunces/.test(e.font) && e.style === 'italic'), `titles in italic Fraunces (got ${m.eras[0].font} ${m.eras[0].style})`);
+  assert(m.eras.every((e) => /Alegreya Sans/.test(e.font) && e.style === 'italic'), `titles in italic Alegreya Sans (got ${m.eras[0].font} ${m.eras[0].style})`);
   const ratio = Math.min(...m.eras.map((e) => contrast(rgb(e.color), bg)));
   assert(ratio >= 4.5, `bracket title contrast ≥ 4.5:1 (got ${ratio.toFixed(2)})`);
   assert(m.trackHeight === 48 || m.trackHeight === 72, `track height reserved at 48 or 72 px (got ${m.trackHeight})`);

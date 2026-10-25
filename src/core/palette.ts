@@ -24,14 +24,17 @@ export interface ThemePalette {
 /** Index of the neutral grey used by the "other" river (drawn with a background-colour hatch). */
 export const OTHER_COLOR = 8;
 
-/** Light ("paper") and dark ("night chart") palettes: Okabe-Ito hue families tuned per theme. */
+/**
+ * Light and dark palettes. Chrome colours are the Radix blue/slate roles of src/ui/theme/tokens.css (ground, ink,
+ * muted, hair, focus); the fills are Okabe-Ito hue families tuned per theme (until the chart moves to two waters).
+ */
 export const PALETTES: Readonly<Record<Theme, ThemePalette>> = {
   light: {
-    background: '#F5F1E8', ink: '#1B2330', secondary: '#4F5868', graticule: '#DDD5C4', focus: '#1B2330',
+    background: '#FBFDFF', ink: '#113264', secondary: '#60646C', graticule: '#ACD8FC', focus: '#0090FF',
     fills: ['#704C01', '#0390CE', '#048A5F', '#928A02', '#0B67AB', '#9E5D3E', '#BE6C9A', '#00595C', '#6C7178'],
   },
   dark: {
-    background: '#10161F', ink: '#E9E4D8', secondary: '#A7AFBC', graticule: '#253041', focus: '#E9E4D8',
+    background: '#111927', ink: '#C2E6FF', secondary: '#B0B4BA', graticule: '#004074', focus: '#0090FF',
     fills: ['#E0AE60', '#97D5FB', '#3CC494', '#E4D50C', '#0698F4', '#E36A1C', '#D27FAD', '#468E8C', '#61676D'],
   },
 };

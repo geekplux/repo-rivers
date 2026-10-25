@@ -26,10 +26,10 @@ export default async function phase11({ page, baseURL }) {
   });
   assert(card.scroll[0] <= 1280 && card.scroll[1] <= 640, `the card fits 1280×640 without scrolling (got ${card.scroll})`);
   assert(card.stack.right <= 1280 && card.stack.bottom <= 640, 'the chart and its labels are inside the card');
-  assert(card.wordmark === 'repo rivers' && card.pitch === 'See any GitHub repo’s history as rivers.', 'wordmark and pitch are shown');
+  assert(card.wordmark === 'Repo Rivers' && card.pitch === 'See any GitHub repo’s history as rivers.', 'wordmark and pitch are shown');
   assert(card.pitchSize >= 40, `the pitch is legible at thumbnail size (≥ 40 px, got ${card.pitchSize})`);
   assert(card.eras >= 3 && card.labels >= 3, `eras and direct labels are drawn (${card.eras}, ${card.labels})`);
-  assert(card.title === 'Vite · repo rivers' && card.app === 0, 'a minimal view: the Vite sample, no input or controls');
+  assert(card.title === 'Vite, Repo Rivers' && card.app === 0, 'a minimal view: the Vite sample, no input or controls');
   await runAxe(page, 'embed=social');
   await shoot(page, '01-embed-social', SOCIAL);
   await shootCvd(page, '02-embed-social', SOCIAL);

@@ -117,7 +117,7 @@ export default async function phase8({ page, baseURL }) {
     const search = await page.evaluate(() => location.search);
     assert(search === '?repo=sveltejs/svelte', `URL becomes ?repo=sveltejs/svelte (got ${search})`);
     assert(/Showing sveltejs\/svelte/.test(await announced(page)), 'result is announced politely');
-    assert((await page.title()) === 'sveltejs/svelte · repo rivers', 'document title names the repo');
+    assert((await page.title()) === 'sveltejs/svelte, Repo Rivers', 'document title names the repo');
     await shoot(page, '04-result-svelte');
 
     // Sampled badge: a keyboard-operable disclosure.

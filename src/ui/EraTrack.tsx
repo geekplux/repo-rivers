@@ -38,7 +38,7 @@ export interface EraTrackProps {
 }
 
 /**
- * Era brackets above the chart: titles in (synthesized) italic Fraunces, one button per era in tab order after
+ * Era brackets above the chart: titles in italic Alegreya Sans, one button per era in tab order after
  * the chart. Focus or hover shows the note in the readout (hover wins while it lasts); the button's name is the
  * title, dates and provenance, and its description the note. "named by AI" appears only when the names are AI's.
  */

@@ -1,11 +1,25 @@
-/* Page layout and chart styling ("survey map", docs/PLAN.md §3). Tokens live in ui/theme/tokens.css. */
-body { margin: 0; background: var(--rr-bg); color: var(--rr-ink); font: 16px/1.5 var(--rr-body); }
+/* Page layout and chart styling. Tokens live in ui/theme/tokens.css; the page follows docs/redesign/DESIGN.md. */
+body {
+  margin: 0; background: var(--ground); color: var(--ink); font: 16px/24px var(--rr-font);
+  font-variant-numeric: lining-nums; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
 a { color: inherit; text-underline-offset: 3px; }
-:focus-visible { outline: 2px solid var(--rr-focus); outline-offset: 2px; }
-.rr-page { max-width: 1200px; margin: 0 auto; padding: var(--rr-s4) var(--rr-s5) var(--rr-s6); }
-.rr-header { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
-.rr-wordmark { display: inline-flex; align-items: center; gap: 8px; font: 600 22px/1 var(--rr-display); letter-spacing: -0.02em; word-spacing: -0.04em; }
-.rr-wordmark path { fill: currentColor; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* The content column: 1200 centred (x 120..1320 at 1440), 16 px margins below that. */
+.rr-wrap { box-sizing: border-box; width: min(1200px, calc(100% - 32px)); margin-inline: auto; }
+.rr-header { height: 72px; display: flex; align-items: center; justify-content: space-between; }
+.rr-header > .rr-wrap { display: flex; align-items: center; justify-content: space-between; }
+.rr-brand { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
+.rr-wordmark { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; line-height: 24px; letter-spacing: -0.005em; }
+.rr-logo { flex: none; display: block; }
+/* The theme glyph sits optically flush with the column's right edge (its 44 px box overhangs by 12). */
+.rr-nav { display: flex; align-items: center; gap: 4px; margin-right: -12px; color: var(--muted); }
+.rr-nav a { display: flex; align-items: center; height: 44px; padding: 0 12px; text-decoration: none; }
+.rr-icon { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; cursor: pointer; }
+@media (hover: hover) {
+  .rr-nav a:hover, .rr-icon:hover { color: var(--ink); }
+}
+.rr-num { font-variant-numeric: lining-nums tabular-nums; }
 .rr-intro { margin: var(--rr-s4) 0; }
 .rr-hero { font: 500 clamp(26px, 3.4vw, 36px)/1.15 var(--rr-display); letter-spacing: -0.01em; margin: 0 0 var(--rr-s2); }
 .rr-lede { color: var(--rr-ink-2); margin: 0; max-width: 72ch; }
@@ -14,11 +28,11 @@ a { color: inherit; text-underline-offset: 3px; }
 /* Quiet text toggles: the pressed sample is bold and underlined (not colour alone). */
 .rr-chips button { font: inherit; padding: var(--rr-s1) 0; border: 0; background: none; color: var(--rr-ink-2); cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 6px; }
 .rr-chips button:hover { color: var(--rr-ink); text-decoration-color: currentColor; text-decoration-thickness: 1px; }
-.rr-chips button[aria-pressed='true'] { color: var(--rr-ink); font-weight: 600; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+.rr-chips button[aria-pressed='true'] { color: var(--rr-ink); font-weight: 500; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
 /* The chart is the page's focal point: no frame around it, just space. */
 .rr-card { margin-top: var(--rr-s5); }
 .rr-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s2) var(--rr-s3); margin-bottom: var(--rr-s3); }
-.rr-card h2 { font: 600 28px/1.15 var(--rr-display); letter-spacing: -0.01em; margin: 0; }
+.rr-card h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
 .rr-meta-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s1) var(--rr-s3); }
 .rr-meta { font: 14px var(--rr-mono); color: var(--rr-ink-2); margin: 0; font-variant-numeric: tabular-nums; }
 .rr-caption { font-size: 14px; margin: 0 0 4px; }
@@ -89,7 +103,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-seg label { position: relative; padding: var(--rr-s1) 10px; border-radius: 4px; color: var(--rr-ink-2); cursor: pointer; }
 .rr-seg label:hover { color: var(--rr-ink); }
 .rr-seg input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: inherit; }
-.rr-seg label:has(:checked) { background: var(--rr-grid); color: var(--rr-ink); font-weight: 600; }
+.rr-seg label:has(:checked) { background: var(--rr-grid); color: var(--rr-ink); font-weight: 500; }
 .rr-seg label:has(:checked)::before { content: '✓ ' / ''; }
 .rr-seg label:has(:focus-visible) { outline: 2px solid var(--rr-focus); outline-offset: 2px; }
 .rr-seg:disabled { opacity: 0.55; }
@@ -125,11 +139,11 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-repo input[aria-invalid='true'] { border-width: 2px; border-style: dashed; }
 .rr-field-error { margin: 0; padding-left: 8px; border-left: 3px solid var(--rr-ink); color: var(--rr-ink); }
 button.rr-primary, .rr-state button, .rr-badge { font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid var(--rr-ink); border-radius: 4px; background: none; color: var(--rr-ink); cursor: pointer; }
-button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight: 600; }
+button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight: 500; }
 .rr-state { display: grid; align-content: center; justify-items: start; gap: 10px; min-height: 320px; padding: 0 4px;
   background: repeating-linear-gradient(90deg, transparent 0 119px, var(--rr-grid) 119px 120px); }
 .rr-state > * { margin: 0; max-width: 64ch; background: var(--rr-bg); }
-.rr-state h3 { font: 600 20px/1.2 var(--rr-display); }
+.rr-state h3 { font: 500 20px/1.2 var(--rr-display); }
 .rr-progress-line { font: 16px var(--rr-mono); font-variant-numeric: tabular-nums; }
 .rr-bar { width: min(560px, 100%); }
 .rr-bar svg { display: block; overflow: visible; }
@@ -151,20 +165,31 @@ button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight:
 .rr-notice { font-size: 14px; padding: 6px 10px; border-left: 3px solid var(--rr-ink-2); margin: 4px 0 8px; }
 .rr-card h2:focus { outline: none; }
 .rr-card h2:focus-visible { outline: 2px solid var(--rr-focus); }
-.rr-footer { margin-top: var(--rr-s6); font-size: 14px; color: var(--rr-ink-2); }
+/* Footer (DESIGN §3): a 0.5 rule across the page, then 520 | 680 columns of 13/20 muted text. */
+.rr-footer { margin-top: 160px; border-top: 0.5px solid var(--line); padding: 32px 0 56px; font-size: 13px; line-height: 20px; color: var(--muted); }
+.rr-footer .rr-wrap { display: grid; grid-template-columns: 13fr 17fr; }
+.rr-footer p { margin: 0 0 6px; max-width: 440px; }
+.rr-footer a { color: var(--ink); text-decoration: none; border-bottom: 0.5px solid var(--line); padding-bottom: 1px; }
+.rr-made-by { color: var(--ink); font-weight: 500; }
+.rr-made { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; }
+.rr-made li:first-child a { font-weight: 500; }
+@media (hover: hover) {
+  .rr-footer a:hover { border-bottom-color: var(--ink); }
+}
 @media (max-width: 640px) {
-  .rr-page { padding: var(--rr-s3) var(--rr-s3) var(--rr-s5); }
+  .rr-header { height: 60px; }
+  .rr-footer .rr-wrap { display: block; }
+  .rr-footer .rr-wrap > div + div { margin-top: 24px; }
   .rr-intro { margin-top: var(--rr-s3); }
   .rr-card-head { display: block; }
   .rr-meta-row { margin-top: var(--rr-s2); }
   .rr-inputs .rr-chips { padding-bottom: 0; }
-  .rr-card h2 { font-size: 24px; }
   .rr-controls { gap: var(--rr-s3) var(--rr-s4); }
 }
 /* ?embed=social (phase 11): a fixed 1280×640 card for the social preview and gallery. */
 .rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 28px 48px 0; overflow: hidden; }
 .rr-social main { margin-top: 14px; }
-.rr-social .rr-header { font-size: 15px; }
+.rr-social .rr-header { height: auto; font-size: 15px; }
 .rr-social-pitch { font: 500 44px/1.1 var(--rr-display); letter-spacing: -0.015em; margin: 0 0 8px; }
 .rr-social-sub { margin: 0 0 4px; font-size: 18px; color: var(--rr-ink-2); }
-.rr-social-sub b { font: 600 17px var(--rr-mono); color: var(--rr-ink); }
+.rr-social-sub b { font: 500 17px var(--rr-mono); color: var(--rr-ink); }

@@ -80,7 +80,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md
 
 - [geekplux/timeline-sankey](https://github.com/geekplux/timeline-sankey) (BSD-3-Clause): the inspiration for the ribbon shape, the dashed cross-links and hover dimming. repo-rivers is a rewrite; no code was copied.
 - The [Okabe-Ito](https://jfly.uni-koeln.de/color/) colour-blind-safe palette, from which the river hues are derived.
-- [Fraunces](https://github.com/undercasetype/Fraunces) by Undercase Type, under the [SIL Open Font License](public/fonts/OFL.txt).
+- [Alegreya Sans](https://github.com/huertatipografica/Alegreya-Sans) by Huerta Tipográfica, under the [SIL Open Font License](public/fonts/OFL.txt).
 
 ## License
 

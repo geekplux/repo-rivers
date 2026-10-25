@@ -23,7 +23,7 @@ export function SocialCard() {
   const sample = findSample(new URLSearchParams(location.search).get('sample') ?? '') ?? samples[0]!;
   const [agg, setAgg] = useState<RepoAggregate | null>(null);
   useEffect(() => void sample.load().then(setAgg), [sample]);
-  useEffect(() => void (document.title = `${sample.title} · repo rivers`), [sample]);
+  useEffect(() => void (document.title = `${sample.title}, Repo Rivers`), [sample]);
   const view = useMemo(() => agg && selectView(agg, OPTIONS), [agg]);
   const layout = useMemo(() => agg && view && layoutRivers(view, { width: WIDTH, height: HEIGHT, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets }), [agg, view]);
   const summaryId = useId();
@@ -38,8 +38,8 @@ export function SocialCard() {
       <main>
         <h1 className="rr-social-pitch">See any GitHub repo’s history as rivers.</h1>
         <p className="rr-social-sub">
-          {agg && view ? <><b>{agg.repo.owner}/{agg.repo.name}</b> · {view.metric} per {agg.time.unit} by folder, {years} · </> : null}
-          paste a URL or open a sample; no account, no key
+          {agg && view ? <><b>{agg.repo.owner}/{agg.repo.name}</b>: {view.metric} per {agg.time.unit} by folder, {years}. </> : null}
+          Paste a URL or open a sample; no account, no key.
         </p>
         {agg && view && layout && (
           <div className="rr-stack">

@@ -33,7 +33,7 @@ export default async function phase12({ page, baseURL, worker }) {
   }
   await page.evaluate(() => document.fonts.ready);
   const fonts = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family));
-  assert(fonts.some((f) => /Fraunces/.test(f)), `the self-hosted display font loads (got ${JSON.stringify(fonts)})`);
+  assert(fonts.some((f) => /Alegreya Sans/.test(f)), `the self-hosted font loads (got ${JSON.stringify(fonts)})`);
   const violations = await page.evaluate(() => window.rrCsp);
   assert(violations.length === 0, `no CSP violations (got ${JSON.stringify(violations)})`);
   await shoot(page, '01-fullstack-sample-desktop');

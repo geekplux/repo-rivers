@@ -62,8 +62,8 @@ export default async function phase5({ page, baseURL }) {
   console.log(`  rivers-rendered at ${rendered.toFixed(0)} ms after navigation`);
   const anim = await page.locator('.rr-reveal').evaluate((g) => getComputedStyle(g).animationName);
   assert(anim === 'rr-reveal', `reveal animation runs with motion allowed (got ${anim})`);
-  const fonts = await page.evaluate(async () => (await document.fonts.ready, [...document.fonts].filter((f) => f.family.includes('Fraunces')).map((f) => f.status)));
-  assert(fonts.includes('loaded'), `self-hosted Fraunces loaded (${fonts})`);
+  const fonts = await page.evaluate(async () => (await document.fonts.ready, [...document.fonts].filter((f) => f.family.includes('Alegreya Sans')).map((f) => f.status)));
+  assert(fonts.includes('loaded'), `self-hosted Alegreya Sans loaded (${fonts})`);
   await page.waitForTimeout(REVEAL_MS);
 
   // AC2 / S1 / S3: Vite labels and transfers; focus ring contrast on a chip (>= 3:1).
@@ -109,7 +109,7 @@ export default async function phase5({ page, baseURL }) {
     estimated: document.querySelectorAll('[data-estimated]').length,
     partial: document.querySelectorAll('[data-partial]').length,
   }));
-  assert(dark.bg === 'rgb(16, 22, 31)', `dark background (${dark.bg})`);
+  assert(dark.bg === 'rgb(17, 25, 39)', `dark background is Radix blue 2 (${dark.bg})`);
   assert(['rgb(224, 174, 96)', 'rgb(151, 213, 251)', 'rgb(60, 196, 148)', 'rgb(228, 213, 12)', 'rgb(6, 152, 244)', 'rgb(227, 106, 28)', 'rgb(210, 127, 173)', 'rgb(70, 142, 140)'].includes(dark.fill), `dark river fill (${dark.fill})`);
   assert(dark.estimated > 0 && dark.partial === 1, 'estimated rule and partial marker present');
   await shoot(page, '05-dark-desktop', DESKTOP);

@@ -19,9 +19,19 @@ import { RiverChart } from './ui/RiverChart.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
 import { EMPTY, useRiverFocus } from './ui/useRiverFocus.ts';
 import { useMedia, useWidth } from './ui/useSize.ts';
+import { ThemeButton } from './ui/ThemeButton.tsx';
 import { Wordmark } from './ui/Wordmark.tsx';
 
 type Loaded = { id: string; aggregate: RepoAggregate } | { id: string; error: string };
+const SOURCE = 'https://github.com/geekplux/repo-rivers';
+const MADE = [
+  ['geekplux.com', 'https://geekplux.com'],
+  ['Vert', 'https://vert.geekplux.com'],
+  ['Explorable', 'https://explorable.geekplux.com'],
+  ['Pagelapse', 'https://pagelapse.geekplux.com'],
+  ['Reasontrail', 'https://reasontrail.geekplux.com'],
+  ['markvis', 'https://github.com/geekplux/markvis'],
+] as const;
 const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** Home/End scroll the mobile chart region to its ends (when the region itself has focus). */
@@ -77,7 +87,7 @@ export function App() {
   };
   const focus = useRiverFocus(layout, view?.rivers ?? [], current?.id ?? '');
   const title = repoName || (findSample(loaded?.id ?? '') ?? sample).title;
-  useEffect(() => void (document.title = `${title} · repo rivers`), [title]);
+  useEffect(() => void (document.title = `${title}, Repo Rivers`), [title]);
   const [status, setStatus] = useState(rs.status);
   if (status !== rs.status) {
     setStatus(rs.status);
@@ -120,12 +130,17 @@ export function App() {
     if (r && (r.top < 0 || r.bottom > innerHeight)) el!.scrollIntoView({ block: 'nearest', behavior: still ? 'instant' : 'smooth' });
   }, [era, mobile, still]);
   return (
-    <div className="rr-page">
+    <>
       <header className="rr-header">
-        <Wordmark />
-        <a href="https://github.com/geekplux/repo-rivers">GitHub</a>
+        <div className="rr-wrap">
+          <a className="rr-brand" href="/"><Wordmark /></a>
+          <nav className="rr-nav" aria-label="Site">
+            <a href={SOURCE}>Source</a>
+            <ThemeButton />
+          </nav>
+        </div>
       </header>
-      <main>
+      <main className="rr-wrap">
         <div className="rr-intro">
           <h1 className="rr-hero">See any GitHub repo’s history as rivers.</h1>
           <p className="rr-lede">Modules flow across time, widen when busy, and split or merge when code moves.</p>
@@ -140,7 +155,7 @@ export function App() {
             {agg && !busy && (
               <div className="rr-meta-row">
                 <p className="rr-meta">
-                  {repoName ? '' : `${agg.repo.owner}/${agg.repo.name} · `}{view?.metric} per {unit} · read {day.format(Date.parse(agg.generatedAt))}
+                  {repoName ? '' : `${agg.repo.owner}/${agg.repo.name}, `}{view?.metric} per {unit}, read {day.format(Date.parse(agg.generatedAt))}
                 </p>
                 <SourceNote source={agg.source} buckets={agg.time.starts.length} unit={unit ?? 'bucket'} />
               </div>
@@ -191,11 +206,21 @@ export function App() {
         </section>
       </main>
       <footer className="rr-footer">
-        Data from the GitHub API, sampled when a history is large. Built-in samples work offline, with no key.
-        {/* Matches DAILY_AI_CAP in wrangler.jsonc; the cap keeps a public demo from running up a Workers AI bill. */}
-        {' '}AI era names are capped site-wide each day; past the cap, eras get rule-based names.{' '}
-        <a href="https://github.com/geekplux/repo-rivers">Source</a>
+        <div className="rr-wrap">
+          <div>
+            <p>Data from the GitHub API, read without an account; large histories are sampled. The built-in samples work offline.</p>
+            {/* Matches DAILY_AI_CAP in wrangler.jsonc; the cap keeps a public demo from running up a Workers AI bill. */}
+            <p>AI era names are capped site-wide each day; past the cap, eras get rule-based names.</p>
+            <p>Open source under MIT. <a href={SOURCE}>Source on GitHub</a></p>
+          </div>
+          <div>
+            <p className="rr-made-by">Made by GeekPlux</p>
+            <ul className="rr-made">
+              {MADE.map(([name, href]) => <li key={href}><a href={href}>{name}</a></li>)}
+            </ul>
+          </div>
+        </div>
       </footer>
-    </div>
+    </>
   );
 }
