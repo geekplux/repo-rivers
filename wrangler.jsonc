@@ -24,12 +24,17 @@
   // Workers AI names eras (POST /api/eras). Local dev uses wrangler.dev.jsonc, which has no `ai` binding, so
   // `pnpm dev:worker` never contacts Cloudflare and the route answers with heuristic names.
   "ai": { "binding": "AI" },
+  // Site-wide cap on Workers AI calls per UTC day, counted in RIVERS_KV (worker/src/budget.ts). Past it, every
+  // visitor gets heuristic era names until midnight UTC. "0" switches AI naming off. Cache hits never count.
+  "vars": { "DAILY_AI_CAP": "200" },
   // Workers Logs for the deployed Worker (no effect locally).
   "observability": { "enabled": true },
   // PR Preview deployments (`wrangler preview`, run by Workers Builds on PRs). Previews inherit no bindings, so
   // this lists what Previews get. No RIVERS_KV on purpose: without it the Worker skips the cache (every request
   // is a miss, nothing is written), so a Preview never reads or writes production entries. Its own rate-limit
   // namespace (1102) keeps Preview traffic off production's counters. GITHUB_TOKEN is not shared either.
+  // Without RIVERS_KV there is nowhere to count the daily AI budget, so Previews always answer with heuristic
+  // era names: a public preview URL cannot spend Workers AI.
   "previews": {
     "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1102", "simple": { "limit": 20, "period": 60 } }],
     "ai": { "binding": "AI" }

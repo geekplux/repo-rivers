@@ -20,6 +20,7 @@
     }
   ],
   "ratelimits": [{ "name": "API_LIMIT", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } }],
+  "vars": { "DAILY_AI_CAP": "200" },
   "observability": { "enabled": true }
   // Optional secret: GITHUB_TOKEN in .dev.vars (never in this file).
 }

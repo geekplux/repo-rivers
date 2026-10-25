@@ -191,7 +191,9 @@ export function App() {
         </section>
       </main>
       <footer className="rr-footer">
-        Data from the GitHub API, sampled when a history is large. Built-in samples work offline, with no key.{' '}
+        Data from the GitHub API, sampled when a history is large. Built-in samples work offline, with no key.
+        {/* Matches DAILY_AI_CAP in wrangler.jsonc; the cap keeps a public demo from running up a Workers AI bill. */}
+        {' '}AI era names are capped site-wide each day; past the cap, eras get rule-based names.{' '}
         <a href="https://github.com/geekplux/repo-rivers">Source</a>
       </footer>
     </div>

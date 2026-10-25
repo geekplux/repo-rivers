@@ -5,6 +5,7 @@ interface __BaseEnv_Env {
 	RIVERS_KV: KVNamespace;
 	API_LIMIT: RateLimit;
 	AI: Ai;
+	DAILY_AI_CAP: "200";
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

@@ -4,6 +4,7 @@ import { heuristicEras } from '../../src/core/eras/heuristic.ts';
 import { ERA_MODEL } from '../../src/core/eras/prompt.ts';
 import { summarizeForEras, type EraSummary } from '../../src/core/eras/summary.ts';
 import { parseAggregate, type Era } from '../../src/core/schema.ts';
+import { budgetKey } from '../src/budget.ts';
 import { ERAS_TTL_SECONDS, erasKey, type AiRunner } from '../src/erasRoute.ts';
 import { handle, type WorkerEnv } from '../src/index.ts';
 
@@ -22,7 +23,7 @@ function fakeKv(initial: Record<string, string> = {}) {
 }
 const fakeAi = (answer: () => unknown) => ({ run: vi.fn<AiRunner['run']>(async () => answer()) });
 
-type TestEnv = { RIVERS_KV?: unknown; AI?: AiRunner };
+type TestEnv = { RIVERS_KV?: unknown; AI?: AiRunner; DAILY_AI_CAP?: string };
 const health = async (env: TestEnv) => (await handle(new Request('http://local/api/health'), env as WorkerEnv, { waitUntil: () => undefined })).json();
 
 async function post(env: TestEnv, body: unknown = { summary: SUMMARY }, method = 'POST') {
@@ -45,8 +46,10 @@ describe('POST /api/eras', () => {
     const [model, input] = ai.run.mock.calls[0]!;
     expect(model).toBe(ERA_MODEL);
     expect(input).toMatchObject({ max_tokens: 400, temperature: 0.2, response_format: { type: 'json_schema' } });
-    expect(kv.puts).toEqual([{ key: await erasKey(SUMMARY), value: JSON.stringify(first.body.eras), options: { expirationTtl: ERAS_TTL_SECONDS } }]);
-    expect(kv.puts[0]!.key).toMatch(/^eras:v1:[0-9a-f]{64}$/);
+    const eraPuts = kv.puts.filter((p) => p.key.startsWith('eras:'));
+    expect(eraPuts).toEqual([{ key: await erasKey(SUMMARY), value: JSON.stringify(first.body.eras), options: { expirationTtl: ERAS_TTL_SECONDS } }]);
+    expect(eraPuts[0]!.key).toMatch(/^eras:v1:[0-9a-f]{64}$/);
+    expect(kv.data.get(budgetKey(new Date()))).toBe('1');
 
     const again = await post({ RIVERS_KV: kv, AI: ai });
     expect(again.body).toEqual(first.body);
@@ -81,11 +84,31 @@ describe('POST /api/eras', () => {
     expect(kv.puts).toHaveLength(0);
   });
 
-  it('names with AI on every request without a RIVERS_KV binding (PR Previews)', async () => {
+  it('makes no AI call without a RIVERS_KV binding (PR Previews have nowhere to count the budget)', async () => {
     const ai = fakeAi(() => ({ response: { eras: names() } }));
-    expect((await post({ AI: ai })).body.source).toBe('ai');
-    expect((await post({ AI: ai })).body.source).toBe('ai');
-    expect(ai.run).toHaveBeenCalledTimes(2);
+    expect((await post({ AI: ai })).body).toEqual({ eras: heuristicEras(SUMMARY), source: 'heuristic' });
+    expect(ai.run).not.toHaveBeenCalled();
+  });
+
+  it('counts each successful AI call against the daily budget and stops at DAILY_AI_CAP', async () => {
+    const kv = fakeKv();
+    const ai = fakeAi(() => ({ response: { eras: names() } }));
+    const day = budgetKey(new Date());
+    expect((await post({ AI: ai, RIVERS_KV: kv, DAILY_AI_CAP: '1' })).body.source).toBe('ai');
+    expect(kv.data.get(day)).toBe('1');
+    // A different summary misses the cache, but today's budget is spent: heuristic names, no model call.
+    const other = { ...SUMMARY, repo: `${SUMMARY.repo}-fork` };
+    expect((await post({ AI: ai, RIVERS_KV: kv, DAILY_AI_CAP: '1' }, { summary: other })).body.source).toBe('heuristic');
+    expect(ai.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not spend budget on a failed AI call, and DAILY_AI_CAP "0" switches AI off', async () => {
+    const kv = fakeKv();
+    expect((await post({ AI: fakeAi(() => ({ response: 'not json' })), RIVERS_KV: kv })).body.source).toBe('heuristic');
+    expect(kv.data.get(budgetKey(new Date()))).toBeUndefined();
+    const ai = fakeAi(() => ({ response: { eras: names() } }));
+    expect((await post({ AI: ai, RIVERS_KV: kv, DAILY_AI_CAP: '0' })).body.source).toBe('heuristic');
+    expect(ai.run).not.toHaveBeenCalled();
   });
 
   it('a missing AI binding falls back to the heuristic (O3)', async () => {

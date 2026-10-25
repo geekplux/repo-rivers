@@ -3,6 +3,7 @@ import { ERA_MODEL, eraRequest } from '../../src/core/eras/prompt.ts';
 import type { EraSummary } from '../../src/core/eras/summary.ts';
 import { checkEras, parseEraSummary, parseNames } from '../../src/core/eras/validate.ts';
 import type { Era } from '../../src/core/schema.ts';
+import { dailyCap, takeBudget } from './budget.ts';
 import { json } from './http.ts';
 import type { KvStore } from './kv.ts';
 
@@ -12,10 +13,12 @@ export interface AiRunner {
 }
 
 /** Bindings the route needs; without `AI` every answer is the heuristic (O3); without `RIVERS_KV` (PR Previews)
- * nothing is cached. */
+ * nothing is cached and, since there is nowhere to count the daily budget, no AI call is made either. */
 export interface ErasEnv {
   RIVERS_KV?: KvStore;
   AI?: AiRunner;
+  /** Site-wide AI calls per UTC day (wrangler.jsonc `vars`); defaults to `DEFAULT_DAILY_AI_CAP` in budget.ts. */
+  DAILY_AI_CAP?: string;
 }
 
 /** AI names are immutable per summary; KV keeps them this long. */
@@ -42,8 +45,9 @@ async function nameWithAi(ai: AiRunner, summary: EraSummary): Promise<Era[] | nu
 
 /**
  * `POST /api/eras` with `{ summary }`: 400 unless the summary passes `parseEraSummary`. A KV hit answers with
- * no model call; otherwise one `env.AI.run` per new summary hash, cached for 90 days. Any failure, invalid
- * output or a missing binding answers `{ eras: heuristic, source: 'heuristic' }` (not cached).
+ * no model call; otherwise one `env.AI.run` per new summary hash, cached for 90 days, while today's site-wide
+ * budget lasts. Any failure, invalid output, a spent budget or a missing binding answers
+ * `{ eras: heuristic, source: 'heuristic' }` (not cached).
  */
 export async function erasRoute(request: Request, env: ErasEnv): Promise<Response> {
   let summary: EraSummary | null = null;
@@ -67,8 +71,10 @@ export async function erasRoute(request: Request, env: ErasEnv): Promise<Respons
       // corrupt entry: name again
     }
   }
-  const eras = env.AI ? await nameWithAi(env.AI, summary) : null;
+  const spend = env.AI ? await takeBudget(env.RIVERS_KV, dailyCap(env.DAILY_AI_CAP)) : null;
+  const eras = env.AI && spend ? await nameWithAi(env.AI, summary) : null;
   if (!eras) return json({ eras: heuristicEras(summary), source: 'heuristic' });
+  await spend?.();
   await env.RIVERS_KV?.put(key, JSON.stringify(eras), { expirationTtl: ERAS_TTL_SECONDS }).catch(() => console.error('KV write failed'));
   return json({ eras, source: 'ai' });
 }
