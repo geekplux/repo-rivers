@@ -40,8 +40,8 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
         aria-label={chartLabel(aggregate, view)} aria-describedby={describedBy} {...pointer}>
         <defs><Hatch id={`${id}h`} /></defs>
         {selected && <rect x={0} y={yOf(selected.start)} width={width} height={yOf(selected.end + 1) - yOf(selected.start)} className="rr-era-band" data-era-band={activeEra} />}
-        {guides.years.map((t) => <text key={t.text} x={0} y={t.y} className="rr-tick" data-year={t.text}>{t.text}</text>)}
         {guides.eras.map((g, i) => <line key={i} x1={0} x2={width} y1={g.y} y2={g.y} className="rr-rule" data-era-mark={i} />)}
+        {guides.years.map((t) => <text key={t.text} x={0} y={t.y} className="rr-tick rr-phone-year" data-year={t.text}>{t.text}</text>)}
         <g className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`}>
           <g transform={flipMatrix(flip)}>
             <Waters L={L} view={view} on={on} hatch={`${id}h`} />

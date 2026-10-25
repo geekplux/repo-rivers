@@ -58,7 +58,9 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-chart .rr-era-name { font-size: 16px; font-weight: 500; fill: var(--ink); }
 .rr-era-range, .rr-tick { fill: var(--muted); font-variant-numeric: lining-nums tabular-nums; }
 .rr-era-band { fill: var(--band); }
-/* Phone era names (DESIGN §5): 13/500 ink on a 6 px ground halo, right-aligned at the column's edge. */
+/* Phone (DESIGN §5): era names 13/500 ink on a 6 px ground halo, right-aligned at the column's edge; year labels
+   get a 4 px halo where an era rule crosses them. */
+.rr-chart .rr-phone-year { paint-order: stroke; stroke: var(--ground); stroke-width: 4px; stroke-linejoin: round; }
 .rr-chart .rr-phone-era { font-weight: 500; fill: var(--ink); paint-order: stroke; stroke: var(--ground); stroke-width: 6px; stroke-linejoin: round; }
 .rr-river { transition: opacity 250ms ease-out; }
 .rr-tone-0, .rr-river.rr-on:not(.rr-other) { fill: var(--water-a); }
