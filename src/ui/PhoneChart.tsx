@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, type MouseEvent } from 'react';
 import { PHONE, phoneGuides } from '../core/layout/guides.ts';
 import { flipMatrix, flipName, toPage, type Flip } from '../core/layout/transpose.ts';
 import { eraRange } from '../core/summary.ts';
-import { chartLabel, cls, EraButtons, Hatch, Names, useRenderedMark, Waters, type RiverChartProps } from './RiverChart.tsx';
+import { chartLabel, cls, Drawing, EraButtons, Hatch, Names, useChartMotion, useRenderedMark, Waters, type RiverChartProps } from './RiverChart.tsx';
 
 export interface PhoneChartProps extends Omit<RiverChartProps, 'interactive'> {
   /** The chart's width (the column's content width). */
@@ -18,11 +18,12 @@ export interface PhoneChartProps extends Omit<RiverChartProps, 'interactive'> {
  * run fits them, reading downward. The water is drawn in layout coordinates inside a transposing group; the
  * focus is a horizontal rule at the bucket and a dot on the river. Same `role="img"` and HTML layers as desktop.
  */
-export function PhoneChart({ aggregate, view, layout: L, width, flip, active, chart, svg, describedBy, eras = [], activeEra = null, onEra }: PhoneChartProps) {
+export function PhoneChart({ aggregate, view, layout: L, width, flip, active, chart, svg, describedBy, eras = [], activeEra = null, onEra, arrive, viewKey }: PhoneChartProps) {
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
   useRenderedMark(aggregate);
   const { river: on, bucket } = active;
+  const { svgRef, waterRef, eraRef, eraNameRef } = useChartMotion(arrive, on, true);
   const col = bucket === null ? undefined : L.columns[bucket];
   const shape = L.rivers.find((r) => r.id === on);
   const { left, right, top, bottom } = L.plot;
@@ -48,13 +49,13 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
   }, [ruleY]);
   return (
     <div className="rr-stack" style={{ width }}>
-      <svg data-testid="river-chart" data-phone width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rr-chart" role="img"
+      <svg ref={svgRef} data-testid="river-chart" data-phone width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rr-chart" role="img"
         aria-label={chartLabel(aggregate, view)} aria-describedby={describedBy} {...pointer}>
         <defs><Hatch id={`${id}h`} /></defs>
         {selected && <rect x={0} y={yOf(selected.start)} width={width} height={yOf(selected.end + 1) - yOf(selected.start)} className="rr-era-band" data-era-band={activeEra} />}
-        {guides.eras.map((g, i) => <line key={i} x1={0} x2={width} y1={g.y} y2={g.y} className="rr-rule" data-era-mark={i} />)}
+        <g ref={eraRef}>{guides.eras.map((g, i) => <line key={i} x1={0} x2={width} y1={g.y} y2={g.y} className="rr-rule" data-era-mark={i} />)}</g>
         {guides.years.map((t) => <text key={t.text} x={0} y={t.y} className="rr-tick rr-phone-year" data-year={t.text}>{t.text}</text>)}
-        <g className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`}>
+        <Drawing className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`} innerRef={waterRef} arrive={arrive} viewKey={viewKey}>
           <g transform={flipMatrix(flip)}>
             <Waters L={L} view={view} on={on} hatch={`${id}h`} />
             {L.estimated.map((e) => <line key={e.from} x1={e.x0} x2={e.x1} y1={axis} y2={axis} className="rr-estimated" data-estimated />)}
@@ -66,8 +67,8 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
             return <text key={index} x={px} y={py} className="rr-label rr-clip-label">{text.replace('↑', '←')}</text>;
           })}
           <Names L={L} names={L.labels.names.map((n) => flipName(flip, n))} on={on} />
-        </g>
-        {guides.eras.map((g, i) => <text key={i} x={width} y={g.nameY} textAnchor="end" className="rr-phone-era">{g.text}</text>)}
+        </Drawing>
+        <g ref={eraNameRef}>{guides.eras.map((g, i) => <text key={i} x={width} y={g.nameY} textAnchor="end" className="rr-phone-era">{g.text}</text>)}</g>
         {col && <line x1={0} x2={width} y1={flip.dy + col.x} y2={flip.dy + col.x} className="rr-cursor" data-cursor-line />}
         {dot && <circle cx={dot[0]} cy={dot[1]} r="4.5" className="rr-dot" data-cursor={bucket} />}
       </svg>

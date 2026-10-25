@@ -1,8 +1,75 @@
-// Phase 5: the river chart in the "survey map" identity (docs/PLAN.md phase 5, docs/viz/rivers.md S1–S7).
+// Phase 5: the river chart (docs/PLAN.md phase 5, docs/viz/rivers.md S1–S7), in the Cyanotype design and its motion
+// (docs/redesign/DESIGN.md §4–§6).
 import { DESKTOP, MOBILE, assert, shoot, shootCvd, tabTo } from '../lib.mjs';
 
 const CHART = '[data-testid="river-chart"]';
-const REVEAL_MS = 800;
+const REVEAL_MS = 1000; // the arrive reveal is 900 ms (DESIGN §6)
+
+/** Records every Web Animations call (id, duration, easing) in `window.rrAnimated`, from the first script on. */
+const recordAnimations = () => {
+  window.rrAnimated = [];
+  const animate = Element.prototype.animate;
+  Element.prototype.animate = function (frames, options) {
+    window.rrAnimated.push({ id: options?.id ?? '', ms: options?.duration, easing: options?.easing ?? 'linear' });
+    return animate.call(this, frames, options);
+  };
+};
+const animated = (page) => page.evaluate(() => window.rrAnimated.splice(0));
+const count = (log, id) => log.filter((a) => a.id === id).length;
+
+/**
+ * R7 / DESIGN §6: the arrive reveal (900 ms ease-out, with the era fade) runs once per load and again after a
+ * sample is chosen, never on a view switch (that crossfades in 250 ms), a theme switch, a resize or focus; focus
+ * runs the river's moved-files dashes forward once (600 ms), not again while moving between its quarters.
+ */
+async function expectMotion(page, baseURL) {
+  await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
+  let log = await animated(page);
+  assert(count(log, 'rr-arrive') === 1 && count(log, 'rr-arrive-eras') === 1, `the arrive reveal runs once on load (${JSON.stringify(log)})`);
+  const reveal = log.find((a) => a.id === 'rr-arrive');
+  assert(reveal.ms === 900 && reveal.easing === 'ease-out', `the reveal is 900 ms ease-out (${JSON.stringify(reveal)})`);
+  await page.waitForTimeout(REVEAL_MS);
+
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  await page.locator(`${CHART} path[data-river^="p:"]`).first().waitFor();
+  log = await animated(page);
+  assert(count(log, 'rr-arrive') === 0 && count(log, 'rr-crossfade-in') === 1 && log.filter((a) => a.id.startsWith('rr-crossfade')).every((a) => a.ms === 250),
+    `switching to Contributors crossfades in 250 ms, without the reveal (${JSON.stringify(log)})`);
+  await page.waitForTimeout(400);
+  assert((await page.locator('.rr-ghost').count()) === 0, 'the crossfade removes its fading copy');
+  await page.locator('.rr-seg label', { hasText: 'Modules' }).click();
+  await page.waitForTimeout(400);
+  const theme = page.locator('header .rr-icon');
+  await theme.click();
+  await theme.click();
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.setViewportSize(MOBILE);
+  await page.locator(`${CHART}[data-phone]`).waitFor();
+  await page.setViewportSize(DESKTOP);
+  await page.locator(`${CHART}:not([data-phone])`).waitFor();
+  await page.waitForTimeout(400);
+  log = await animated(page);
+  assert(count(log, 'rr-arrive') === 0 && log.every((a) => a.id.startsWith('rr-crossfade')), `theme switches and resizes never replay the reveal (${JSON.stringify(log)})`);
+
+  await page.locator('.rr-plot').focus(); // focus-in: the largest river, which moved files in (Svelte: packages)
+  await page.waitForTimeout(50);
+  log = await animated(page);
+  const dash = log.filter((a) => a.id === 'rr-dash');
+  assert(dash.length > 0 && dash.every((a) => a.ms === 600) && count(log, 'rr-arrive') === 0, `focus runs the river's dashes once, 600 ms (${JSON.stringify(log)})`);
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(50);
+  assert((await animated(page)).length === 0, 'moving between quarters of the same river runs nothing');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Vite' }).click();
+  await page.locator(`${CHART}[aria-label*="vitejs/vite"]`).waitFor({ state: 'visible' });
+  await page.waitForTimeout(50);
+  log = await animated(page);
+  assert(count(log, 'rr-arrive') === 1, `choosing a sample replays the reveal once (${JSON.stringify(log)})`);
+  await page.waitForTimeout(REVEAL_MS);
+}
 
 async function open(page, url, repo) {
   await page.goto(url, { waitUntil: 'load' });
@@ -61,10 +128,11 @@ export default async function phase5({ page, baseURL }) {
   const rendered = await page.evaluate(() => performance.getEntriesByName('rivers-rendered')[0]?.startTime);
   assert(rendered !== undefined && rendered < 1500, `rivers-rendered at ${rendered?.toFixed(0)} ms (< 1500)`);
   console.log(`  rivers-rendered at ${rendered.toFixed(0)} ms after navigation`);
-  const anim = await page.locator('.rr-reveal').evaluate((g) => getComputedStyle(g).animationName);
-  assert(anim === 'rr-reveal', `reveal animation runs with motion allowed (got ${anim})`);
   const fonts = await page.evaluate(async () => (await document.fonts.ready, [...document.fonts].filter((f) => f.family.includes('Alegreya Sans')).map((f) => f.status)));
   assert(fonts.includes('loaded'), `self-hosted Alegreya Sans loaded (${fonts})`);
+  await page.addInitScript(recordAnimations);
+  await expectMotion(page, baseURL);
+  await open(page, baseURL, 'vitejs/vite');
   await page.waitForTimeout(REVEAL_MS);
 
   // AC2 / S1 / S3: Vite labels and transfers; focus ring contrast on a chip (>= 3:1).
@@ -116,13 +184,23 @@ export default async function phase5({ page, baseURL }) {
   await shoot(page, '05-dark-desktop', DESKTOP);
   await page.emulateMedia({ colorScheme: 'light' });
 
-  // AC5 / S6: reduced motion draws everything on first paint.
+  // AC5 / S6 / DESIGN §6: reduced motion draws everything on first paint, and nothing animates: no reveal, no
+  // crossfade, no dash run, no fade.
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(baseURL, { waitUntil: 'commit' });
+  await page.goto(`${baseURL}?sample=svelte`, { waitUntil: 'commit' });
   await page.locator('path[data-river]').first().waitFor({ state: 'attached', timeout: 5000 });
   await page.waitForTimeout(50);
   const still = await page.locator('.rr-reveal').evaluate((g) => [getComputedStyle(g).animationName, getComputedStyle(g).clipPath]);
   assert(still[0] === 'none' && still[1] === 'none', `no reveal under reduced motion (${still})`);
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  await page.locator('.rr-seg label', { hasText: 'Modules' }).click();
+  await page.locator('.rr-plot').focus();
+  await page.keyboard.press('ArrowDown');
+  const quiet = await page.evaluate(() => ({ called: window.rrAnimated.splice(0), running: document.getAnimations().map((a) => a.id || a.animationName || a.transitionProperty) }));
+  assert(quiet.called.length === 0 && quiet.running.length === 0, `nothing animates under reduced motion (${JSON.stringify(quiet)})`);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await open(page, baseURL, 'vitejs/vite');
   await shoot(page, '06-reduced-motion-desktop', DESKTOP);
 
   // R6 / DESIGN §5: the phone chart runs down the page (time top to bottom), no horizontal scroll anywhere; names

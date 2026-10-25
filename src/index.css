@@ -24,7 +24,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-intro { padding-top: 104px; }
 .rr-hero { font: 500 56px/60px var(--rr-font); letter-spacing: -0.025em; margin: 0 0 0 -3px; max-width: 880px; text-wrap: balance; }
 .rr-hero i { font-weight: 400; }
-.rr-muted { color: var(--rr-ink-2); fill: var(--rr-ink-2); }
+.rr-muted { color: var(--muted); fill: var(--muted); }
 .rr-go { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 40px; }
 .rr-repo { display: contents; }
 .rr-repo input { box-sizing: border-box; width: 440px; height: 48px; padding: 0 16px; border: 0.5px solid var(--line); border-radius: 6px;
@@ -95,8 +95,9 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-focusing .rr-lab:not(.rr-on) .rr-on-water, .rr-focusing .rr-lab:not(.rr-on) .rr-label-muted { fill: var(--ink); }
 .rr-cursor { stroke: var(--ink); stroke-width: 0.5; pointer-events: none; }
 .rr-dot { fill: var(--ground); stroke: var(--ink); stroke-width: 1.5; }
-.rr-reveal { animation: rr-reveal 700ms var(--rr-ease) both; }
-@keyframes rr-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+/* Motion (DESIGN §6) runs from ui/motion.ts with the Web Animations API: the arrive reveal of .rr-reveal, the era
+   fade, the dash run and the crossfade, whose fading copy is .rr-ghost. Colours never transition (theme: instant). */
+.rr-ghost { pointer-events: none; }
 /* The keyboard target and the era buttons are HTML laid over the drawing (it is one role="img"). */
 .rr-plot { position: absolute; pointer-events: none; }
 .rr-eras { position: absolute; top: 0; left: 0; pointer-events: none; }
@@ -141,7 +142,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
 @media (hover: hover) {
   .rr-seg label:hover { color: var(--ink); }
 }
-.rr-empty { display: grid; place-items: center; min-height: 320px; margin: 0; color: var(--rr-ink-2); }
+.rr-empty { display: grid; place-items: center; min-height: 320px; margin: 0; color: var(--muted); }
 /* Rivers and Eras (DESIGN §3): 144 below, a 280 | 920 grid; h2 on the baseline of the table head / first row. */
 .rr-sec { display: grid; grid-template-columns: 280px minmax(0, 920px); align-items: start; margin-top: 144px; }
 .rr-sec h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
@@ -194,7 +195,8 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
 .rr-progress-line { font-variant-numeric: lining-nums tabular-nums; }
 .rr-bar svg { display: block; }
 .rr-bar-track { stroke: var(--line); stroke-width: 0.5; }
-.rr-bar-fill { stroke: var(--ink); stroke-width: 2; }
+/* While a repo loads the line fills left to right with its progress (DESIGN §6): a scale, eased, never a colour. */
+.rr-bar-fill { stroke: var(--ink); stroke-width: 2; transform-origin: 0 0; transition: transform 250ms ease-out; }
 .rr-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
 .rr-progress .rr-actions { margin-top: 16px; }
 .rr-state button { height: 44px; padding: 0 16px; border: 0.5px solid var(--line); border-radius: 6px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
@@ -215,7 +217,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
 .rr-popover ul { margin: 0; padding-left: 18px; }
 .rr-notice { margin: 0 0 16px; padding: 12px 16px; border: 0.5px solid var(--line); border-radius: 6px; font-size: 13px; line-height: 20px; }
 .rr-card h2:focus { outline: none; }
-.rr-card h2:focus-visible { outline: 2px solid var(--rr-focus); }
+.rr-card h2:focus-visible { outline: 2px solid var(--focus); }
 /* Footer (DESIGN §3): a 0.5 rule across the page, then 520 | 680 columns of 13/20 muted text. */
 .rr-footer { margin-top: 160px; border-top: 0.5px solid var(--line); padding: 32px 0 56px; font-size: 13px; line-height: 20px; color: var(--muted); }
 .rr-footer .rr-wrap { display: grid; grid-template-columns: 13fr 17fr; }
@@ -232,7 +234,8 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-nav a { padding: 0 8px; }
   .rr-made { gap: 8px 16px; margin-top: 6px; }
   .rr-footer .rr-wrap { display: block; }
-  .rr-footer .rr-wrap > div + div { margin-top: 24px; }
+  /* V2Phone: "Made by GeekPlux" follows the last paragraph's 6 px. */
+  .rr-footer .rr-wrap > div + div { margin-top: 0; }
   .rr-intro { padding-top: 40px; }
   .rr-hero { font-size: 32px; line-height: 36px; }
   .rr-go { gap: 8px; margin-top: 24px; }

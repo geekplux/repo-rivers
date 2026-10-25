@@ -16,6 +16,7 @@ import { ErrorState } from './ui/states/ErrorState.tsx';
 import { errorCopy, loadingLine, type ErrorAction } from './ui/states/copy.ts';
 import { useEras } from './ui/useEras.ts';
 import { useRepo } from './ui/useRepo.ts';
+import { arriveKey, viewKey } from './ui/motion.ts';
 import { Legend, Readout } from './ui/Readout.tsx';
 import { PhoneChart } from './ui/PhoneChart.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
@@ -42,6 +43,9 @@ export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [options, setOptions] = useState<ControlValue>({ dimension: 'modules', depth: 'auto', includeBots: false });
   const [switched, setSwitched] = useState(false);
+  // Bumped each time data arrives (a sample loaded, a repo drawn, a sample reopened after an error): with the
+  // source it keys the arrive reveal (DESIGN §6), which a view switch, the theme, a resize or focus never replay.
+  const [arrivals, setArrivals] = useState(0);
   const [frame, width] = useWidth<HTMLDivElement>();
   const mobile = useMedia('(max-width: 640px)');
   const measure = useNameMeasure();
@@ -54,7 +58,7 @@ export function App() {
   useEffect(() => {
     let live = true;
     sample.load().then(
-      (aggregate) => live && setLoaded({ id: sample.id, aggregate }),
+      (aggregate) => live && (setLoaded({ id: sample.id, aggregate }), setArrivals((n) => n + 1)),
       (e: unknown) => live && setLoaded({ id: sample.id, error: e instanceof Error ? e.message : String(e) }),
     );
     return () => void (live = false);
@@ -99,7 +103,10 @@ export function App() {
   const [status, setStatus] = useState(rs.status);
   if (status !== rs.status) {
     setStatus(rs.status);
-    if (rs.status === 'done') setSwitched(true); // "Showing …" until the first movement
+    if (rs.status === 'done') {
+      setSwitched(true); // "Showing …" until the first movement
+      setArrivals((n) => n + 1);
+    }
   }
   const shownStatus = useRef(rs.status);
   useEffect(() => {
@@ -113,7 +120,7 @@ export function App() {
     if (rs.status !== 'error') return;
     setActed(true);
     if (a === 'edit') return document.getElementById(REPO_INPUT_ID)?.focus();
-    if (a === 'sample') return (repo.clear(), setActed(true), select(sample.id));
+    if (a === 'sample') return (repo.clear(), setActed(true), setArrivals((n) => n + 1), select(sample.id));
     repo.load(rs.ref, { browser: a === 'browser' });
   };
 
@@ -136,6 +143,7 @@ export function App() {
   const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;
   const drawn = !busy && agg && view && layout && view.rivers.length > 0;
+  const motion = { arrive: arriveKey(current?.id ?? '', arrivals), viewKey: viewKey(options) };
   // Phone: while a river (or an era) is pinned or has keyboard focus, the readout docks to the bottom of the viewport
   // (DESIGN §5); a plain hover never docks it.
   const docked = Boolean(mobile && drawn && ((eraOn && eraHeld) || focus.held));
@@ -177,10 +185,10 @@ export function App() {
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {drawn && (flip ? (
               <PhoneChart aggregate={agg} view={view} layout={layout} width={width} flip={flip} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
-                eras={eras} activeEra={era} onEra={onEra} />
+                eras={eras} activeEra={era} onEra={onEra} {...motion} />
             ) : (
               <RiverChart aggregate={agg} view={view} layout={layout} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
-                eras={eras} activeEra={era} onEra={onEra} />
+                eras={eras} activeEra={era} onEra={onEra} {...motion} />
             ))}
             {!busy && view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
+import { Component, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { AXIS_ROOM, ERA_BAND, eraMarks, yearTicks } from '../core/layout/guides.ts';
 import type { RiverLayout } from '../core/layout/layout.ts';
 import type { RiverName } from '../core/layout/riverNames.ts';
@@ -6,6 +6,7 @@ import { link } from '../core/layout/ribbons.ts';
 import type { Era, RepoAggregate } from '../core/schema.ts';
 import { eraNote } from '../core/summary.ts';
 import type { RiverView } from '../core/view.ts';
+import { arrivals, crossfades, playArrive, playCrossfade, reducedMotion, runDashes, runsDashes } from './motion.ts';
 import { floatLabel } from './overlays.ts';
 import type { FocusState } from './useRiverFocus.ts';
 
@@ -31,6 +32,13 @@ export interface RiverChartProps {
   activeEra?: number | null;
   /** Hover or focus of an era button (or null when it ends); `held` when it is keyboard focus, not a plain hover. */
   onEra?: (era: number | null, held: boolean) => void;
+  /**
+   * The arrival this drawing belongs to (`arriveKey`): a new key plays the arrive reveal once (DESIGN §6). Left out,
+   * nothing moves (the social card).
+   */
+  arrive?: string;
+  /** The view (`viewKey`): a change within the same arrival crossfades the drawing. */
+  viewKey?: string;
   /**
    * `false` draws a static picture (the `?embed=social` card): no tab stops and no pointer or key handlers.
    * Default `true`.
@@ -59,6 +67,55 @@ export function useRenderedMark(aggregate: RepoAggregate): void {
       clearTimeout(timer);
     };
   }, [aggregate]);
+}
+
+/**
+ * The drawing's water and names group (`.rr-reveal`). A view switch within one arrival crossfades it: a copy of the
+ * group as it was, taken just before React changes it (`getSnapshotBeforeUpdate`), fades out over the new one.
+ */
+export class Drawing extends Component<{ className: string; arrive?: string; viewKey?: string; innerRef: RefObject<SVGGElement | null>; children: ReactNode }> {
+  private clear: (() => void) | undefined;
+
+  getSnapshotBeforeUpdate(prev: Drawing['props']): Element | null {
+    const g = this.props.innerRef.current;
+    if (!g || !crossfades({ arrive: prev.arrive, view: prev.viewKey }, { arrive: this.props.arrive, view: this.props.viewKey }) || reducedMotion()) return null;
+    return g.cloneNode(true) as Element;
+  }
+
+  componentDidUpdate(_: unknown, __: unknown, ghost: Element | null): void {
+    const g = this.props.innerRef.current;
+    if (!ghost || !g) return;
+    this.clear?.();
+    this.clear = playCrossfade(g, ghost);
+  }
+
+  componentWillUnmount(): void {
+    this.clear?.();
+  }
+
+  render() {
+    return <g ref={this.props.innerRef} className={this.props.className}>{this.props.children}</g>;
+  }
+}
+
+/**
+ * The arrive reveal (once per arrival, after the drawing and its era marks are attached) and the dash run when
+ * focus moves onto a river. Both do nothing under reduced motion.
+ */
+export function useChartMotion(arrive: string | undefined, on: string | null, phone: boolean) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const waterRef = useRef<SVGGElement>(null);
+  const eraRef = useRef<SVGGElement>(null);
+  const eraNameRef = useRef<SVGGElement>(null);
+  useLayoutEffect(() => {
+    if (arrivals.claim(arrive)) playArrive(waterRef.current, [eraRef.current, eraNameRef.current], phone);
+  }, [arrive, phone]);
+  const was = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (runsDashes(was.current, on)) runDashes(svgRef.current);
+    was.current = on;
+  }, [on]);
+  return { svgRef, waterRef, eraRef, eraNameRef };
 }
 
 /**
@@ -129,12 +186,13 @@ export function Hatch({ id }: { id: string }) {
  * target (`role="application"`) and the era buttons are HTML siblings laid over it, so no focusable element sits
  * inside the image.
  */
-export function RiverChart({ aggregate, view, layout: L, active, chart, svg, describedBy, eras = [], activeEra = null, onEra, interactive = true }: RiverChartProps) {
+export function RiverChart({ aggregate, view, layout: L, active, chart, svg, describedBy, eras = [], activeEra = null, onEra, interactive = true, arrive, viewKey }: RiverChartProps) {
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
   useRenderedMark(aggregate);
 
   const { river: on, bucket } = active;
+  const { svgRef, waterRef, eraRef } = useChartMotion(arrive, on, false);
   const col = bucket === null ? undefined : L.columns[bucket];
 
   const { repo, time } = aggregate;
@@ -153,12 +211,12 @@ export function RiverChart({ aggregate, view, layout: L, active, chart, svg, des
   const pointer = svg && { ...svg, onClick: (e: MouseEvent<Element>) => (ref.current?.focus({ preventScroll: true, focusVisible: false }), svg.onClick(e)) };
   return (
     <div className="rr-stack" style={{ width: L.width }}>
-      <svg data-testid="river-chart" data-static={!interactive || undefined} width={L.width} height={height} viewBox={`0 0 ${L.width} ${height}`}
+      <svg ref={svgRef} data-testid="river-chart" data-static={!interactive || undefined} width={L.width} height={height} viewBox={`0 0 ${L.width} ${height}`}
         className="rr-chart" role="img" aria-label={chartLabel(aggregate, view)} aria-describedby={describedBy} {...(interactive ? pointer : {})}>
         <defs><Hatch id={`${id}h`} /></defs>
         {selected && <rect x={selected.x0} y={8} width={selected.x1 - selected.x0} height={axisY - 8} className="rr-era-band" data-era-band={activeEra} />}
         {banded && (
-          <g className="rr-era-marks">
+          <g ref={eraRef} className="rr-era-marks">
             {marks.map((m, i) => (
               <g key={eras[i]!.start} data-era-mark={i}>
                 <line x1={m.x0} x2={m.x0} y1={ERA_BAND - 8} y2={axisY} className="rr-rule" />
@@ -170,11 +228,11 @@ export function RiverChart({ aggregate, view, layout: L, active, chart, svg, des
             ))}
           </g>
         )}
-        <g className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`}>
+        <Drawing className={cls('rr-reveal', on !== null && 'rr-focusing')} key={`${repo.owner}/${repo.name}`} innerRef={waterRef} arrive={arrive} viewKey={viewKey}>
           <Waters L={L} view={view} on={on} hatch={`${id}h`} />
           {L.clipped.map(({ index, box, text }) => <text key={index} x={box.x} y={box.y + 7} className="rr-label rr-clip-label">{text}</text>)}
           <Names L={L} names={L.labels.names} on={on} />
-        </g>
+        </Drawing>
         {col && <line x1={col.x} x2={col.x} y1={ruleTop} y2={axisY} className="rr-cursor" data-cursor-line />}
         {col && shape && bucket !== null && (
           <circle cx={col.x} cy={(shape.edges.top[bucket]! + shape.edges.bottom[bucket]!) / 2} r="4.5" className="rr-dot" data-cursor={bucket} />
