@@ -21,5 +21,6 @@ All notable changes to this project are documented here. The format is based on 
 
 ### Changed
 - Redesign "Cyanotype", foundation: Radix blue and slate colours in light and dark, a header button that switches the theme and remembers the choice, Alegreya Sans (self-hosted) in place of Fraunces, the confluence logo and favicon, and a new header and footer.
+- Redesign "Cyanotype", hero and chart head: the headline "A repository’s history, drawn as rivers" with one row of field, Draw and the samples sentence; the chart head names the repository as owner/name with a meta line (measure, unit and span) and an "Estimated from n of m commits" button that opens the source notes; Folder depth or Include bots and the Modules | Contributors control sit at the head's right, replacing "More options"; loading and error panels are restyled, the loading copy drops the middle dot, and error copy writes the name as Repo Rivers.
 - GitHub's hourly API limit now reaches the browser as its own error code (`github_rate_limited`), separate from this site's per-IP limit (`too_many_requests`), and the UI explains each one plainly, with GitHub's reset time when it is known.
 - The rate-limit binding uses its own namespace id (`1002`), so it no longer shares a counter with other Workers on the account.
