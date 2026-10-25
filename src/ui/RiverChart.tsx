@@ -149,7 +149,7 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
             // Names inside a river are on water; "other" (hatched), mouth and peak names are ink with a ground halo.
             const water = (n.kind === 'course' || n.kind === 'level') && L.rivers.find((x) => x.id === n.id)?.kind !== 'other';
             return (
-              <g key={n.id} className={cls('rr-lab', n.id === on && 'rr-on')} data-name={n.kind}>
+              <g key={`${n.id}@${n.x},${n.y}`} className={cls('rr-lab', n.id === on && 'rr-on')} data-name={n.kind}>
                 {n.leader && <path d={n.leader} className="rr-leader" />}
                 <text x={n.x} y={n.y} textAnchor={n.anchor === 'middle' ? 'middle' : undefined} transform={n.angle ? `rotate(${n.angle.toFixed(1)} ${n.x} ${n.y})` : undefined}
                   className={cls('rr-label', water && 'rr-on-water', n.kind === 'peak' && 'rr-peak')} data-label-for={n.id}>{label(n.id, n.text)}</text>

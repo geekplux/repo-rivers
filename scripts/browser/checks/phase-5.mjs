@@ -141,5 +141,15 @@ export default async function phase5({ page, baseURL }) {
   }
   await tabTo(page, '[role="region"]');
   await shoot(page, '02-vite-mobile', MOBILE);
+  // R4 review: switching dimension on the phone leaves no name behind (every name belongs to a drawn river).
+  await open(page, `${baseURL}?sample=express`, 'expressjs/express');
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  await page.locator(`${CHART} path[data-river^="p:"]`).first().waitFor();
+  const stale = await page.evaluate((sel) => {
+    const svg = document.querySelector(sel);
+    const rivers = new Set([...svg.querySelectorAll('path[data-river]')].map((p) => p.dataset.river));
+    return [...svg.querySelectorAll('[data-label-for]')].map((t) => t.dataset.labelFor).filter((id) => !rivers.has(id));
+  }, CHART);
+  assert(stale.length === 0, `mobile Express contributors: every name has its river (stale ${stale.join(', ')})`);
   await page.setViewportSize(DESKTOP);
 }

@@ -66,6 +66,17 @@ describe('placeRiverNames', () => {
     expect(placeRiverNames({ ...base, rivers: [river('top', () => 6, (i) => (i < 20 ? 4 : 0))] }).dropped).toEqual(['top']);
   });
 
+  it('keeps names clear of obstacles: a covered course goes level, a covered peak is dropped', () => {
+    const r = river('packages/vite', (i) => 100 + 2 * i, () => 40);
+    const free = name({ ...base, rivers: [r] }, 'packages/vite')!;
+    const pushed = name({ ...base, obstacles: [free.box], rivers: [r] }, 'packages/vite')!;
+    expect(pushed.kind).toBe('level');
+    expect(pushed.box.x > free.box.x + free.box.width || pushed.box.x + pushed.box.width < free.box.x).toBe(true);
+    const ended = river('docs', () => 300, (i) => (i < 20 ? 3 + (i === 10 ? 4 : 0) : 0));
+    const peak = name({ ...base, rivers: [ended] }, 'docs')!;
+    expect(placeRiverNames({ ...base, obstacles: [{ x: peak.x - 2, y: peak.y - 2, width: 4, height: 4 }], rivers: [ended] }).dropped).toEqual(['docs']);
+  });
+
   it('keeps names inside a river clear of transfers', () => {
     const r = river('packages/vite', (i) => 100 + 2 * i, () => 40);
     const free = name({ ...base, rivers: [r] }, 'packages/vite')!;
