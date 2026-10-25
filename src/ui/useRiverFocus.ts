@@ -47,6 +47,15 @@ export function stepFocus(s: FocusState, key: string, lanes: readonly string[], 
 }
 
 /**
+ * A river picked outside the chart (a row of the Rivers table): pins it at the current bucket, or at its peak when
+ * nothing is focused; picking the pinned river again clears, as a click on a pinned river does in the chart.
+ */
+export function pickRiver(s: FocusState, river: Pick<River, 'id' | 'values' | 'peak'>): FocusState {
+  if (s.pinned && s.river === river.id) return EMPTY;
+  return { river: river.id, bucket: s.bucket ?? river.values.indexOf(river.peak), pinned: true };
+}
+
+/**
  * Pointer → `{river, bucket}` in chart CSS px: the bucket under x, and the band under y using the interpolated
  * edges at x (bands thinner than 8 px get an 8 px zone; nearest centre wins). Null outside the plot's x-range.
  */
@@ -114,5 +123,10 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
       else setState({ ...hit, pinned: true });
     },
   };
-  return { active, chart, svg };
+  /** The Rivers table: a row picks its river (Enter, Space or a click); Escape there clears. */
+  const table = {
+    pick: (r: Pick<River, 'id' | 'values' | 'peak'>) => (setHover(null), setState(pickRiver(active, r))),
+    clear: () => (setHover(null), setState(EMPTY)),
+  };
+  return { active, chart, svg, table };
 }

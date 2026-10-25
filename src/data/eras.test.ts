@@ -7,7 +7,7 @@ import { parseAggregate, type Era } from '../core/schema.ts';
 import { describeEras, eraLine } from '../core/summary.ts';
 import { selectView } from '../core/view.ts';
 import svelte from '../samples/svelte.json';
-import { DataTable } from '../ui/DataTable.tsx';
+import { EraList } from '../ui/EraList.tsx';
 import { requestEras } from './eras.ts';
 
 const AGG = parseAggregate(svelte);
@@ -48,13 +48,12 @@ describe('era text', () => {
     expect(describeEras(VIEW, [])).toBe('');
   });
 
-  it('the table has an era footer row spanning each era’s buckets', () => {
-    const html = renderToStaticMarkup(createElement(DataTable, { view: VIEW, caption: 'c', eras: AI }));
-    const foot = html.match(/<tfoot>(.*)<\/tfoot>/)![1]!;
-    expect(foot).toContain('<th scope="row">Era</th>');
-    const spans = [...foot.matchAll(/colSpan="(\d+)"[^>]*>([^<]*)</gi)].map((m) => [Number(m[1]), m[2]]);
-    expect(spans).toEqual(AI.map((e) => [e.end - e.start + 1, `${e.title} (named by AI)`]));
-    expect(foot).toMatch(/<\/td><td><\/td><\/tr>$/); // the row covers the Total column
-    expect(renderToStaticMarkup(createElement(DataTable, { view: VIEW, caption: 'c' }))).not.toContain('<tfoot>');
+  it('the Eras list shows every era, AI or rule-based, and nothing without eras', () => {
+    const items = (eras: Era[]) => [...renderToStaticMarkup(createElement(EraList, { eras, buckets: VIEW.buckets })).matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1]!.split(/<[^>]+>/).filter(Boolean));
+    expect(items(AI)).toEqual(AI.map((e, i) => [`${VIEW.buckets[e.start]!.label} to ${VIEW.buckets[e.end]!.label}`, `Named ${i}`, ', named by AI', `Note ${i}.`]));
+    const rules = heuristicEras(SUMMARY);
+    expect(items(rules).map((t) => t[1])).toEqual(rules.map((e) => e.title));
+    expect(items(rules).flat().join()).not.toMatch(/AI/);
+    expect(renderToStaticMarkup(createElement(EraList, { eras: [], buckets: VIEW.buckets }))).toBe('');
   });
 });

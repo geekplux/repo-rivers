@@ -46,7 +46,7 @@ More detail: [docs/EXTENDING.md](docs/EXTENDING.md) (public API, adapters, themi
 - Meaning never relies on colour alone: rivers have direct labels and a stable order, "other" is hatched, transfers are dashed with arrowheads.
 - The palette is based on Okabe-Ito and is tested in code: every pair of colours stays distinguishable (CIEDE2000 ΔE ≥ 8) under protanopia, deuteranopia and tritanopia simulation, in light and dark themes.
 - The chart is keyboard-operable: arrow keys move between rivers and time buckets, Home/End jump to the ends, Enter pins and Escape clears.
-- Screen readers get a prose summary, a live readout of the focused river, and a "View as table" data table.
+- Screen readers get a prose summary, a live readout of the focused river, and the Rivers table: every river with its total, share and active years.
 - `prefers-reduced-motion` turns off every animation. The browser checks run axe on the sample, loading and error states.
 
 Found a barrier? Please [open an issue](https://github.com/geekplux/repo-rivers/issues/new/choose).

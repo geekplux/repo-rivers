@@ -6,7 +6,7 @@ import { caveats, describeEras, describeView, eraLine, focusReadout, idleReadout
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
 import { Controls, type ControlValue } from './ui/Controls.tsx';
-import { DataTable } from './ui/DataTable.tsx';
+import { EraList } from './ui/EraList.tsx';
 import { Progress } from './ui/Progress.tsx';
 import { REPO_INPUT_ID, RepoInput } from './ui/RepoInput.tsx';
 import { metaLine } from './ui/headMeta.ts';
@@ -17,6 +17,7 @@ import { useEras } from './ui/useEras.ts';
 import { useRepo } from './ui/useRepo.ts';
 import { Legend, Readout } from './ui/Readout.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
+import { RiverIndex } from './ui/RiverIndex.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
 import { EMPTY, useRiverFocus } from './ui/useRiverFocus.ts';
 import { useMedia, useNameMeasure, useWidth } from './ui/useSize.ts';
@@ -116,6 +117,7 @@ export function App() {
 
   const notes = agg && view && caveats(agg, view, layout?.clipped);
   const { active } = focus;
+  const shown = eraOn && !active.pinned ? EMPTY : active; // an era in focus wins over a hovered river
   const moved = active.bucket !== null && (rs.status === 'done' || loaded?.id === sample.id);
   if (moved && !acted) setActed(true);
   if (moved && switched) setSwitched(false); // "Showing …" only until the first movement in the new chart
@@ -179,7 +181,7 @@ export function App() {
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {drawn && (
-              <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={eraOn && !active.pinned ? EMPTY : active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
+              <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
                 eras={eras} activeEra={era} onEra={setEra} />
             )}
             {!busy && view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
@@ -193,17 +195,15 @@ export function App() {
               })} />
             )}
           </div>
-          {!busy && agg && view && notes && (
-            <div className="rr-more">
-              {/* Closed by default; the chart's aria-describedby still reads the summary (hidden text counts for descriptions). */}
-              <details className="rr-describe">
-                <summary>Read as text</summary>
-                <p id={summaryId} className="rr-summary">{describeView(agg, view, notes)} {describeEras(view, eras)}</p>
-              </details>
-              <DataTable view={view} eras={eras} caption={`${view.metric} per ${unit} in ${agg.repo.owner}/${agg.repo.name}; rows are rivers, columns are ${unit}s`} />
-            </div>
-          )}
+          {/* Never shown: the chart's aria-describedby reads it (hidden text counts for descriptions). */}
+          {!busy && agg && view && notes && <p id={summaryId} className="rr-summary" hidden>{describeView(agg, view, notes)} {describeEras(view, eras)}</p>}
         </section>
+        {drawn && unit && (
+          <>
+            <RiverIndex view={view} unit={unit} repo={heading} active={shown.river} pinned={shown.pinned} onPick={focus.table.pick} onClear={focus.table.clear} />
+            <EraList eras={eras} buckets={view.buckets} />
+          </>
+        )}
       </main>
       <footer className="rr-footer">
         <div className="rr-wrap">

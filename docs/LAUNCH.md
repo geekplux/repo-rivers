@@ -46,7 +46,7 @@ A developer joins a project built on Svelte and wants a mental map of the reposi
 1. Open `https://reporivers.geekplux.com?sample=svelte`.
 2. The chart shows `src` and `test` until 2023, then `packages`. The bracket *The move to packages* and the dashed arrows explain why old blog posts and issues point to paths that no longer exist.
 3. Tab into the chart and press the arrow keys: the readout gives lines changed and the share of each quarter, so the busiest folders of the last year are clear.
-4. Switch to **Contributors** to see who has been active recently, and open **View as table** to copy the numbers.
+4. Switch to **Contributors** to see who has been active recently, and read the **Rivers** table under the chart for each one’s total, share and active years.
 
 Takeaway in under a minute: where the code lives now, when it moved, and who to ask.
 

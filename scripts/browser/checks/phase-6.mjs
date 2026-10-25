@@ -1,5 +1,9 @@
 // Phase 6: interaction and accessibility (docs/PLAN.md phase 6, docs/viz/rivers.md §6 and S8).
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { DESKTOP, MOBILE, assert, runAxe, shoot, shootCvd, tabTo } from '../lib.mjs';
+import { parseAggregate } from '../../../src/core/schema.ts';
+import { selectView } from '../../../src/core/view.ts';
 
 const CHART = '[data-testid="river-chart"]';
 const PLOT = '[aria-roledescription="river chart"]';
@@ -45,12 +49,14 @@ const emptyPoint = (page) => page.evaluate(([sel, plot]) => {
   return null;
 }, [CHART, PLOT]);
 
-/** The view-model value for `river` (row header) and bucket column `bucket`, read from the data table. */
-const tableValue = (page, label, bucket) => page.evaluate(([l, b]) => {
-  const row = [...document.querySelectorAll('.rr-table tbody tr')].find((tr) => tr.querySelector('th').textContent === l);
-  return row ? row.querySelectorAll('td')[b].textContent : null;
-}, [label, bucket]);
-const bucketLabel = (page, b) => page.evaluate((i) => document.querySelectorAll('.rr-table thead th')[i + 1].textContent, b);
+/** The Vite sample's modules view (the page's default): the readout's numbers must equal it. */
+const VITE = selectView(parseAggregate(JSON.parse(readFileSync(join(import.meta.dirname, '../../../src/samples/vite.json'), 'utf8'))), { dimension: 'modules' });
+/** The view-model value for river `label` in bucket `bucket`, formatted as the readout writes it. */
+const tableValue = (label, bucket) => {
+  const r = VITE.rivers.find((x) => x.label === label);
+  return r ? new Intl.NumberFormat('en').format(r.values[bucket]) : null;
+};
+const bucketLabel = (b) => VITE.buckets[b].label;
 
 const lum = (rgb) => rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
 const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].toSorted((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
@@ -80,12 +86,12 @@ async function expectHighlight(page, id) {
   return s;
 }
 
-/** S8 / DESIGN §4: `name, Q2 2023: 7,732 lines changed, 21% of the quarter.`, numbers equal to the view model (the table). */
+/** S8 / DESIGN §4: `name, Q2 2023: 7,732 lines changed, 21% of the quarter.`, numbers equal to the view model. */
 async function expectReadout(page, label, bucket, unit) {
   const text = await readout(page);
   const [, name, b, value, share] = text.match(/^(.+?), (.+?): (no [^.]+|[\d,]+ [^,]+)(?:, (<1|\d+)% of the \w+)?\./) ?? [];
-  const expected = await tableValue(page, label, bucket);
-  assert(name === label && b === (await bucketLabel(page, bucket)), `readout names ${label} at ${b} (${text})`);
+  const expected = tableValue(label, bucket);
+  assert(name === label && b === bucketLabel(bucket), `readout names ${label} at ${b} (${text})`);
   assert(expected === '0' ? value.startsWith('no ') : value.startsWith(`${expected} `), `readout value equals the view model (${value} vs ${expected})`);
   assert(expected === '0' || (share !== undefined && text.includes(`% of the ${unit}.`)), `readout share (${share})`);
   return text;
@@ -167,7 +173,7 @@ export default async function phase6({ page, baseURL }) {
   await page.keyboard.press('ArrowLeft');
   assert((await state(page)).bucket === '25', 'Left moves back one bucket');
   const lanes = await page.evaluate(() => [...document.querySelectorAll('path[data-river]')].map((p) => p.dataset.river));
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.rr-table tbody th')].map((th) => th.textContent));
+  const rows = await page.evaluate(() => [...document.querySelectorAll('.rr-index tbody th')].map((th) => th.textContent));
   for (let i = 0; i < lanes.length; i++) await page.keyboard.press('ArrowUp');
   const named = [];
   for (let i = 0; i < lanes.length; i++) {
@@ -219,7 +225,7 @@ export default async function phase6({ page, baseURL }) {
   await bot.waitFor();
   const dots = await bot.evaluate((p) => [getComputedStyle(p).strokeDasharray, getComputedStyle(p).stroke]);
   assert(dots[0] !== 'none' && dots[1] !== 'none', `bot river has a dotted outline (${dots})`);
-  const botRows = await page.evaluate(() => [...document.querySelectorAll('.rr-table tbody th')].map((th) => th.textContent.trim()));
+  const botRows = await page.evaluate(() => [...document.querySelectorAll('.rr-index tbody th')].map((th) => th.textContent.trim()));
   assert(botRows.some((t) => /\[bot\]$/i.test(t)) && !botRows.some((t) => /\[bot\]\s+bot$/i.test(t)), `bot rows say bot once (${botRows.filter((t) => /bot/i.test(t))})`);
   assert((await page.locator('.rr-legend').innerText()).includes('bot'), 'the legend explains the dotted outline');
   await runAxe(page, 'contributors with bots');
@@ -250,15 +256,40 @@ export default async function phase6({ page, baseURL }) {
   await frameCard(page);
   await shoot(page, '05-depth2-desktop', DESKTOP);
 
-  // AC5/A4: the table, opened, with caption and scoped headers.
-  await page.locator('.rr-table summary').click();
-  assert(await page.locator('.rr-table caption').isVisible(), 'table caption visible');
-  assert((await page.locator('.rr-table tbody th[scope="row"]').count()) === (await page.locator('path[data-river]').count()), 'one table row per river');
-  await runAxe(page, 'express depth 2, table open');
-  await page.evaluate(() => scrollTo(0, document.querySelector('.rr-legend').getBoundingClientRect().top + scrollY - 8));
+  // AC5/A4 (redesign R5): the Rivers table replaces "View as table"; a row focuses its river in the chart.
+  const index = page.locator('.rr-index');
+  assert((await index.locator('caption').textContent()).startsWith('Every river of expressjs/express by lines changed'), 'the Rivers table has a caption');
+  assert((await index.locator('tbody th[scope="row"]').count()) === (await page.locator('path[data-river]').count()), 'one table row per river');
+  assert((await page.getByText('View as table').count()) === 0 && (await page.getByText('Read as text').count()) === 0, 'no table or text toggles');
+  const rowIds = await index.locator('tbody tr').evaluateAll((trs) => trs.map((tr) => tr.dataset.row));
+  await index.locator(`tr[data-row="${rowIds[1]}"]`).scrollIntoViewIfNeeded();
+  const cell = await index.locator(`tr[data-row="${rowIds[1]}"] td.rr-c-share`).boundingBox();
+  await page.mouse.click(cell.x + cell.width / 2, cell.y + cell.height / 2); // anywhere on the row
+  s = await state(page);
+  assert(s.river === rowIds[1] && s.pinned && s.bucket === '1', `a click on a row pins its river at the current bucket (${JSON.stringify(s)})`);
+  const row = await index.locator(`tr[data-row="${rowIds[1]}"]`).evaluate((tr) => ({
+    on: tr.classList.contains('rr-on'), pressed: tr.querySelector('button').getAttribute('aria-pressed'), bg: getComputedStyle(tr.cells[1]).backgroundColor,
+  }));
+  assert(row.on && row.pressed === 'true' && row.bg !== 'rgba(0, 0, 0, 0)', `the picked row has the band and a pressed button (${JSON.stringify(row)})`);
+  await expectHighlight(page, rowIds[1]);
+  await page.evaluate(() => scrollTo(0, document.querySelector('.rr-index').getBoundingClientRect().top + scrollY - 200));
   await shoot(page, '07-table-open-desktop', DESKTOP);
+  await page.keyboard.press('Escape');
+  s = await state(page);
+  assert(s.river === '' && !s.pinned && (await index.locator('tr.rr-on').count()) === 0, 'Escape on a row clears the focus');
+  await index.locator(`tr[data-row="${rowIds[0]}"] button`).focus();
+  await page.keyboard.press('Enter');
+  assert((await state(page)).river === rowIds[0] && (await state(page)).pinned, 'Enter on a row pins its river');
+  await page.keyboard.press(' ');
+  assert((await state(page)).river === '', 'Space on the pinned row releases it');
+  await page.locator(PLOT).focus();
+  await page.keyboard.press('ArrowDown');
+  const lit = (await state(page)).river;
+  assert(lit && (await index.locator('tr.rr-on').getAttribute('data-row')) === lit, 'focusing a river in the chart highlights its row');
+  await page.keyboard.press('Escape');
+  await runAxe(page, 'express depth 2, Rivers table');
   const describedBy = await page.locator(PLOT).getAttribute('aria-describedby');
-  const summary = await page.locator(`[id="${describedBy}"]`).textContent(); // folded under "Read as text"
+  const summary = await page.locator(`[id="${describedBy}"]`).textContent(); // never shown, read through aria-describedby
   assert(/The largest river is .+, with \d+% of all lines changed\. The busiest year was \d{4}/.test(summary), `summary linked via aria-describedby (${summary})`);
 
   // Mobile: Home/End on the scroll region, keyboard focus scrolls the bucket into view.

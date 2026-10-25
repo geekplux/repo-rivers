@@ -79,8 +79,8 @@ export default async function phase9({ page, baseURL }) {
   assert(bands === 0, `no era band until an era is selected (got ${bands})`);
   const prose = await page.locator('.rr-summary').textContent();
   assert(prose.includes(`${vite.eras.length} eras: ${vite.eras[0].title}`), 'the prose summary lists the eras');
-  const footer = await page.locator('.rr-table tfoot').textContent();
-  assert(vite.eras.every((e) => footer.includes(e.title)), 'the table has an era row');
+  const list = await page.locator('.rr-era-list li').evaluateAll((lis) => lis.map((li) => li.textContent));
+  assert(list.length === vite.eras.length && vite.eras.every((e, i) => list[i].includes(e.title) && list[i].endsWith(asSentence(e.note))), `the Eras section lists every era with its note (${list})`);
   await runAxe(page, 'eras');
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '01-eras-vite-desktop');
@@ -176,6 +176,7 @@ export default async function phase9({ page, baseURL }) {
   const cached = await page.evaluate(() => JSON.parse(localStorage.getItem('rr:agg:v1:expressjs/express'))?.aggregate?.eras);
   assert(cached?.length === after.eras.length && cached.every((e) => e.source === 'ai'), 'AI eras are cached with the aggregate');
   assert((await page.locator('.rr-summary').textContent()).includes('Era names were written by AI.'), 'the prose summary says AI named the eras');
+  assert((await page.locator('.rr-era-title').first().textContent()) === 'Callbacks and routers, named by AI', 'the Eras section shows the AI names, said to be by AI');
   await runAxe(page, 'ai eras');
   await page.evaluate(() => scrollTo(0, document.querySelector('.rr-card').getBoundingClientRect().top + scrollY - 8));
   await shoot(page, '04-eras-ai-swap');
