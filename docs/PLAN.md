@@ -79,7 +79,7 @@ Each criterion is testable. The phase that first satisfies it is in brackets.
 
 **Open-source packaging**
 - **S1** The repo contains an MIT `LICENSE`, a README that sells the project in 10 seconds, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue and PR templates, `CHANGELOG.md`, `docs/GOOD_FIRST_ISSUES.md`, `docs/EXTENDING.md`, an `examples/` gallery, a social preview image, and `docs/LAUNCH.md`. [P1, P10, P11]
-- **S2** No secrets are in git. There is no mention of Sean's employer, nothing finance-related, and no decorative 3D. The deploy has not been executed, and `pnpm run check:deploy` succeeds. [all, P12]
+- **S2** No secrets are in git. There is no company names beyond tools, services and cited sources, nothing finance-related, and no decorative 3D. The deploy has not been executed, and `pnpm run check:deploy` succeeds. [all, P12]
 
 ---
 
@@ -658,7 +658,7 @@ pnpm check:browser --phase <n>
   3. Every code snippet in EXTENDING.md type-checks: it is extracted into `docs/snippets/*.ts`, which is included in `tsconfig.node.json`.
   4. Every export in `src/core/index.ts` has TSDoc. Enforce this with a small test that parses the file and checks for `/**` before each `export`.
   5. Links resolve: a link-check test over the Markdown files for relative paths.
-  6. No employer mention and nothing finance-related (grep).
+  6. No company names and nothing finance-related (grep).
 - **Verifier:** the §5 commands. Read the README as Markdown, and check that its relative links and images exist (the link-check test, plus a manual read of the first screen). A regression `check:browser --phase 9` run.
 - **Risks:** docs drifting from the code. The snippet typecheck mitigates this.
 - **Size:** about 400 lines of docs, plus the CoC boilerplate (excluded).
@@ -709,7 +709,7 @@ pnpm check:browser --phase <n>
   1. `pnpm build && pnpm run check:deploy` succeeds, writes `.wrangler/dry-run/` (gitignored), and reports a Worker bundle under 1 MiB.
   2. A full-stack local run: `wrangler dev` serves `dist/` plus the API. A single headless Chrome loads `/` offline-mocked for external hosts, the sample renders, `/api/health` gives 200, and the CSP causes no console violations. Then everything is killed (`ps` check).
   3. The PR description contains the exact deploy command and the prerequisites, and states "awaiting Sean's approval to deploy". The main agent sets `STATE: DONE` with that note.
-  4. Hard-rule audit: no secrets (grep for tokens and keys), no `.github/workflows/`, no Next/Remix, no employer mention, nothing finance-related, no decorative 3D, and no deploy executed (shell history or wrangler output shows only `--dry-run`).
+  4. Hard-rule audit: no secrets (grep for tokens and keys), no `.github/workflows/`, no Next/Remix, no company names, nothing finance-related, no decorative 3D, and no deploy executed (shell history or wrangler output shows only `--dry-run`).
 - **Verifier:** the §5 commands, `pnpm run check:deploy`, the `wrangler dev` browser check (screenshot `01-fullstack-sample-desktop.png`, `02-fullstack-health.png` of the JSON), and the hard-rule greps.
 - **Risks:**
   - The dry run needs a KV id format. Use a clearly fake 32-hex placeholder, documented in DEPLOY.md.
