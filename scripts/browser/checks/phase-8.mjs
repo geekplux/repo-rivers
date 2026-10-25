@@ -40,7 +40,7 @@ async function submit(page, text) {
 }
 const readout = (page) => page.locator('[data-testid="readout"] p[aria-hidden]').first().innerText();
 const announced = async (page) => (await sleep(300), page.locator('[data-testid="readout"] [aria-live="polite"]').innerText());
-const chartOf = (page, repo) => page.locator(`${CHART}[aria-label="River chart of ${repo}"]`).waitFor({ state: 'visible', timeout: 10_000 });
+const chartOf = (page, repo) => page.locator(`${CHART}[aria-label^="River chart of ${repo}:"]`).waitFor({ state: 'visible', timeout: 10_000 });
 
 /** Shows an error state for `repo` (Worker answer `answer`), checks its copy and actions, runs axe. */
 async function expectError(page, repo, title, actions, shot) {
@@ -94,18 +94,15 @@ export default async function phase8({ page, baseURL }) {
     assert(await page.evaluate(() => document.activeElement?.id === 'rr-repo'), 'focus stays in the field');
     await shoot(page, '01-input-invalid');
 
-    // AC1 + AC6: paste a /tree/ URL → progress "n of m" (static dashes under reduced motion) → chart → ?repo=.
+    // AC1 + AC6: paste a /tree/ URL → progress "n of m" (a solid 2 px line) → chart → ?repo=.
     await submit(page, 'https://github.com/sveltejs/svelte/tree/main');
     const progress = page.locator('[data-testid="progress"]');
-    await progress.getByText('Reading history · 18 of 51 requests').waitFor({ timeout: 10_000 });
+    await progress.getByText('Reading sveltejs/svelte: 18 of 51 requests').waitFor({ timeout: 10_000 });
     assert(!(await input.getAttribute('aria-describedby')), 'the inline error is gone after a valid submit');
     const bar = await page.locator('[role="progressbar"]').evaluate((el) => ({ now: el.getAttribute('aria-valuenow'), max: el.getAttribute('aria-valuemax'), label: el.getAttribute('aria-label') }));
     assert(bar.now === '18' && bar.max === '51' && /sveltejs\/svelte/.test(bar.label), `determinate, labelled progressbar (got ${JSON.stringify(bar)})`);
-    const anim = () => page.locator('.rr-bar-fill').evaluate((el) => getComputedStyle(el).animationName);
-    assert((await anim()) === 'none', `dash flow is static under reduced motion (got ${await anim()})`);
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    assert((await anim()) === 'rr-flow', `dash flows without reduced motion (got ${await anim()})`);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const fill = await page.locator('.rr-bar-fill').evaluate((el) => [getComputedStyle(el).strokeWidth, getComputedStyle(el).strokeDasharray]);
+    assert(fill[0] === '2px' && fill[1] === 'none', `progress is a solid 2 px line (got ${fill})`);
     assert(/Reading the history of sveltejs\/svelte/.test(await announced(page)), 'progress is announced politely');
     assert(await page.locator('.rr-frame').getAttribute('aria-busy') === 'true', 'chart frame is aria-busy while loading');
     await runAxe(page, 'loading');
@@ -117,12 +114,12 @@ export default async function phase8({ page, baseURL }) {
     const search = await page.evaluate(() => location.search);
     assert(search === '?repo=sveltejs/svelte', `URL becomes ?repo=sveltejs/svelte (got ${search})`);
     assert(/Showing sveltejs\/svelte/.test(await announced(page)), 'result is announced politely');
-    assert((await page.title()) === 'sveltejs/svelte · repo rivers', 'document title names the repo');
+    assert((await page.title()) === 'sveltejs/svelte, Repo Rivers', 'document title names the repo');
     await shoot(page, '04-result-svelte');
 
     // Sampled badge: a keyboard-operable disclosure.
     const badge = page.locator('.rr-badge');
-    assert((await badge.innerText()).startsWith('sampled'), 'a "sampled" badge');
+    assert((await badge.innerText()).startsWith('Estimated from'), 'an "Estimated from" source button');
     await badge.focus();
     await page.keyboard.press('Enter');
     const panel = page.locator('.rr-popover');
@@ -164,9 +161,9 @@ export default async function phase8({ page, baseURL }) {
     await page.getByRole('button', { name: 'Check the spelling' }).click();
     assert(await page.evaluate(() => document.activeElement?.id === 'rr-repo'), '"Check the spelling" focuses the field');
 
-    const got = await expectError(page, `${FAKE_REPO.owner}/${FAKE_REPO.name}`, 'GitHub’s hourly limit reached', ['Try from your browser', 'Show a sample instead'], '07-error-rate-limited');
+    const got = await expectError(page, `${FAKE_REPO.owner}/${FAKE_REPO.name}`, 'GitHub’s hourly limit was reached', ['Try from your browser', 'Show a sample instead'], '07-error-rate-limited');
     const local = await page.evaluate((t) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(Date.parse(t)), resetAt);
-    assert(got.body.includes(`resets at ${local}`), `local reset time ${local} shown (got "${got.body}")`);
+    assert(got.body.includes(`after ${local}`), `local reset time ${local} shown (got "${got.body}")`);
     const apiBefore = api.length;
     github.length = 0;
     await page.getByRole('button', { name: 'Try from your browser' }).click();
@@ -192,7 +189,7 @@ export default async function phase8({ page, baseURL }) {
     allowConsoleError(/ERR_INTERNET_DISCONNECTED|ERR_FAILED.*api\.github\.com\/repos\/down/);
     await page.route('**/api/repo/down/both', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>repo rivers</title>' }));
     await page.route('https://api.github.com/repos/down/**', (r) => r.abort('internetdisconnected'));
-    await expectError(page, 'down/both', 'The repo rivers service isn’t answering', ['Try again', 'Show a sample instead']);
+    await expectError(page, 'down/both', 'The Repo Rivers service isn’t answering', ['Try again', 'Show a sample instead']);
 
     // AC4: an unreachable Worker (here: the SPA fallback page) → automatic browser fallback with a notice.
     await page.evaluate(() => localStorage.clear());

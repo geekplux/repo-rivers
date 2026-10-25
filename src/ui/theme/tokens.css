@@ -1,32 +1,90 @@
-/* "Survey map" design tokens (docs/PLAN.md §3). River fills mirror PALETTES in src/core/palette.ts (tokens.test.ts). */
+/*
+ * "Cyanotype" design tokens (docs/redesign/DESIGN.md §2): Radix Colors 3.0 blue and slate, light and dark, and the
+ * semantic roles built on them. The dark set applies when the system is dark and no light choice is stored
+ * (`data-theme` on <html>, set by public/theme.js before first paint) or when dark is chosen. Print is always light:
+ * both dark blocks are screen-only. tokens.test.ts checks the scales, the roles (against PALETTES) and the river contrast.
+ */
 @font-face {
-  font-family: Fraunces;
-  src: url('/fonts/fraunces-subset.woff2') format('woff2');
-  font-weight: 500 650;
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-sans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-sans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-sans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-sans-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-sans-500-italic.woff2') format('woff2');
+  font-weight: 500;
+  font-style: italic;
   font-display: swap;
 }
 
 :root {
-  color-scheme: light dark;
-  --rr-bg: #f5f1e8;
-  --rr-ink: #1b2330;
-  --rr-ink-2: #4f5868;
-  --rr-grid: #ddd5c4;
-  --rr-focus: #1b2330;
-  --rr-river-0: #704c01;
-  --rr-river-1: #0390ce;
-  --rr-river-2: #048a5f;
-  --rr-river-3: #928a02;
-  --rr-river-4: #0b67ab;
-  --rr-river-5: #9e5d3e;
-  --rr-river-6: #be6c9a;
-  --rr-river-7: #00595c;
-  --rr-river-8: #6c7178;
-  --rr-display: Fraunces, Georgia, serif;
-  --rr-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --rr-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
-  --rr-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Spacing scale (calm layout): every page-level gap is one of these steps. */
+  color-scheme: light;
+  /* Radix 3.0 blue and slate, light. */
+  --blue-1: #fbfdff;
+  --blue-2: #f4faff;
+  --blue-3: #e6f4fe;
+  --blue-4: #d5efff;
+  --blue-5: #c2e5ff;
+  --blue-6: #acd8fc;
+  --blue-7: #8ec8f6;
+  --blue-8: #5eb1ef;
+  --blue-9: #0090ff;
+  --blue-10: #0588f0;
+  --blue-11: #0d74ce;
+  --blue-12: #113264;
+  --slate-1: #fcfcfd;
+  --slate-2: #f9f9fb;
+  --slate-3: #f0f0f3;
+  --slate-4: #e8e8ec;
+  --slate-5: #e0e1e6;
+  --slate-6: #d9d9e0;
+  --slate-7: #cdced6;
+  --slate-8: #b9bbc6;
+  --slate-9: #8b8d98;
+  --slate-10: #80838d;
+  --slate-11: #60646c;
+  --slate-12: #1c2024;
+
+  /* Roles (DESIGN §2). */
+  --ground: var(--blue-1);
+  --ink: var(--blue-12);
+  --muted: var(--slate-11);
+  --water-a: var(--blue-12);
+  --water-b: var(--blue-11);
+  --on-water: var(--blue-1);
+  --line: var(--blue-7);
+  --hair: var(--blue-6);
+  --band: var(--blue-3);
+  --solid: var(--blue-12);
+  --on-solid: var(--blue-1);
+  --field: #ffffff;
+  --focus: var(--blue-9);
+
+  --rr-font: 'Alegreya Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Spacing steps (DESIGN §2). */
   --rr-s1: 4px;
   --rr-s2: 8px;
   --rr-s3: 16px;
@@ -35,22 +93,71 @@
   --rr-s6: 64px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --rr-bg: #10161f;
-    --rr-ink: #e9e4d8;
-    --rr-ink-2: #a7afbc;
-    --rr-grid: #253041;
-    --rr-focus: #e9e4d8;
-    --rr-river-0: #e0ae60;
-    --rr-river-1: #97d5fb;
-    --rr-river-2: #3cc494;
-    --rr-river-3: #e4d50c;
-    --rr-river-4: #0698f4;
-    --rr-river-5: #e36a1c;
-    --rr-river-6: #d27fad;
-    --rr-river-7: #468e8c;
-    --rr-river-8: #61676d;
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --blue-1: #0d1520;
+    --blue-2: #111927;
+    --blue-3: #0d2847;
+    --blue-4: #003362;
+    --blue-5: #004074;
+    --blue-6: #104d87;
+    --blue-7: #205d9e;
+    --blue-8: #2870bd;
+    --blue-9: #0090ff;
+    --blue-10: #3b9eff;
+    --blue-11: #70b8ff;
+    --blue-12: #c2e6ff;
+    --slate-1: #111113;
+    --slate-2: #18191b;
+    --slate-3: #212225;
+    --slate-4: #272a2d;
+    --slate-5: #2e3135;
+    --slate-6: #363a3f;
+    --slate-7: #43484e;
+    --slate-8: #5a6169;
+    --slate-9: #696e77;
+    --slate-10: #777b84;
+    --slate-11: #b0b4ba;
+    --slate-12: #edeef0;
+    --ground: var(--blue-2);
+    --line: var(--blue-6);
+    --hair: var(--blue-5);
+    --field: var(--blue-1);
+  }
+}
+
+@media screen {
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --blue-1: #0d1520;
+    --blue-2: #111927;
+    --blue-3: #0d2847;
+    --blue-4: #003362;
+    --blue-5: #004074;
+    --blue-6: #104d87;
+    --blue-7: #205d9e;
+    --blue-8: #2870bd;
+    --blue-9: #0090ff;
+    --blue-10: #3b9eff;
+    --blue-11: #70b8ff;
+    --blue-12: #c2e6ff;
+    --slate-1: #111113;
+    --slate-2: #18191b;
+    --slate-3: #212225;
+    --slate-4: #272a2d;
+    --slate-5: #2e3135;
+    --slate-6: #363a3f;
+    --slate-7: #43484e;
+    --slate-8: #5a6169;
+    --slate-9: #696e77;
+    --slate-10: #777b84;
+    --slate-11: #b0b4ba;
+    --slate-12: #edeef0;
+    --ground: var(--blue-2);
+    --line: var(--blue-6);
+    --hair: var(--blue-5);
+    --field: var(--blue-1);
   }
 }
 

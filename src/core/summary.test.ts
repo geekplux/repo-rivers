@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { layoutRivers } from './layout/layout.ts';
 import { parseAggregate, type RepoAggregate } from './schema.ts';
-import { amount, caveats, columnTotals, describeView, idleLine, readoutLine, share } from './summary.ts';
+import { amount, caveats, columnTotals, describeView, eraNote, eraRange, focusReadout, idleReadout, legendItems, plain, readoutCaveats, share, tagsBot } from './summary.ts';
 import { selectView } from './view.ts';
 import express from '../samples/express.json';
 import svelte from '../samples/svelte.json';
@@ -34,57 +34,119 @@ describe('caveats', () => {
   });
 });
 
-describe('readoutLine', () => {
+describe('focusReadout', () => {
   const view = selectView(VITE, { dimension: 'modules' });
   const c = caveats(VITE, view);
   const totals = columnTotals(view);
+  const line = (id: string | null, i: number, v = view, cv = c) => plain(focusReadout(v, cv, id, i));
 
-  it('follows the template with numbers from the view model', () => {
+  it('follows the board copy with numbers from the view model; the name italic and the value bold', () => {
     const r = view.rivers.find((x) => x.id === 'm:packages/vite')!;
     const i = r.values.indexOf(r.peak);
-    const line = readoutLine(view, c, r.id, i);
-    const parts = line.split(' · ');
-    expect(parts.slice(0, 4)).toEqual([
-      'packages/vite', view.buckets[i]!.label, `${new Intl.NumberFormat('en').format(r.values[i]!)} lines changed`,
-      `${Math.round((100 * r.values[i]!) / totals[i]!)}% of the quarter`,
-    ]);
+    const rich = focusReadout(view, c, r.id, i);
+    expect(rich[0]).toEqual({ i: 'packages/vite' });
+    expect(rich).toContainEqual({ b: new Intl.NumberFormat('en').format(r.values[i]!) });
     expect(c.estimated).toContain(i);
-    expect(parts[4]).toBe('estimated (GitHub listed only 300 files)');
+    expect(plain(rich)).toBe(`packages/vite, ${view.buckets[i]!.label}: ${new Intl.NumberFormat('en').format(r.values[i]!)} lines changed, `
+      + `${Math.round((100 * r.values[i]!) / totals[i]!)}% of the quarter.`);
+    expect(readoutCaveats(view, c, i)).toBe(' This quarter is estimated.');
   });
 
-  it('reads zero values as "no changes" and appends the partial flag on the last bucket', () => {
+  it('reads zero values as "no changes"; the partial bucket is spoken only', () => {
     const r = view.rivers.find((x) => x.values.at(-1) === 0)!;
-    const line = readoutLine(view, c, r.id, view.buckets.length - 1);
-    expect(line).toBe(`${r.label} · ${view.buckets.at(-1)!.label} · no lines changed this quarter · partial quarter, to 20 Oct`);
+    const last = view.buckets.length - 1;
+    expect(line(r.id, last)).toBe(`${r.label}, ${view.buckets.at(-1)!.label}: no lines changed this quarter.`);
+    expect(readoutCaveats(view, c, last)).toContain(' Quarter in progress, to 20 Oct.');
+    expect(readoutCaveats(view, c, 0)).toBe(c.estimated.includes(0) ? ' This quarter is estimated.' : '');
   });
 
-  it('lists transfers in and out of the river, in order after the estimate flags', () => {
+  it('lists transfers in and out of the river', () => {
     const t = view.transfers.find((x) => x.files > 1)!;
     const to = view.rivers.find((x) => x.id === t.to)!;
     const from = view.rivers.find((x) => x.id === t.from)!;
-    expect(readoutLine(view, c, t.to, t.bucket)).toContain(`${t.files} files moved in from ${from.label}`);
-    expect(readoutLine(view, c, t.from, t.bucket)).toContain(`${t.files} files moved out to ${to.label}`);
+    expect(line(t.to, t.bucket)).toContain(` ${t.files} files moved in from ${from.label}`);
+    expect(focusReadout(view, c, t.to, t.bucket)).toContainEqual({ i: from.label });
+    expect(line(t.from, t.bucket)).toContain(` ${t.files} files moved out to ${to.label}`);
+  });
+
+  it('groups many moves into one sentence, largest first (the board copy for Svelte packages, Q2 2023)', () => {
+    const sv = selectView(SVELTE, { dimension: 'modules' });
+    const b = sv.buckets.findIndex((x) => x.label === 'Q2 2023');
+    const text = plain(focusReadout(sv, caveats(SVELTE, sv), 'm:packages', b));
+    expect(text).toMatch(/^packages, Q2 2023: 7,732 lines changed, 21% of the quarter\. 952 files moved in from test, 231 from src and \d+ from \d+ more modules\./);
   });
 
   it('flags clipped columns and bots, and reads a whole column when no river is active', () => {
     const sv = selectView(SVELTE, { dimension: 'modules' });
     const L = layoutRivers(sv, { width: 1104 });
     const sc = caveats(SVELTE, sv, L.clipped);
-    expect(readoutLine(sv, sc, sv.rivers[0]!.id, 9)).toContain(' · column clipped, drawn at 23% scale');
-    expect(readoutLine(sv, sc, null, 9)).toMatch(/^Q1 2019 · [\d,]+ lines changed across \d+ rivers/);
+    expect(line(sv.rivers[0]!.id, 9, sv, sc)).not.toContain('scale');
+    expect(readoutCaveats(sv, sc, 9)).toContain(' Column drawn at 23% scale.');
+    expect(line(null, 9, sv, sc)).toMatch(/^Q1 2019: [\d,]+ lines changed across \d+ rivers\./);
     const people = selectView(SVELTE, { dimension: 'contributors', includeBots: true });
     const bot = people.rivers.find((r) => r.bot)!;
-    expect(readoutLine(people, caveats(SVELTE, people), bot.id, bot.values.indexOf(bot.peak))).toMatch(/ · bot$/);
+    const rich = focusReadout(people, caveats(SVELTE, people), bot.id, bot.values.indexOf(bot.peak));
+    expect(bot.label).toMatch(/\[bot\]$/);
+    expect(rich[0]).toEqual({ i: bot.label });
+    expect(rich).not.toContainEqual({ m: 'bot' });
+    expect(plain(rich)).toMatch(/ commits?, /);
+    const plainBot = { ...bot, label: 'release-helper' };
+    const relabelled = { ...people, rivers: people.rivers.map((r) => (r.id === bot.id ? plainBot : r)) };
+    const tagged = focusReadout(relabelled, caveats(SVELTE, relabelled), bot.id, bot.values.indexOf(bot.peak));
+    expect(tagged.slice(0, 3)).toEqual([{ i: 'release-helper' }, ' ', { m: 'bot' }]);
   });
 
-  it('names every river, including the ones whose labels are dropped', () => {
-    const L = layoutRivers(view, { width: 1104 });
-    for (const r of view.rivers) expect(readoutLine(view, c, r.id, 0).startsWith(`${r.label} · `)).toBe(true);
-    expect(L.labels.placed.length + L.labels.dropped.length).toBeGreaterThanOrEqual(view.rivers.length);
+  it('tags a bot only when its label does not already say [bot]', () => {
+    expect(tagsBot({ bot: true, label: 'renovate[bot]' })).toBe(false);
+    expect(tagsBot({ bot: true, label: 'Dependabot[BOT]' })).toBe(false);
+    expect(tagsBot({ bot: true, label: 'release-helper' })).toBe(true);
+    expect(tagsBot({ bot: false, label: 'someone' })).toBe(false);
   });
 
-  it('has an idle line', () => {
-    expect(idleLine(VITE, view)).toBe(`vitejs/vite · ${view.buckets[0]!.label}–${view.buckets.at(-1)!.label} · 27 quarters · ${view.rivers.length} rivers by lines changed. Hover, tap or Tab into the chart.`);
+  it('names every river, never with a middle dot', () => {
+    for (const r of view.rivers) {
+      expect(line(r.id, 0).startsWith(`${r.label}, `)).toBe(true);
+      expect(line(r.id, 0)).not.toContain('·');
+    }
+  });
+});
+
+describe('idleReadout', () => {
+  it('names the largest river, its share and the files moved (DESIGN §4)', () => {
+    const view = selectView(VITE, { dimension: 'modules' });
+    const top = view.rivers.filter((r) => r.kind !== 'other').toSorted((a, b) => b.total - a.total)[0]!;
+    const all = view.rivers.reduce((a, r) => a + r.total, 0);
+    const moved = view.transfers.reduce((a, t) => a + t.files, 0);
+    expect(top.label).toBe('packages/vite');
+    expect(idleReadout(view)[0]).toEqual({ i: 'packages/vite' });
+    expect(plain(idleReadout(view))).toBe(`packages/vite carries ${Math.round((100 * top.total) / all)}% of all lines changed, and ${new Intl.NumberFormat('en').format(moved)} files moved between modules.`);
+  });
+
+  it('uses commits for contributors and leaves out moves when there are none', () => {
+    const people = selectView(VITE, { dimension: 'contributors' });
+    expect(plain(idleReadout(people))).toMatch(/^.+ carries \d+% of all commits\.$/);
+  });
+});
+
+describe('legendItems', () => {
+  it('lists only the marks the view draws, the unit word following the bucket unit', () => {
+    const all = { estimated: true, partial: true, moved: true, bots: false, ai: false };
+    expect(legendItems({ unit: 'quarter', ...all }).map((i) => i.text)).toEqual(['estimated', 'quarter in progress', 'files moved']);
+    expect(legendItems({ unit: 'year', ...all, estimated: false, moved: false }).map((i) => i.text)).toEqual(['year in progress']);
+    expect(legendItems({ unit: 'month', estimated: false, partial: false, moved: false, bots: true, ai: true }).map((i) => i.kind)).toEqual(['bot', 'ai']);
+  });
+});
+
+describe('era text', () => {
+  const view = selectView(VITE, { dimension: 'modules' });
+  it('ranges read "Q2 2020 to Q1 2021", or one label for a one-bucket era', () => {
+    expect(eraRange(view.buckets, { start: 0, end: 3 })).toBe(`${view.buckets[0]!.label} to ${view.buckets[3]!.label}`);
+    expect(eraRange(view.buckets, { start: 2, end: 2 })).toBe(view.buckets[2]!.label);
+  });
+  it('notes are sentences: capitalised, "; " read as ", ", a full stop', () => {
+    expect(eraNote('src/node grew; tests moved')).toBe('Src/node grew, tests moved.');
+    expect(eraNote('Done.')).toBe('Done.');
+    expect(eraNote('')).toBe('');
   });
 });
 

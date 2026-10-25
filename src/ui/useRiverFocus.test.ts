@@ -3,7 +3,7 @@ import { layoutRivers } from '../core/layout/layout.ts';
 import { parseAggregate } from '../core/schema.ts';
 import { selectView } from '../core/view.ts';
 import vite from '../samples/vite.json';
-import { EMPTY, hitTest, reconcile, startSpot, stepFocus, type FocusState } from './useRiverFocus.ts';
+import { EMPTY, hitTest, pickRiver, reconcile, startSpot, stepFocus, type FocusState } from './useRiverFocus.ts';
 
 const AGG = parseAggregate(vite);
 const view = selectView(AGG, { dimension: 'modules' });
@@ -90,5 +90,32 @@ describe('hitTest', () => {
       if (hit?.river === r.id) found = true;
     }));
     expect(found).toBe(true);
+  });
+});
+
+describe('pickRiver (the Rivers table)', () => {
+  const r = view.rivers[1]!;
+  const peak = r.values.indexOf(r.peak);
+  it('pins the river at its peak from the empty state, at the current bucket otherwise', () => {
+    expect(pickRiver(EMPTY, r)).toEqual({ river: r.id, bucket: peak, pinned: true });
+    expect(pickRiver({ river: view.rivers[0]!.id, bucket: 4, pinned: false }, r)).toEqual({ river: r.id, bucket: 4, pinned: true });
+    expect(pickRiver({ river: view.rivers[0]!.id, bucket: 4, pinned: true }, r)).toEqual({ river: r.id, bucket: 4, pinned: true });
+  });
+  it('picking the pinned river again clears, like a click on it in the chart', () => {
+    expect(pickRiver({ river: r.id, bucket: 2, pinned: true }, r)).toEqual(EMPTY);
+    expect(pickRiver({ river: r.id, bucket: 2, pinned: false }, r)).toEqual({ river: r.id, bucket: 2, pinned: true });
+  });
+});
+
+const down = (s: FocusState, ...keys: string[]): FocusState => keys.reduce((acc, k) => stepFocus(acc, k, lanes, B, start, true) ?? acc, s);
+describe('stepFocus on the phone (time runs down)', () => {
+  it('moves along time with Up and Down and between rivers with Left and Right', () => {
+    const s = { river: lanes[1]!, bucket: 5, pinned: false };
+    expect(down(s, 'ArrowDown')).toEqual({ ...s, bucket: 6 });
+    expect(down(s, 'ArrowUp')).toEqual({ ...s, bucket: 4 });
+    expect(down(s, 'ArrowRight')).toEqual({ ...s, river: lanes[2] });
+    expect(down(s, 'ArrowLeft')).toEqual({ ...s, river: lanes[0] });
+    expect(down(s, 'End', 'Enter')).toEqual({ ...s, bucket: B - 1, pinned: true });
+    expect(down(s, 'Escape')).toEqual(EMPTY);
   });
 });

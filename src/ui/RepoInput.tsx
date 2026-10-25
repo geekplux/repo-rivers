@@ -5,8 +5,9 @@ import { parseRepoInput, type RepoRef } from '../core/github/repoRef.ts';
 export const REPO_INPUT_ID = 'rr-repo';
 
 /**
- * "github.com/owner/name" + Draw rivers. Enter submits; anything `parseRepoInput` rejects shows an inline
- * error (linked with `aria-describedby`) and makes no request.
+ * The hero's field (placeholder "github.com/owner/name", named "GitHub repository" for assistive tech) and Draw.
+ * Enter submits; anything `parseRepoInput` rejects shows an inline error (linked with `aria-describedby`) and
+ * makes no request. The form's boxes sit in the hero row next to the samples sentence (`display: contents`).
  */
 export function RepoInput({ initial, onSubmit }: { initial: string; onSubmit: (ref: RepoRef) => void }) {
   const [text, setText] = useState(initial);
@@ -21,13 +22,11 @@ export function RepoInput({ initial, onSubmit }: { initial: string; onSubmit: (r
   };
   return (
     <form className="rr-repo" noValidate onSubmit={submit}>
-      <label htmlFor={REPO_INPUT_ID}>GitHub repository</label>
-      <span className="rr-repo-row">
-        <input id={REPO_INPUT_ID} type="text" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false}
-          placeholder="github.com/owner/name" value={text} onChange={(e) => (setText(e.target.value), setError(''))}
-          aria-invalid={error ? true : undefined} aria-describedby={error ? errorId : undefined} />
-        <button type="submit" className="rr-primary">Draw rivers</button>
-      </span>
+      <label htmlFor={REPO_INPUT_ID} className="rr-sr">GitHub repository</label>
+      <input id={REPO_INPUT_ID} type="text" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false}
+        placeholder="github.com/owner/name" value={text} onChange={(e) => (setText(e.target.value), setError(''))}
+        aria-invalid={error ? true : undefined} aria-describedby={error ? errorId : undefined} />
+      <button type="submit" className="rr-btn">Draw</button>
       {error && <p id={errorId} role="alert" className="rr-field-error">{error}</p>}
     </form>
   );

@@ -24,7 +24,7 @@ export function errorCopy(f: { code: FailureCode; via: Via; resetAt?: string }, 
   const at = resetTime(f.resetAt, timeZone);
   switch (f.code) {
     case 'not_found':
-      return { title: `Couldn’t find ${repo}`, body: 'It may be private, or the name may be misspelled; repo rivers can only read public repositories.', actions: [{ id: 'edit', label: 'Check the spelling' }, SAMPLE] };
+      return { title: `Couldn’t find ${repo}`, body: 'It may be private, or the name may be misspelled; Repo Rivers can only read public repositories.', actions: [{ id: 'edit', label: 'Check the spelling' }, SAMPLE] };
     case 'rate_limited': {
       const when = at ? `after ${at}` : 'in up to an hour';
       return f.via === 'worker'
@@ -40,7 +40,7 @@ export function errorCopy(f: { code: FailureCode; via: Via; resetAt?: string }, 
     case 'offline':
       return { title: 'You’re offline', body: 'Reading a repository needs the network; the built-in samples still work.', actions: [{ id: 'retry', label: 'Try again' }, SAMPLE] };
     case 'unavailable':
-      return { title: 'The repo rivers service isn’t answering', body: 'GitHub couldn’t be reached from your browser either. The built-in samples still work.', actions: [{ id: 'retry', label: 'Try again' }, SAMPLE] };
+      return { title: 'The Repo Rivers service isn’t answering', body: 'GitHub couldn’t be reached from your browser either. The built-in samples still work.', actions: [{ id: 'retry', label: 'Try again' }, SAMPLE] };
     default:
       return { title: 'GitHub sent an unexpected answer', body: 'This is usually temporary; try again in a minute.', actions: [{ id: 'retry', label: 'Try again' }, SAMPLE] };
   }
@@ -52,5 +52,10 @@ export function errorCopy(f: { code: FailureCode; via: Via; resetAt?: string }, 
  */
 export function loadingLine(repo: string, p: FetchProgress | null): string {
   const quarter = p && p.total > 0 ? Math.min(100, Math.floor((p.done / p.total) * 4) * 25) : 0;
-  return `Reading the history of ${repo}${quarter === 0 ? '' : ` · ${quarter}% of requests done`}`;
+  return `Reading the history of ${repo}${quarter === 0 ? '' : `: ${quarter}% of requests done`}`;
+}
+
+/** The loading panel's line, e.g. "Reading owner/name: 18 of 51 requests" (just "Reading owner/name" before the first count). */
+export function progressLine(repo: string, p: FetchProgress | null): string {
+  return p ? `Reading ${repo}: ${p.done} of ${Math.max(p.total, p.done)} requests` : `Reading ${repo}`;
 }

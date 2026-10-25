@@ -1,170 +1,275 @@
-/* Page layout and chart styling ("survey map", docs/PLAN.md §3). Tokens live in ui/theme/tokens.css. */
-body { margin: 0; background: var(--rr-bg); color: var(--rr-ink); font: 16px/1.5 var(--rr-body); }
+/* Page layout and chart styling. Tokens live in ui/theme/tokens.css; the page follows docs/redesign/DESIGN.md. */
+body {
+  margin: 0; background: var(--ground); color: var(--ink); font: 16px/24px var(--rr-font);
+  font-variant-numeric: lining-nums; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
 a { color: inherit; text-underline-offset: 3px; }
-:focus-visible { outline: 2px solid var(--rr-focus); outline-offset: 2px; }
-.rr-page { max-width: 1200px; margin: 0 auto; padding: var(--rr-s4) var(--rr-s5) var(--rr-s6); }
-.rr-header { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
-.rr-wordmark { display: inline-flex; align-items: center; gap: 8px; font: 600 22px/1 var(--rr-display); letter-spacing: -0.02em; word-spacing: -0.04em; }
-.rr-wordmark path { fill: currentColor; }
-.rr-intro { margin: var(--rr-s4) 0; }
-.rr-hero { font: 500 clamp(26px, 3.4vw, 36px)/1.15 var(--rr-display); letter-spacing: -0.01em; margin: 0 0 var(--rr-s2); }
-.rr-lede { color: var(--rr-ink-2); margin: 0; max-width: 72ch; }
-.rr-muted { color: var(--rr-ink-2); fill: var(--rr-ink-2); }
-.rr-chips { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s1) var(--rr-s3); font-size: 14px; }
-/* Quiet text toggles: the pressed sample is bold and underlined (not colour alone). */
-.rr-chips button { font: inherit; padding: var(--rr-s1) 0; border: 0; background: none; color: var(--rr-ink-2); cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 6px; }
-.rr-chips button:hover { color: var(--rr-ink); text-decoration-color: currentColor; text-decoration-thickness: 1px; }
-.rr-chips button[aria-pressed='true'] { color: var(--rr-ink); font-weight: 600; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* The content column: 1200 centred (x 120..1320 at 1440), 16 px margins below that. */
+.rr-wrap { box-sizing: border-box; width: min(1200px, calc(100% - 32px)); margin-inline: auto; }
+.rr-header { height: 72px; display: flex; align-items: center; justify-content: space-between; }
+.rr-header > .rr-wrap { display: flex; align-items: center; justify-content: space-between; }
+.rr-brand { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
+.rr-wordmark { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; line-height: 24px; letter-spacing: -0.005em; }
+.rr-logo { flex: none; display: block; }
+/* The theme glyph sits optically flush with the column's right edge (its 44 px box overhangs by 12). */
+.rr-nav { display: flex; align-items: center; gap: 4px; margin-right: -12px; color: var(--muted); }
+.rr-nav a { display: flex; align-items: center; height: 44px; padding: 0 12px; text-decoration: none; }
+.rr-icon { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; cursor: pointer; }
+@media (hover: hover) {
+  .rr-nav a:hover, .rr-icon:hover { color: var(--ink); }
+}
+.rr-num { font-variant-numeric: lining-nums tabular-nums; }
+/* Hero (DESIGN §3): h1, then one row: field, Draw and the samples sentence. */
+.rr-intro { padding-top: 104px; }
+.rr-hero { font: 500 56px/60px var(--rr-font); letter-spacing: -0.025em; margin: 0 0 0 -3px; max-width: 880px; text-wrap: balance; }
+.rr-hero i { font-weight: 400; }
+.rr-muted { color: var(--muted); fill: var(--muted); }
+.rr-go { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 40px; }
+.rr-repo { display: contents; }
+.rr-repo input { box-sizing: border-box; width: 440px; height: 48px; padding: 0 16px; border: 0.5px solid var(--line); border-radius: 6px;
+  background: var(--field); color: var(--ink); font: inherit; }
+.rr-repo input::placeholder { color: var(--muted); opacity: 1; }
+.rr-repo input[aria-invalid='true'] { border-color: var(--ink); border-style: dashed; }
+.rr-field-error { order: 1; flex-basis: 100%; margin: 0; font-size: 13px; line-height: 20px; color: var(--ink); }
+.rr-btn { height: 48px; padding: 0 24px; border: 0; border-radius: 6px; background: var(--solid); color: var(--on-solid); font: 500 16px/24px var(--rr-font); cursor: pointer; }
+.rr-or { margin-left: 16px; color: var(--muted); }
+/* Sample names: ink with a 0.5 underline, the current one 1.5 (not colour alone); the hit area reaches 44 tall. */
+.rr-or button { position: relative; padding: 0 0 1px; border: 0; border-bottom: 0.5px solid var(--line); background: none; color: var(--ink); font: inherit; line-height: 18px; cursor: pointer; }
+.rr-or button::after { content: ''; position: absolute; inset: -13px -2px; }
+.rr-or button[aria-pressed='true'] { padding-bottom: 0; border-bottom: 1.5px solid var(--ink); }
+@media (hover: hover) {
+  .rr-or button:hover { border-bottom-color: var(--ink); }
+}
 /* The chart is the page's focal point: no frame around it, just space. */
-.rr-card { margin-top: var(--rr-s5); }
-.rr-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s2) var(--rr-s3); margin-bottom: var(--rr-s3); }
-.rr-card h2 { font: 600 28px/1.15 var(--rr-display); letter-spacing: -0.01em; margin: 0; }
-.rr-meta-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s1) var(--rr-s3); }
-.rr-meta { font: 14px var(--rr-mono); color: var(--rr-ink-2); margin: 0; font-variant-numeric: tabular-nums; }
-.rr-caption { font-size: 14px; margin: 0 0 4px; }
-.rr-frame { overflow-x: auto; min-height: 352px; }
-.rr-chart { display: block; font: 12px var(--rr-mono); font-variant-numeric: tabular-nums; }
-.rr-chart text { dominant-baseline: central; }
-.rr-label { fill: var(--rr-ink); paint-order: stroke; stroke: var(--rr-bg); stroke-width: 3px; stroke-linejoin: round; }
-.rr-tick { fill: var(--rr-ink-2); dominant-baseline: auto; letter-spacing: 0.04em; }
-.rr-grid { stroke: var(--rr-grid); }
-.rr-estimated-label { dominant-baseline: central; }
-.rr-estimated { stroke: var(--rr-ink-2); stroke-width: 2; stroke-dasharray: 0 4; stroke-linecap: round; }
-.rr-hatch { stroke: var(--rr-bg); stroke-width: 1.5; }
-.rr-bot { stroke: var(--rr-ink); stroke-width: 1.5; stroke-dasharray: 0 3; stroke-linecap: round; }
-.rr-pin { fill: var(--rr-ink); }
-.rr-arrow { fill: var(--rr-ink); stroke: var(--rr-bg); stroke-width: 2; paint-order: stroke; stroke-linejoin: round; }
-.rr-pin { stroke: var(--rr-bg); stroke-width: 1.5; }
-.rr-halo { fill: none; stroke: var(--rr-bg); }
-.rr-transfer { fill: none; stroke: var(--rr-ink); stroke-dasharray: 6 4; }
-.rr-leader-halo { stroke: var(--rr-bg); stroke-width: 3; }
-.rr-leader { stroke: var(--rr-ink-2); }
-.rr-cut { fill: var(--rr-bg); }
-.rr-break { stroke: var(--rr-ink); stroke-width: 1.25; }
-.rr-survey { stroke: var(--rr-ink-2); stroke-dasharray: 4 3; }
-.rr-survey-halo { stroke: var(--rr-bg); stroke-width: 4; }
-.rr-reveal { animation: rr-reveal 700ms var(--rr-ease) both; }
-@keyframes rr-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
-/* Interaction (docs/viz/rivers.md §6): one tab stop, dim others to 0.18, outline the active river, bucket cursor. */
-.rr-plot { outline: none; }
-.rr-ring { fill: none; stroke: var(--rr-focus); stroke-width: 2; visibility: hidden; }
-.rr-plot:focus-visible .rr-ring { visibility: visible; }
-.rr-dimmable { transition: opacity 120ms ease-out; }
-.rr-focusing .rr-dimmable:not(.rr-on) { opacity: 0.18; }
-.rr-river.rr-on:not(.rr-bot) { stroke: var(--rr-ink); stroke-width: 1.5; }
-.rr-river.rr-bot.rr-on { stroke-width: 2.25; }
-.rr-cursor { stroke: var(--rr-ink); stroke-opacity: 0.6; pointer-events: none; }
-.rr-cursor-box { fill: var(--rr-bg); stroke: var(--rr-ink); }
-.rr-cursor-tag { fill: var(--rr-ink); }
-/* Era track (phase 9, docs/viz/rivers.md §8): drawn above the chart, after it in tab order. */
-.rr-stack { display: flex; flex-direction: column; width: max-content; }
-.rr-eras { order: -1; position: relative; flex: none; }
-.rr-era { position: absolute; top: 0; height: 100%; margin: 0; padding: 0; border: 0; background: none; color: var(--rr-ink); font: inherit; text-align: left; cursor: default; }
-.rr-era-title { position: absolute; left: 4px; top: 16px; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  padding-bottom: 2px; font: italic 500 16px/20px var(--rr-display); font-synthesis: style; text-underline-offset: 3px; }
-.rr-era-row2 { top: 42px; }
-.rr-era:is(:hover, :focus-visible, [data-active]) .rr-era-title { text-decoration: underline; }
-.rr-era-bracket { position: absolute; left: 0; right: 0; top: 40px; height: 6px; border: 1px solid var(--rr-ink-2); border-bottom: 0; }
-/* Focus: no outline box (titles may run past their button); a 2 px focus-colour rule under the whole visible title,
-   inside its own box so it never reaches a neighbour's row, plus a 2 px focus-colour bracket. */
-.rr-era:focus-visible { outline: none; }
-.rr-era:focus-visible .rr-era-title { text-decoration: none; padding-bottom: 0; border-bottom: 2px solid var(--rr-focus); }
-.rr-era:focus-visible .rr-era-bracket { height: 5px; border-width: 2px; border-color: var(--rr-focus); }
-.rr-era-ai { position: absolute; right: 4px; top: 0; font: 12px/16px var(--rr-mono); color: var(--rr-ink-2); }
-.rr-era-band { fill: var(--rr-ink); opacity: 0.04; }
-.rr-era-band.rr-on { opacity: 0.08; }
-.rr-table td.rr-era-cell { text-align: left; font-family: var(--rr-display); font-style: italic; }
-@media (max-width: 640px) { .rr-era-title { font-size: 14px; } }
-.rr-key { display: flex; flex-wrap: wrap; gap: var(--rr-s1) var(--rr-s4); font-size: 13px; margin: var(--rr-s2) 0 0; }
-.rr-key span { display: inline-flex; align-items: center; gap: 6px; }
-.rr-key-bot { fill: none; }
-.rr-readout { padding: var(--rr-s3) 0 0; min-height: 3em; }
-.rr-readout p { margin: 0; font: 14px/1.5 var(--rr-mono); font-variant-numeric: tabular-nums; }
-.rr-readout .rr-note { font-family: var(--rr-body); }
+.rr-card { margin-top: 104px; }
+/* Chart head (DESIGN §3): title and meta left; the controls flush with the column's right edge. */
+.rr-card-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; margin-bottom: 16px; }
+.rr-card h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
+.rr-meta { min-height: 20px; margin-top: 4px; font-size: 13px; line-height: 20px; color: var(--muted); }
+/* 8 px of padding, taken back by the margin, so focus rings (2 px, offset 2) on the chart and era buttons are not
+   clipped by the scroll box while the drawing keeps its place on the column. */
+.rr-frame { overflow-x: auto; min-height: 352px; padding: 8px; margin: -8px; }
+/* Until the chart is drawn, the frame holds its height: era band and top (92) + the plot, clamp(320, 0.45·W, 480),
+   + the axis room (44), W being the column's width (layoutRivers' default plot height), + the sample's `head`
+   (room for a clipped column's label, from the sample registry). */
+.rr-frame.rr-waiting { min-height: calc(136px + var(--rr-head, 0px) + clamp(320px, 0.45 * min(1200px, 100vw - 32px), 480px)); }
+main.rr-waiting { min-height: 100vh; }
+/* The chart (DESIGN §4): no hue; two waters, a hatched "other", 0.5 rules, 13/16 text. */
+.rr-stack { position: relative; width: max-content; }
+.rr-chart { display: block; font-family: var(--rr-font); }
+.rr-chart text { font-size: 13px; }
+.rr-rule { stroke: var(--line); stroke-width: 0.5; }
+.rr-chart .rr-era-name { font-size: 16px; font-weight: 500; fill: var(--ink); }
+.rr-era-range, .rr-tick { fill: var(--muted); font-variant-numeric: lining-nums tabular-nums; }
+.rr-era-band { fill: var(--band); }
+/* Phone (DESIGN §5): era names 13/500 ink on a 6 px ground halo, right-aligned at the column's edge; year labels
+   get a 4 px halo where an era rule crosses them. */
+.rr-chart .rr-phone-year { paint-order: stroke; stroke: var(--ground); stroke-width: 4px; stroke-linejoin: round; }
+.rr-chart .rr-phone-era { font-weight: 500; fill: var(--ink); paint-order: stroke; stroke: var(--ground); stroke-width: 6px; stroke-linejoin: round; }
+.rr-river { transition: opacity 250ms ease-out; }
+.rr-tone-0, .rr-river.rr-on:not(.rr-other) { fill: var(--water-a); }
+.rr-tone-1 { fill: var(--water-b); }
+.rr-other { stroke: var(--water-b); stroke-width: 0.5; }
+.rr-hatch-ground { fill: var(--ground); }
+.rr-hatch { stroke: var(--water-b); stroke-width: 1.6; }
+/* Bots: a perforated edge, ground-coloured dots along the outline (shape, not colour). */
+.rr-bot { stroke: var(--ground); stroke-width: 1.5; stroke-dasharray: 0 3; stroke-linecap: round; }
+.rr-label { font-style: italic; font-weight: 500; fill: var(--ink); dominant-baseline: central; paint-order: stroke; stroke: var(--ground); stroke-width: 3px; stroke-linejoin: round; }
+.rr-label.rr-on-water { fill: var(--on-water); stroke: none; }
+.rr-label-muted { fill: var(--muted); }
+.rr-on-water .rr-label-muted { fill: var(--on-water); }
+.rr-clip-label { font-style: normal; font-variant-numeric: lining-nums tabular-nums; }
+.rr-lab { transition: opacity 250ms ease-out; }
+.rr-label.rr-peak { stroke-width: 4px; }
+.rr-leader { fill: none; stroke: var(--line); stroke-width: 0.5; }
+.rr-halo { fill: none; stroke: var(--ground); }
+.rr-transfer { fill: none; stroke: var(--water-b); stroke-dasharray: 6 3; }
+.rr-arrow { fill: var(--water-b); }
+.rr-xfer { transition: opacity 250ms ease-out; }
+.rr-xfer.rr-on .rr-transfer { stroke: var(--ink); }
+.rr-xfer.rr-on .rr-arrow { fill: var(--ink); }
+.rr-cut { fill: var(--ground); }
+.rr-break { stroke: var(--ink); stroke-width: 1.25; }
+.rr-estimated { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 1 3; }
+.rr-survey { stroke: var(--ink); stroke-width: 0.5; stroke-dasharray: 2 3; }
+/* Focus (DESIGN §4): the focused river stays at full strength in water A, the others fade to 18 %, their names to
+   45 % in ink; a 0.5 ink rule marks the bucket and a dot the river's centre. 250 ms ease-out; instant when reduced. */
+:is(.rr-focusing, .rr-ghost-focusing) :is(.rr-river, .rr-xfer):not(.rr-on) { opacity: 0.18; }
+:is(.rr-focusing, .rr-ghost-focusing) .rr-lab:not(.rr-on) { opacity: 0.45; }
+:is(.rr-focusing, .rr-ghost-focusing) .rr-lab:not(.rr-on) :is(.rr-on-water, .rr-label-muted) { fill: var(--ink); }
+.rr-cursor { stroke: var(--ink); stroke-width: 0.5; pointer-events: none; }
+.rr-dot { fill: var(--ground); stroke: var(--ink); stroke-width: 1.5; }
+/* Motion (DESIGN §6) runs from ui/motion.ts with the Web Animations API: the arrive reveal of .rr-reveal, the era
+   fade, the dash run and the crossfade, whose fading copy is .rr-ghost. Colours never transition (theme: instant). */
+.rr-ghost { pointer-events: none; }
+/* The keyboard target and the era buttons are HTML laid over the drawing (it is one role="img"). */
+.rr-plot { position: absolute; pointer-events: none; }
+.rr-eras { position: absolute; top: 0; left: 0; pointer-events: none; }
+.rr-era { position: absolute; top: 4px; bottom: 4px; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 3px; background: none; pointer-events: auto; cursor: default; }
+/* The under row: the live readout left, the legend right. */
+.rr-under { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 24px; margin-top: 4px; }
+.rr-readout-slot { flex: 1 1 520px; min-height: 24px; }
+.rr-readout p { margin: 0; font-size: 16px; line-height: 24px; }
+.rr-readout b { font-weight: 500; font-variant-numeric: lining-nums tabular-nums; }
+.rr-readout .rr-note { font-size: 13px; line-height: 20px; color: var(--muted); }
+/* Phone: docked to the bottom of the viewport while a river or era is focused; the page pads by its height. */
+.rr-readout.rr-dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; box-sizing: border-box; min-height: calc(72px + env(safe-area-inset-bottom));
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--ground); border-top: 0.5px solid var(--line);
+}
+html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
+.rr-legend { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 20px; color: var(--muted); }
+.rr-legend li { display: flex; align-items: center; gap: 6px; }
+.rr-legend svg { display: block; }
+.rr-legend .rr-bot { stroke: var(--ground); }
 .rr-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.rr-controls { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s3) var(--rr-s5); margin: var(--rr-s4) 0 0; font-size: 14px; }
-.rr-seg { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rr-s1); border: 0; margin: 0; padding: 0; }
-.rr-seg legend { float: left; margin-right: var(--rr-s2); color: var(--rr-ink-2); }
-/* Quiet segments: the checked one gets a soft fill, weight and a check mark (not colour alone). */
-.rr-seg label { position: relative; padding: var(--rr-s1) 10px; border-radius: 4px; color: var(--rr-ink-2); cursor: pointer; }
-.rr-seg label:hover { color: var(--rr-ink); }
-.rr-seg input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: inherit; }
-.rr-seg label:has(:checked) { background: var(--rr-grid); color: var(--rr-ink); font-weight: 600; }
-.rr-seg label:has(:checked)::before { content: '✓ ' / ''; }
-.rr-seg label:has(:focus-visible) { outline: 2px solid var(--rr-focus); outline-offset: 2px; }
-.rr-seg:disabled { opacity: 0.55; }
-.rr-seg:disabled label { cursor: default; }
-.rr-check { display: inline-flex; align-items: center; gap: 6px; }
-.rr-check:has(:disabled) { opacity: 0.55; }
-.rr-ctl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.rr-hint { color: var(--rr-ink-2); }
-.rr-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--rr-ink); }
-.rr-options summary, .rr-more summary { cursor: pointer; width: fit-content; color: var(--rr-ink-2); text-underline-offset: 4px; }
-.rr-options summary:hover, .rr-more summary:hover { color: var(--rr-ink); text-decoration: underline; }
-.rr-options[open] > summary, .rr-more details[open] > summary { color: var(--rr-ink); }
-.rr-options-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rr-s3) var(--rr-s5); margin-top: var(--rr-s3); }
-.rr-more { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rr-s2) var(--rr-s5); margin-top: var(--rr-s5); font-size: 14px; }
-.rr-more details[open] { flex-basis: 100%; }
-.rr-summary { max-width: 68ch; margin: var(--rr-s3) 0 0; font-size: 16px; }
-.rr-empty { display: grid; place-items: center; min-height: 320px; margin: 0; color: var(--rr-ink-2); }
-.rr-table { margin: 0; font-size: 14px; }
-.rr-table summary { cursor: pointer; width: fit-content; }
-.rr-table-scroll { overflow-x: auto; margin-top: 8px; }
-.rr-table table { border-collapse: collapse; font: 13px var(--rr-mono); font-variant-numeric: tabular-nums; }
-.rr-table caption { text-align: left; font: 14px var(--rr-body); color: var(--rr-ink-2); padding-bottom: 6px; }
-.rr-table th, .rr-table td { padding: 3px 8px; border-bottom: 1px solid var(--rr-grid); text-align: right; white-space: nowrap; }
-.rr-table th[scope='row'] { text-align: left; position: sticky; left: 0; background: var(--rr-bg); }
-/* Paste-a-URL flow (phase 8): input, progress, error states, source badge. */
-.rr-inputs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rr-s3) var(--rr-s5); }
-.rr-inputs .rr-chips { padding-bottom: 6px; }
-.rr-repo { display: grid; gap: var(--rr-s2); width: min(560px, 100%); font-size: 14px; }
-.rr-repo label { color: var(--rr-ink-2); }
-.rr-repo-row { display: flex; gap: 8px; }
-.rr-repo input { flex: 1; min-width: 0; font: 16px var(--rr-mono); padding: 7px 10px; border: 1px solid var(--rr-ink-2); border-radius: 4px; background: var(--rr-bg); color: var(--rr-ink); }
-.rr-repo input::placeholder { color: var(--rr-ink-2); opacity: 1; }
-.rr-repo input[aria-invalid='true'] { border-width: 2px; border-style: dashed; }
-.rr-field-error { margin: 0; padding-left: 8px; border-left: 3px solid var(--rr-ink); color: var(--rr-ink); }
-button.rr-primary, .rr-state button, .rr-badge { font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid var(--rr-ink); border-radius: 4px; background: none; color: var(--rr-ink); cursor: pointer; }
-button.rr-primary { background: var(--rr-ink); color: var(--rr-bg); font-weight: 600; }
-.rr-state { display: grid; align-content: center; justify-items: start; gap: 10px; min-height: 320px; padding: 0 4px;
-  background: repeating-linear-gradient(90deg, transparent 0 119px, var(--rr-grid) 119px 120px); }
-.rr-state > * { margin: 0; max-width: 64ch; background: var(--rr-bg); }
-.rr-state h3 { font: 600 20px/1.2 var(--rr-display); }
-.rr-progress-line { font: 16px var(--rr-mono); font-variant-numeric: tabular-nums; }
-.rr-bar { width: min(560px, 100%); }
-.rr-bar svg { display: block; overflow: visible; }
-.rr-bar-track { stroke: var(--rr-grid); stroke-width: 6; }
-.rr-bar-end { stroke: var(--rr-ink-2); stroke-width: 1; }
-.rr-bar-fill { stroke: var(--rr-ink); stroke-width: 6; stroke-dasharray: 10 4; animation: rr-flow 1.6s linear infinite; }
-@keyframes rr-flow { to { stroke-dashoffset: -28; } }
-.rr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.rr-card-head .rr-source { position: relative; }
-/* The data-source note is a quiet text disclosure, not a chip. */
-.rr-card-head .rr-badge { padding: 0; border: 0; border-radius: 0; font: 14px var(--rr-mono); color: var(--rr-ink-2); text-decoration: underline dotted; text-underline-offset: 4px; }
-.rr-card-head .rr-badge:hover, .rr-card-head .rr-badge[aria-expanded='true'] { color: var(--rr-ink); }
-.rr-popover { position: absolute; z-index: 2; top: calc(100% + 6px); left: 0; width: min(420px, 80vw); padding: 10px 14px; border: 1px solid var(--rr-ink-2); border-radius: 6px; background: var(--rr-bg); font-size: 14px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.15); }
+.rr-controls { display: flex; align-items: center; gap: 16px; }
+.rr-sel { display: flex; align-items: center; gap: 6px; height: 36px; color: var(--muted); }
+.rr-sel-box { position: relative; display: flex; align-items: center; margin-right: -4px; color: var(--ink); }
+.rr-sel select { appearance: none; field-sizing: content; height: 44px; margin: -4px 0; padding: 0 20px 0 0; border: 0; border-radius: 3px; background: none; color: inherit; font: 500 16px/24px var(--rr-font); cursor: pointer; }
+.rr-sel svg { position: absolute; right: 4px; pointer-events: none; }
+.rr-check { position: relative; display: flex; align-items: center; gap: 6px; height: 36px; color: var(--muted); cursor: pointer; }
+.rr-check::after { content: ''; position: absolute; inset: -4px 0; }
+.rr-check input { position: relative; z-index: 1; appearance: none; flex: none; width: 16px; height: 16px; margin: 0; border: 0.75px solid currentColor; border-radius: 3px; background: var(--field); cursor: inherit; }
+.rr-check input:checked { border-color: var(--solid); background: var(--solid); }
+.rr-check svg { position: absolute; z-index: 2; left: 0; color: var(--on-solid); pointer-events: none; visibility: hidden; }
+.rr-check input:checked + svg { visibility: visible; }
+.rr-check:has(:checked) { color: var(--ink); }
+/* Segmented control: 36 tall, 6 outside, 3 inside the 3 px padding; each radio's hit area reaches 44 tall. */
+.rr-seg { box-sizing: border-box; display: flex; height: 36px; padding: 3px; border: 0.5px solid var(--line); border-radius: 6px; }
+.rr-seg label { position: relative; display: flex; align-items: center; padding: 0 14px; border-radius: 3px; color: var(--muted); cursor: pointer; }
+.rr-seg input { position: absolute; inset: -7px 0; width: 100%; height: calc(100% + 14px); margin: 0; opacity: 0; cursor: inherit; }
+.rr-seg label:has(:checked) { background: var(--band); color: var(--ink); font-weight: 500; }
+.rr-seg label:has(:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rr-controls :disabled { cursor: default; }
+.rr-controls:has(:disabled) { opacity: 0.55; }
+@media (hover: hover) {
+  .rr-seg label:hover { color: var(--ink); }
+}
+.rr-empty { display: grid; place-items: center; min-height: 320px; margin: 0; color: var(--muted); }
+/* Rivers and Eras (DESIGN §3): 144 below, a 280 | 920 grid; h2 on the baseline of the table head / first row. */
+.rr-sec { display: grid; grid-template-columns: 280px minmax(0, 920px); align-items: start; margin-top: 144px; }
+.rr-sec h2 { font: 500 22px/28px var(--rr-font); letter-spacing: -0.01em; margin: 0; }
+.rr-sec h2.rr-at-head { margin-top: -6px; }
+.rr-sec h2.rr-at-row { margin-top: 13px; }
+.rr-index { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: lining-nums tabular-nums; }
+.rr-index th, .rr-index td { padding: 0; font-weight: 400; text-align: right; white-space: nowrap; }
+.rr-index thead th { padding-bottom: 10px; border-bottom: 0.5px solid var(--line); font-size: 13px; line-height: 20px; color: var(--muted); }
+.rr-index tbody th, .rr-index tbody td { box-sizing: border-box; height: 48px; border-bottom: 0.5px solid var(--hair); }
+.rr-index .rr-c-name, .rr-index .rr-c-spark, .rr-index tbody th { text-align: left; }
+/* Columns 240 / 380 / 120 / 80 / 100 at 920; narrower, the numbers keep their widths and the name (240/920 of the
+   table, as the era ranges) and the sparkline (the rest) give way. */
+.rr-index thead .rr-c-name { width: 26.087%; }
+.rr-index thead .rr-c-amount { width: 120px; }
+.rr-index thead .rr-c-share { width: 80px; }
+.rr-index thead .rr-c-span { width: 100px; }
+.rr-index td.rr-c-span { color: var(--muted); }
+.rr-index tr.rr-on > * { background: var(--band); }
+.rr-narrow { display: none; }
+/* The name's button covers its row, so a click anywhere on the row picks the river; its ring rings the row. */
+.rr-index tbody tr { position: relative; }
+.rr-pick { position: static; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.rr-pick::after { content: ''; position: absolute; inset: 0; }
+.rr-pick:focus-visible { outline: none; }
+.rr-pick:focus-visible::after { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rr-rname { font-style: italic; font-weight: 500; }
+.rr-index svg { display: block; width: calc(100% - 20px); height: 24px; }
+.rr-spark { fill: var(--water-a); }
+.rr-spark-other { fill: var(--water-b); opacity: 0.55; }
+.rr-era-list { margin: 0; padding: 0; list-style: none; }
+.rr-era-list li { display: grid; grid-template-columns: 26.087% 1fr; padding: 16px 0; border-bottom: 0.5px solid var(--hair); }
+.rr-era-when { color: var(--muted); font-variant-numeric: lining-nums tabular-nums; }
+.rr-era-title { font-weight: 500; }
+@media (hover: hover) {
+  .rr-index tbody tr:hover .rr-rname { text-decoration: underline; text-decoration-thickness: 0.5px; text-underline-offset: 3px; }
+}
+@media (max-width: 1024px) {
+  /* The controls take their own row below the title and meta, whatever the meta line's length: the head's height
+     never depends on text that arrives with the data (no layout shift). */
+  .rr-card-head > .rr-controls { flex-basis: 100%; }
+  .rr-sec { display: block; }
+  .rr-sec h2.rr-at-head, .rr-sec h2.rr-at-row { margin: 0 0 12px; }
+}
+/* Where the sparkline column is too narrow for its long head. */
+@media (max-width: 800px) {
+  .rr-wide { display: none; }
+  .rr-narrow { display: inline; }
+}
+/* Loading and error panels, source popover, notices (DESIGN §7): 0.5-bordered, radius 6, no shadow. */
+.rr-state { box-sizing: border-box; max-width: 580px; padding: 24px; border: 0.5px solid var(--line); border-radius: 6px; }
+.rr-state h3, .rr-state-title { margin: 0; font: 500 16px/24px var(--rr-font); }
+.rr-state p:not([class]), .rr-progress-line { margin: 6px 0 16px; color: var(--muted); }
+.rr-progress-line { font-variant-numeric: lining-nums tabular-nums; }
+.rr-bar svg { display: block; }
+.rr-bar-track { stroke: var(--line); stroke-width: 0.5; }
+/* While a repo loads the line fills left to right with its progress (DESIGN §6): a scale, eased, never a colour. */
+.rr-bar-fill { stroke: var(--ink); stroke-width: 2; transform-origin: 0 0; transition: transform 250ms ease-out; }
+.rr-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
+.rr-progress .rr-actions { margin-top: 16px; }
+.rr-state button { height: 44px; padding: 0 16px; border: 0.5px solid var(--line); border-radius: 6px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+.rr-state button.rr-primary { border-color: var(--solid); background: var(--solid); color: var(--on-solid); font-weight: 500; }
+.rr-source { position: relative; display: inline-block; }
+/* "Estimated from n of m commits": a quiet dashed-underline button; the hit area reaches 44 tall. */
+.rr-badge { position: relative; padding: 0; border: 0; border-bottom: 0.5px dashed var(--muted); background: none; color: var(--muted); font: inherit; line-height: 16px; cursor: pointer; }
+.rr-badge::after { content: ''; position: absolute; inset: -14px -2px; }
+.rr-badge[aria-expanded='true'] { color: var(--ink); border-bottom-color: var(--ink); }
+@media (hover: hover) {
+  .rr-badge:hover { color: var(--ink); border-bottom-color: var(--ink); }
+}
+.rr-popover { position: absolute; z-index: 2; top: calc(100% + 8px); left: 0; width: min(420px, 80vw); box-sizing: border-box; padding: 12px 16px; border: 0.5px solid var(--line); border-radius: 6px; background: var(--ground); color: var(--ink); font-size: 13px; line-height: 20px; }
 .rr-popover[hidden] { display: none; }
 .rr-popover dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 8px; }
-.rr-popover dt { color: var(--rr-ink-2); }
-.rr-popover dd { margin: 0; font-family: var(--rr-mono); font-variant-numeric: tabular-nums; }
+.rr-popover dt { color: var(--muted); }
+.rr-popover dd { margin: 0; font-variant-numeric: lining-nums tabular-nums; }
 .rr-popover ul { margin: 0; padding-left: 18px; }
-.rr-notice { font-size: 14px; padding: 6px 10px; border-left: 3px solid var(--rr-ink-2); margin: 4px 0 8px; }
+.rr-notice { margin: 0 0 16px; padding: 12px 16px; border: 0.5px solid var(--line); border-radius: 6px; font-size: 13px; line-height: 20px; }
 .rr-card h2:focus { outline: none; }
-.rr-card h2:focus-visible { outline: 2px solid var(--rr-focus); }
-.rr-footer { margin-top: var(--rr-s6); font-size: 14px; color: var(--rr-ink-2); }
-@media (max-width: 640px) {
-  .rr-page { padding: var(--rr-s3) var(--rr-s3) var(--rr-s5); }
-  .rr-intro { margin-top: var(--rr-s3); }
-  .rr-card-head { display: block; }
-  .rr-meta-row { margin-top: var(--rr-s2); }
-  .rr-inputs .rr-chips { padding-bottom: 0; }
-  .rr-card h2 { font-size: 24px; }
-  .rr-controls { gap: var(--rr-s3) var(--rr-s4); }
+.rr-card h2:focus-visible { outline: 2px solid var(--focus); }
+/* Footer (DESIGN §3): a 0.5 rule across the page, then 520 | 680 columns of 13/20 muted text. */
+.rr-footer { margin-top: 160px; border-top: 0.5px solid var(--line); padding: 32px 0 56px; font-size: 13px; line-height: 20px; color: var(--muted); }
+.rr-footer .rr-wrap { display: grid; grid-template-columns: 13fr 17fr; }
+.rr-footer p { margin: 0 0 6px; max-width: 440px; }
+.rr-footer a { color: var(--ink); text-decoration: none; border-bottom: 0.5px solid var(--line); padding-bottom: 1px; }
+.rr-made-by { color: var(--ink); font-weight: 500; }
+.rr-made { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; }
+.rr-made li:first-child a { font-weight: 500; }
+@media (hover: hover) {
+  .rr-footer a:hover { border-bottom-color: var(--ink); }
 }
-/* ?embed=social (phase 11): a fixed 1280×640 card for the social preview and gallery. */
-.rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 28px 48px 0; overflow: hidden; }
-.rr-social main { margin-top: 14px; }
-.rr-social .rr-header { font-size: 15px; }
-.rr-social-pitch { font: 500 44px/1.1 var(--rr-display); letter-spacing: -0.015em; margin: 0 0 8px; }
-.rr-social-sub { margin: 0 0 4px; font-size: 18px; color: var(--rr-ink-2); }
-.rr-social-sub b { font: 600 17px var(--rr-mono); color: var(--rr-ink); }
+@media (max-width: 640px) {
+  .rr-header { height: 60px; }
+  .rr-nav a { padding: 0 8px; }
+  .rr-made { gap: 8px 16px; margin-top: 6px; }
+  .rr-footer .rr-wrap { display: block; }
+  /* V2Phone: "Made by GeekPlux" follows the last paragraph's 6 px. */
+  .rr-footer .rr-wrap > div + div { margin-top: 0; }
+  .rr-intro { padding-top: 40px; }
+  .rr-hero { font-size: 32px; line-height: 36px; }
+  .rr-go { gap: 8px; margin-top: 24px; }
+  .rr-repo input { flex: 1; width: auto; min-width: 0; }
+  .rr-btn { padding: 0 20px; }
+  .rr-or { flex-basis: 100%; margin: 4px 0 0; }
+  .rr-card { margin-top: 64px; }
+  .rr-card-head { display: block; }
+  /* The phone chart is as wide as the column and grows down the page: nothing scrolls sideways. */
+  .rr-frame { overflow: visible; }
+  .rr-frame.rr-waiting { min-height: 100svh; } /* the phone chart runs at least a screen down the page */
+  .rr-controls { justify-content: space-between; margin-top: 16px; }
+  /* Rivers keeps name | sparkline 100×20 | share; eras keep a 104px range column. */
+  .rr-sec { margin-top: 80px; }
+  .rr-index .rr-c-amount, .rr-index .rr-c-span { display: none; }
+  .rr-index thead .rr-c-name { width: auto; }
+  .rr-index thead .rr-c-spark { width: 110px; }
+  .rr-index thead .rr-c-share { width: 56px; }
+  .rr-index svg { width: 100px; height: 20px; }
+  .rr-era-list li { grid-template-columns: 104px 1fr; }
+  .rr-era-when { padding-right: 12px; }
+}
+/* ?embed=social (phase 11, redesigned in R7): a fixed 1280×640 card; the hero's 56/60 headline, 16 and 13 below. */
+.rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 36px 48px 0; overflow: hidden; background: var(--ground); }
+.rr-social .rr-header { height: 28px; }
+.rr-social main { margin-top: 32px; }
+.rr-social-sub { margin: 8px 0 12px; color: var(--muted); }
+.rr-social-sub b { font-weight: 500; color: var(--ink); }
+.rr-social .rr-hero { max-width: none; }

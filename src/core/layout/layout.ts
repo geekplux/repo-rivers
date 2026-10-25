@@ -1,42 +1,46 @@
 /** `layoutRivers`: pure timeline-sankey geometry for a {@link RiverView} (docs/viz/rivers.md §3–§5). */
-import { assignColors } from '../palette.ts';
+import { tones, type Tone } from '../tones.ts';
+import { tagsBot } from '../summary.ts';
 import type { RiverView } from '../view.ts';
-import { LABEL_HEIGHT, placeLabels, type Box, type PlacedLabel } from './labels.ts';
+import { MOUTH_ROOM, riverNameWidth } from './guides.ts';
 import { laneOrder } from './order.ts';
-import { extend, link, ribbonPath, type Point } from './ribbons.ts';
+import { link, ribbonPath, type Point } from './ribbons.ts';
+import { LABEL_HEIGHT, placeRiverNames, type Box, type RiverName } from './riverNames.ts';
 import { band, clipDomain, linear, sqrt } from './scale.ts';
 
-/** Transfer stroke width on a fixed scale across datasets: 1 file ≈ 1.5 px, 100+ files = 6 px (§3.3). */
-/** Horizontal inset of the plot inside the SVG (room for the focus ring). */
+/** Default horizontal inset of the plot inside the SVG (room for a focus ring drawn at the SVG edge). */
 const INSET = 4;
 
+/** Transfer stroke width on a fixed scale across datasets: 1 file ≈ 1.5 px, 100+ files = 6 px (§3.3). */
 const strokeOf = (files: number): number => 1 + sqrt(100, 5)(Math.min(files, 100));
 
 /** Inputs besides the view. All lengths are CSS px at the real container width (never viewBox-scaled). */
 export interface LayoutOptions {
-  /** Container width; on mobile the chart is `max(width, 720, 28·B)` wide inside a scroll region. */
+  /** Container width (the phone passes its time length, about 56 px per bucket, and draws it transposed). */
   width: number;
-  /** Plot height `H`; default `clamp(0.45·W, 320, 480)`, 360 on mobile. */
+  /** Plot height `H`; default `clamp(0.45·W, 320, 480)`. */
   height?: number;
-  /** Gap between consecutive non-zero rivers (3). */
+  /** Gap between consecutive non-zero rivers (3; the redesign draws 2). */
   gap?: number;
+  /** Space above the plot (8): the desktop chart reserves its era band here. */
+  top?: number;
+  /** Horizontal inset of the plot inside the SVG (4). */
+  inset?: number;
+  /** Room right of the desktop plot for river names at the mouth (140, so the plot ends at 1180 of a 1440 page). */
+  labelRoom?: number;
   /** `'linear'` (default, with outlier clipping) or `'sqrt'` of the column total (shares stay exact). */
   scale?: 'linear' | 'sqrt';
-  /** Minimum band thickness for an inside label (18 = 14 px box + 2 px padding each side). */
-  labelMinThickness?: number;
-  /** Phone layout: no gutter, inside labels repeat every 360 px. */
-  mobile?: boolean;
+  /** Phone names (`placeRiverNames` with `phone`): only straight names in a smoothed run, for the transposed chart. */
+  phone?: boolean;
   /** When the data was read (`generatedAt`); marks a partial last bucket. */
   asOf?: string;
   /** Buckets whose values are estimates (`source.truncatedBuckets`). */
   truncatedBuckets?: readonly number[];
-  /** Label text width; default 7.4 px per character (12 px mono). */
+  /** River name width; default the 13 px italic estimate (6.3 px per character + 4). */
   measure?: (text: string) => number;
-  /** Previous `id → color` so hues stay put across re-layouts. */
-  previousColors?: Readonly<Record<string, number>>;
 }
 
-/** One river: a single path (closed subpath per non-zero run), per-column edges, and a palette index. */
+/** One river: a single path (closed subpath per non-zero run), per-column edges, and its tone. */
 export interface RiverShape {
   id: string;
   label: string;
@@ -45,8 +49,8 @@ export interface RiverShape {
   path: string;
   edges: { top: number[]; bottom: number[] };
   thickness: number[];
-  /** Index into `PALETTES[theme].fills` (`OTHER_COLOR` for "other"). */
-  color: number;
+  /** Water A (0) or water B (1), from {@link tones}; "other" is hatched in water B (1). */
+  tone: Tone;
 }
 
 /** A file move drawn from the source at column `b−1` to the target at column `b` (column 0→1 for b = 0). */
@@ -76,7 +80,8 @@ export interface RiverLayout {
   columns: { x: number; total: number; top: number; height: number; factor: number }[];
   rivers: RiverShape[];
   transfers: TransferShape[];
-  labels: { placed: PlacedLabel[]; dropped: string[] };
+  /** River names (DESIGN §4) and the rivers left without one. */
+  labels: { names: RiverName[]; dropped: string[] };
   /** Outlier columns drawn at `factor` scale with a break mark (`mark`, near the stack top) and `text` (`↑ 224K`, in `box`). */
   clipped: { index: number; x: number; total: number; factor: number; text: string; box: Box; mark: Box }[];
   /** Survey line at `asOf` inside a partial last bucket, with its label. */
@@ -91,25 +96,21 @@ const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', y
 /**
  * Lays out a {@link RiverView} as a timeline-sankey: stable lanes, centred column stacks with 3 px gaps,
  * linear thickness with outlier clipping, mid-x Bézier ribbons that taper to a point at zero, transfers,
- * colours and greedy direct labels. Pure and deterministic (same input, same output).
+ * two tones and greedy direct labels. Pure and deterministic (same input, same output).
  */
-export function layoutRivers(view: RiverView, options: LayoutOptions): RiverLayout {
-  const first = build(view, options, 0);
-  return options.mobile || first.gutter === 0 ? first.layout : build(view, options, first.gutter).layout;
-}
-
-function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: RiverLayout; gutter: number } {
-  const { gap = 3, mobile = false, measure = (t: string) => 7.4 * t.length } = o;
+export function layoutRivers(view: RiverView, o: LayoutOptions): RiverLayout {
+  const { gap = 3, phone = false, measure = riverNameWidth, top: pad = 8, inset = INSET } = o;
+  const gutter = Math.max(0, (o.labelRoom ?? MOUTH_ROOM) - inset);
   const lanes = laneOrder(view.rivers, view.transfers);
   const B = view.buckets.length;
-  const width = mobile ? Math.max(o.width, 720, 28 * B) : o.width;
-  const H = o.height ?? (mobile ? 360 : Math.min(480, Math.max(320, 0.45 * width)));
+  const width = o.width;
+  const H = o.height ?? Math.min(480, Math.max(320, 0.45 * width));
   const totals = view.buckets.map((_, i) => lanes.reduce((s, r) => s + (r.values[i] ?? 0), 0));
   const max = Math.max(0, ...totals);
   const { domain, clipped } = o.scale === 'sqrt' ? { domain: max, clipped: [] } : clipDomain(totals);
   const head = clipped.length ? LABEL_HEIGHT + 8 : 0; // room for the `↑ 224K` label above a full-height column
-  // A 4 px inset on both sides keeps the chart's focus ring (drawn at the SVG edge) off the data and gutter labels.
-  const plot = { left: INSET, right: width - gutter - INSET, top: 8 + head, bottom: 8 + head + H };
+  // An inset on both sides (4 px by default) keeps a focus ring drawn at the SVG edge off the data and labels.
+  const plot = { left: inset, right: width - gutter - inset, top: pad + head, bottom: pad + head + H };
   const { width: w, x } = band(B, plot.left, plot.right);
   const xs = [plot.left, ...view.buckets.map((_, i) => x(i)), plot.right];
   const avail = Math.max(0, H - gap * (lanes.length - 1));
@@ -170,26 +171,22 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
     return { from, to, x0: plot.left + from * w, x1: plot.left + (to + 1) * w };
   });
 
-  const labels = placeLabels({
-    bands: lanes.map((r, j) => ({
-      id: r.id, text: r.bot ? `${r.label} · bot` : r.label, total: r.total, other: r.kind === 'other',
-      values: r.values, top: extend(tops[j]!), bottom: extend(bots[j]!),
-    })),
-    xs, plot, bucketWidth: w, measure, gutter: !mobile, gutterRoom: gutter, window: mobile ? 360 : Infinity,
-    minThickness: o.labelMinThickness ?? 18,
-    obstacles: [...markers.flatMap((m) => [m.box, m.mark]), ...(partial ? [partial.box] : [])],
+  const text = (r: (typeof lanes)[number]): string => (tagsBot(r) ? `${r.label} bot` : r.label);
+  const obstacles = markers.flatMap((m) => [m.box, m.mark]);
+  const labels = placeRiverNames({
+    rivers: lanes.map((r, j) => ({ id: r.id, text: text(r), top: tops[j]!, bottom: bots[j]!, thickness: thick[j]! })),
+    plot, bucketWidth: w, measure, limit: width - inset, transfers: transfers.filter((t) => t.alwaysVisible), obstacles, phone,
   });
-  const colors = assignColors(lanes, o.previousColors);
+  const tone = tones(lanes);
   const rivers = lanes.map((r, j): RiverShape => ({
-    id: r.id, label: r.label, kind: r.kind, bot: r.bot, color: colors[j]!,
+    id: r.id, label: r.label, kind: r.kind, bot: r.bot, tone: tone[j]!,
     path: ribbonPath(xs, tops[j]!, bots[j]!, r.values),
     edges: { top: tops[j]!, bottom: bots[j]! }, thickness: thick[j]!,
   }));
-  const layout: RiverLayout = {
+  return {
     width, height: plot.bottom + 30, plot, bucketWidth: w, domain, unit, columns, rivers, transfers,
-    labels: { placed: labels.placed, dropped: labels.dropped }, clipped: markers, partial, estimated,
+    labels, clipped: markers, partial, estimated,
   };
-  return { layout, gutter: labels.gutterWidth };
 }
 
 /** The `asOf` survey line when it falls inside the last bucket (the value there is not extrapolated). */

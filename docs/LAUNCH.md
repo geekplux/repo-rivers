@@ -2,7 +2,7 @@
 
 > **Drafts only. Do not post until Sean approves.** Nothing in this file has been posted anywhere.
 
-Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280×640), the README GIF [`docs/hero.gif`](hero.gif) and the [gallery](../examples/README.md). Regenerate them with `pnpm build && pnpm gallery`.
+Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280×640), the README image [`docs/images/hero.webp`](images/hero.webp), the launch GIF [`docs/hero.gif`](hero.gif) (the chart arriving, then a pointer following two rivers) and the [gallery](../examples/README.md). Regenerate them with `pnpm build && pnpm gallery`.
 
 ## Show HN
 
@@ -15,11 +15,11 @@ Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280
 > Try it: https://reporivers.geekplux.com. Three samples (Vite, Svelte, Express) are bundled and render offline. Paste `owner/name` or a GitHub URL for any public repository; no account and no key.
 >
 > How it works:
-> - The GitHub REST API gives the default branch's history. Small repositories are read commit by commit; larger ones are sampled with one comparison per time bucket, which caps a fetch at 55 requests (the unauthenticated limit is 60 an hour). A "sampled" badge says what was estimated.
+> - The GitHub REST API gives the default branch's history. Small repositories are read commit by commit; larger ones are sampled with one comparison per time bucket, which caps a fetch at 55 requests (the unauthenticated limit is 60 an hour). The chart head says what was estimated ("Estimated from 6,310 of 9,799 commits").
 > - Paths are mapped to folders (depth 1 to 3) and commits to contributors, then bucketed by week, month, quarter or year.
 > - A pure layout function draws the ribbons in SVG. Runtime dependencies are React and React DOM.
 > - Era boundaries are computed deterministically. One small model call (Workers AI) names them, from a summary of at most 2 KB with no person names and no commit messages; without it, eras get template names.
-> - Colours come from a colour-vision-deficiency-tested palette, every river has a direct label, and the chart works with the keyboard and a screen reader (prose summary and data table).
+> - Rivers carry no hue, only two blues of different lightness (tested under colour-vision-deficiency simulation); rivers are named on the chart, and the chart works with the keyboard and a screen reader (prose summary and the Rivers table).
 >
 > Limits: default branch only, sampled data for large histories, and GitHub lists at most 300 files per comparison (a move-finder fills in large reorganisations).
 >
@@ -35,7 +35,7 @@ Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280
 
 1. > repo-rivers draws a repository's history as a timeline-sankey: one river per top-level folder or contributor, quarter by quarter. Here is Vite moving from src/node to packages/vite. https://reporivers.geekplux.com [attach docs/hero.gif]
 2. > Svelte, 2016 to 2026: the Q1 2019 spike is the Svelte 3 rewrite, and in Q2 2023 dashed arrows carry 952 files from test/ and 231 from src/ into packages/. Express, 2009 to 2026: a long, steady river. [attach examples/svelte-light.png]
-3. > Under the hood: the GitHub REST API (sampled to stay under the 60 requests/hour limit), a pure SVG layout, and one small cached model call that names the eras. Keyboard and screen-reader friendly, colour-blind-safe palette, MIT. Source: https://github.com/geekplux/repo-rivers
+3. > Under the hood: the GitHub REST API (sampled to stay under the 60 requests/hour limit), a pure SVG layout, and one small cached model call that names the eras. Keyboard and screen-reader friendly, nothing depends on telling colours apart, MIT. Source: https://github.com/geekplux/repo-rivers
 
 ## Demo scenarios
 
@@ -44,9 +44,9 @@ Assets: the social preview [`docs/social-preview.png`](social-preview.png) (1280
 A developer joins a project built on Svelte and wants a mental map of the repository before reading code.
 
 1. Open `https://reporivers.geekplux.com?sample=svelte`.
-2. The chart shows `src` and `test` until 2023, then `packages`. The bracket *The move to packages* and the dashed arrows explain why old blog posts and issues point to paths that no longer exist.
+2. The chart shows `src` and `test` until 2023, then `packages`. The era *The move to packages* and the dashed arrows explain why old blog posts and issues point to paths that no longer exist.
 3. Tab into the chart and press the arrow keys: the readout gives lines changed and the share of each quarter, so the busiest folders of the last year are clear.
-4. Switch to **Contributors** to see who has been active recently, and open **View as table** to copy the numbers.
+4. Switch to **Contributors** to see who has been active recently, and read the **Rivers** table under the chart for each one’s total, share and active years.
 
 Takeaway in under a minute: where the code lives now, when it moved, and who to ask.
 

@@ -21,15 +21,20 @@ export function useSampleParam(): [SampleEntry, (id: string) => void] {
   return [sample, select];
 }
 
-/** Samples (Vite · Svelte · Express): quiet text toggle buttons with `aria-pressed`; the pressed one is bold and underlined. */
+/**
+ * "or open Vite, Svelte or Express": the sample names are quiet text toggle buttons with `aria-pressed`; the
+ * pressed one has a heavier underline (not colour alone).
+ */
 export function SampleSwitcher({ value, onSelect }: { value: string; onSelect: (id: string) => void }) {
+  const last = samples.length - 1;
   return (
-    <nav aria-label="Built-in samples" className="rr-chips">
-      <span className="rr-muted">or open a sample</span>
-      {samples.map((s) => (
-        <button key={s.id} type="button" aria-pressed={s.id === value} onClick={() => onSelect(s.id)}>
-          {s.title}
-        </button>
+    <nav aria-label="Built-in samples" className="rr-or">
+      or open{' '}
+      {samples.map((s, i) => (
+        <span key={s.id}>
+          <button type="button" aria-pressed={s.id === value} onClick={() => onSelect(s.id)}>{s.title}</button>
+          {i < last - 1 ? ', ' : i === last - 1 ? ' or ' : ''}
+        </span>
       ))}
     </nav>
   );

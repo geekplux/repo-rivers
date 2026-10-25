@@ -4,14 +4,21 @@ import { parseAggregate, type RepoAggregate } from '../core/schema.ts';
 export interface SampleEntry {
   id: string;
   title: string;
+  /** The sample's repository as owner/name, so the chart head can name it before the JSON has loaded. */
+  repo: string;
+  /**
+   * Extra height above the plot in the default view (the room for a clipped column's `↑ 224K` label), so the page
+   * can hold the chart's height before the JSON has loaded. samples.test.ts checks it against the layout.
+   */
+  head?: number;
   load(): Promise<RepoAggregate>;
 }
 
 /** Built-in samples, in the order they are offered; the first is the default. Each JSON file is a lazy chunk. */
 export const samples: readonly SampleEntry[] = [
-  { id: 'vite', title: 'Vite', load: async () => parseAggregate((await import('./vite.json')).default) },
-  { id: 'svelte', title: 'Svelte', load: async () => parseAggregate((await import('./svelte.json')).default) },
-  { id: 'express', title: 'Express', load: async () => parseAggregate((await import('./express.json')).default) },
+  { id: 'vite', title: 'Vite', repo: 'vitejs/vite', load: async () => parseAggregate((await import('./vite.json')).default) },
+  { id: 'svelte', title: 'Svelte', repo: 'sveltejs/svelte', head: 22, load: async () => parseAggregate((await import('./svelte.json')).default) },
+  { id: 'express', title: 'Express', repo: 'expressjs/express', load: async () => parseAggregate((await import('./express.json')).default) },
 ];
 
 /** Looks up a sample by id. */

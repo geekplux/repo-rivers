@@ -1,6 +1,7 @@
-// `pnpm gallery` (docs/PLAN.md phase 11): renders the shareable assets with the harness's one browser.
-// examples/<sample>-{light,dark,contributors}.png, docs/social-preview.png (1280×640), docs/images/hero.png
-// (the static hero) and docs/hero.gif (reveal + hover pass, ≤ 5 s, 3 plays, via ffmpeg when it is installed).
+// `pnpm gallery` (docs/PLAN.md phase 11, Cyanotype since R7): renders the shareable assets with the harness's one
+// browser at the design's 1440 px width. examples/<sample>-{light,dark,contributors}.png (the chart card),
+// docs/social-preview.png (1280×640), docs/images/hero.webp (the README's still: the page from the header to the
+// readout) and docs/hero.gif (the arrive reveal + a hover pass, ≤ 5 s, 3 plays). The WebP and the GIF need ffmpeg.
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -14,7 +15,7 @@ const FPS = 10;
 const MAX_SECONDS = 5;
 const LOOPS = 2;
 const MB = 1024 * 1024;
-const PAGE = { width: 1280, height: 1100 };
+const PAGE = { width: 1440, height: 1300 };
 const CHART = '[data-testid="river-chart"]';
 const rel = (p) => p.slice(ROOT.length + 1);
 
@@ -51,7 +52,7 @@ async function shootCard(page, file) {
 const riverPoints = (page, id, B) => page.evaluate(([chart, rid, buckets]) => {
   const svg = document.querySelector(chart);
   const box = svg.getBoundingClientRect();
-  const axis = [...svg.querySelectorAll('.rr-axis line.rr-grid')].find((l) => l.getAttribute('y1') === l.getAttribute('y2'));
+  const axis = svg.querySelector('.rr-axis-line');
   const [left, right] = [Number(axis.getAttribute('x1')), Number(axis.getAttribute('x2'))];
   const w = (right - left) / buckets;
   const points = [];
@@ -64,14 +65,34 @@ const riverPoints = (page, id, B) => page.evaluate(([chart, rid, buckets]) => {
   return points;
 }, [CHART, id, B]);
 
-/** Frames of the reveal (paused CSS animation, stepped) and a hover pass along the two largest rivers. */
+/** Holds the arrive motion (Web Animations, ui/motion.ts) paused from its first frame, so the frames can step it. */
+const holdArrive = () => {
+  window.rrHeld = [];
+  const animate = Element.prototype.animate;
+  Element.prototype.animate = function (frames, options) {
+    const a = animate.call(this, frames, options);
+    if (String(options?.id).startsWith('rr-arrive')) {
+      a.pause();
+      window.rrHeld.push(a);
+    }
+    return a;
+  };
+};
+
+/** The page from the top to the bottom of the under row (readout and legend), 24 px below. */
+const heroClip = (page) => page.evaluate(() => {
+  scrollTo(0, 0);
+  const u = document.querySelector('.rr-under').getBoundingClientRect();
+  return { x: 0, y: 0, width: innerWidth, height: Math.ceil(u.bottom + 24) };
+});
+
+/** Frames of the arrive reveal (held, stepped) and a hover pass along the two largest rivers. */
 async function heroFrames(page, url, dir) {
   let n = 0;
-  const clip = await (async () => {
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await open(page, url);
-    return cardClip(page);
-  })();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(holdArrive);
+  await open(page, url);
+  const clip = await cardClip(page);
   const frame = async () => {
     const path = join(dir, `f${String(++n).padStart(4, '0')}.png`);
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -79,15 +100,16 @@ async function heroFrames(page, url, dir) {
     return path;
   };
   const hold = (path, count) => { for (let i = 0; i < count; i++) copyFileSync(path, join(dir, `f${String(++n).padStart(4, '0')}.png`)); };
-  const reveal = await page.evaluate(() => document.getAnimations().filter((a) => a.animationName === 'rr-reveal').length);
-  assert(reveal > 0, 'the reveal animation runs without reduced motion');
-  for (const t of [0, 20, 45, 75, 110, 150, 200, 270, 360, 480, 700]) { // denser early: the reveal eases out
-    await page.evaluate((ms) => document.getAnimations().forEach((a) => (a.pause(), (a.currentTime = ms))), t);
+  const held = await page.evaluate(() => window.rrHeld.length);
+  assert(held >= 1, 'the arrive reveal runs without reduced motion');
+  for (const t of [0, 90, 180, 270, 360, 450, 540, 640, 720, 800, 900]) {
+    await page.evaluate((ms) => window.rrHeld.forEach((a) => (a.currentTime = ms)), t);
     await frame();
   }
-  const still = join(dir, `f${String(n).padStart(4, '0')}.png`);
-  hold(still, 4);
-  await page.emulateMedia({ reducedMotion: 'reduce' }); // instant dimming during the hover pass
+  await page.evaluate(() => window.rrHeld.forEach((a) => a.finish()));
+  const still = await frame();
+  hold(still, 3);
+  await page.emulateMedia({ reducedMotion: 'reduce' }); // instant fades during the hover pass
   const rivers = await page.locator(`${CHART} path[data-river]`).evaluateAll((ps) =>
     ps.filter((p) => p.dataset.river !== 'other').map((p) => ({ id: p.dataset.river, total: Number(p.dataset.total) })).toSorted((a, b) => b.total - a.total));
   const B = JSON.parse(readFileSync(join(ROOT, 'src/samples/vite.json'), 'utf8')).time.starts.length;
@@ -104,7 +126,15 @@ async function heroFrames(page, url, dir) {
   }
   await page.mouse.move(0, 0);
   hold(still, 5);
-  return { frames: n, still };
+  return { frames: n };
+}
+
+/** A lossy WebP of `png` at `quality` (ffmpeg's libwebp); false when ffmpeg is missing. */
+function toWebp(png, out, quality) {
+  const run = spawnSync(FFMPEG, ['-v', 'error', '-y', '-i', png, '-c:v', 'libwebp', '-quality', String(quality), '-compression_level', '6', out], { encoding: 'utf8' });
+  if (run.error) return false;
+  assert(run.status === 0, `ffmpeg failed: ${run.stderr}`);
+  return true;
 }
 
 function makeGif(dir, out) {
@@ -112,7 +142,7 @@ function makeGif(dir, out) {
   if (probe.error || probe.status !== 0) return false;
   for (const [width, colors] of [[960, 128], [880, 96], [800, 64]]) {
     const filter = `scale=${width}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=${colors}[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
-    const run = spawnSync(FFMPEG, ['-v', 'error', '-y', '-framerate', String(FPS), '-i', join(dir, 'f%04d.png'), '-vf', filter, '-loop', String(LOOPS), out], { encoding: 'utf8' });
+    const run = spawnSync(FFMPEG, ['-v', 'error', '-y', '-framerate', String(FPS), '-start_number', '1', '-i', join(dir, 'f%04d.png'), '-vf', filter, '-loop', String(LOOPS), out], { encoding: 'utf8' });
     assert(run.status === 0, `ffmpeg failed: ${run.stderr}`);
     const size = statSync(out).size;
     console.log(`  wrote ${rel(out)} at ${width} px, ${colors} colours: ${(size / MB).toFixed(2)} MB`);
@@ -151,15 +181,26 @@ export default async function gallery({ page, baseURL }) {
   assert(dims.width === 1280 && dims.height === 640 && bytes <= MB, `social preview 1280×640 ≤ 1 MB (got ${dims.width}×${dims.height}, ${bytes} B)`);
   console.log(`  wrote ${rel(social)} (1280×640, ${(bytes / 1024).toFixed(0)} KB)`);
 
-  // Hero: frames → GIF (≤ 2 MB, ≤ 5 s, 3 plays); the fully revealed frame is the static hero and the fallback.
+  // Hero still (README): the redesigned page at 1440, light, at rest; a WebP of at most 300 KB.
   await page.setViewportSize(PAGE);
+  await open(page, at('?sample=vite'));
   const dir = mkdtempSync(join(tmpdir(), 'rr-hero-'));
   try {
-    const { frames, still } = await heroFrames(page, at('?sample=vite'), dir);
+    const png = join(dir, 'hero.png');
+    await page.screenshot({ path: png, clip: await heroClip(page) });
+    const webp = join(ROOT, 'docs/images/hero.webp');
+    for (const q of [86, 78, 70]) {
+      if (!toWebp(png, webp, q)) throw new Error(`check failed: ${FFMPEG} is needed for docs/images/hero.webp`);
+      if (statSync(webp).size <= 300 * 1024) break;
+    }
+    const kb = statSync(webp).size / 1024;
+    assert(kb <= 300, `docs/images/hero.webp ≤ 300 KB (got ${kb.toFixed(0)} KB)`);
+    console.log(`  wrote docs/images/hero.webp (${pngSize(png).width}×${pngSize(png).height}, ${kb.toFixed(0)} KB)`);
+
+    // Hero GIF (docs/LAUNCH.md): frames → GIF (≤ 2 MB, ≤ 5 s, 3 plays).
+    const { frames } = await heroFrames(page, at('?sample=vite'), dir);
     assert(frames / FPS <= MAX_SECONDS, `hero GIF ≤ ${MAX_SECONDS} s (got ${frames / FPS} s)`);
-    copyFileSync(still, join(ROOT, 'docs/images/hero.png'));
-    console.log(`  wrote docs/images/hero.png (${frames} frames at ${FPS} fps = ${frames / FPS} s)`);
-    if (!makeGif(dir, join(ROOT, 'docs/hero.gif'))) console.log(`  ${FFMPEG} not found: no GIF written; docs/images/hero.png is the fallback`);
+    if (!makeGif(dir, join(ROOT, 'docs/hero.gif'))) console.log(`  ${FFMPEG} not found: no GIF written`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

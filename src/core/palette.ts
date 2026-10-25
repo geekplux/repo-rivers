@@ -1,8 +1,8 @@
 /**
- * River palettes and the colour science that checks them (docs/viz/rivers.md §4): Machado 2009 colour-vision
- * simulation in linear sRGB, sRGB↔CIELAB (D65), CIEDE2000 and WCAG 2 contrast. Pure; no DOM.
+ * The chrome colours of both themes and the colour science that checks them: Machado 2009 colour-vision
+ * simulation in linear sRGB, sRGB↔CIELAB (D65), CIEDE2000 and WCAG 2 contrast. Pure; no DOM. The rivers carry no
+ * hue: two waters that differ in lightness (src/ui/theme/tokens.css, checked in tokens.test.ts; tones.ts).
  */
-import type { River } from './view.ts';
 
 /** The two colour themes, matching `prefers-color-scheme`. */
 export type Theme = 'light' | 'dark';
@@ -11,29 +11,19 @@ export type Cvd = 'protanopia' | 'deuteranopia' | 'tritanopia';
 /** A colour as three channels: sRGB (gamma or linear, 0..1) or CIELAB. */
 export type Triple = readonly [number, number, number];
 
-/** Theme tokens; `fills[0..7]` are the river hues, `fills[OTHER_COLOR]` is the "other" grey base. */
+/** Theme chrome colours (the Radix roles ground, ink, muted, hair and focus of src/ui/theme/tokens.css). */
 export interface ThemePalette {
   background: string;
   ink: string;
   secondary: string;
   graticule: string;
   focus: string;
-  fills: readonly string[];
 }
 
-/** Index of the neutral grey used by the "other" river (drawn with a background-colour hatch). */
-export const OTHER_COLOR = 8;
-
-/** Light ("paper") and dark ("night chart") palettes: Okabe-Ito hue families tuned per theme. */
+/** Light and dark chrome; tokens.test.ts checks the CSS roles against these. */
 export const PALETTES: Readonly<Record<Theme, ThemePalette>> = {
-  light: {
-    background: '#F5F1E8', ink: '#1B2330', secondary: '#4F5868', graticule: '#DDD5C4', focus: '#1B2330',
-    fills: ['#704C01', '#0390CE', '#048A5F', '#928A02', '#0B67AB', '#9E5D3E', '#BE6C9A', '#00595C', '#6C7178'],
-  },
-  dark: {
-    background: '#10161F', ink: '#E9E4D8', secondary: '#A7AFBC', graticule: '#253041', focus: '#E9E4D8',
-    fills: ['#E0AE60', '#97D5FB', '#3CC494', '#E4D50C', '#0698F4', '#E36A1C', '#D27FAD', '#468E8C', '#61676D'],
-  },
+  light: { background: '#FBFDFF', ink: '#113264', secondary: '#60646C', graticule: '#ACD8FC', focus: '#0090FF' },
+  dark: { background: '#111927', ink: '#C2E6FF', secondary: '#B0B4BA', graticule: '#004074', focus: '#0090FF' },
 };
 
 /** Machado, Oliveira & Fernandes (2009) matrices at severity 1.0, row-major; apply to **linear** RGB. */
@@ -117,31 +107,4 @@ export function deltaE2000([l1, a1, b1]: Triple, [l2, a2, b2]: Triple): number {
 export function contrast(a: string, b: string): number {
   const [hi, lo] = [lum(a), lum(b)].toSorted((p, q) => q - p) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
-}
-
-/**
- * Assigns a palette index to each lane (in lane order). Rivers are "co-adjacent" when they are consecutive
- * among the non-zero lanes of any column; co-adjacent rivers never share a hue (8 hues allow it in practice).
- * A river keeps its `previous` hue when that causes no conflict (sticky across re-layouts); others prefer
- * `lane mod 8`. "other" is always {@link OTHER_COLOR}.
- */
-export function assignColors(
-  lanes: readonly Pick<River, 'id' | 'kind' | 'values'>[],
-  previous: Readonly<Record<string, number>> = {},
-): number[] {
-  const near = lanes.map(() => new Set<number>());
-  const columns = Math.max(0, ...lanes.map((l) => l.values.length));
-  for (let i = 0; i < columns; i++) {
-    const live = lanes.flatMap((l, j) => ((l.values[i] ?? 0) > 0 ? [j] : []));
-    live.slice(1).forEach((j, n) => (near[j]!.add(live[n]!), near[live[n]!]!.add(j)));
-  }
-  const out: number[] = lanes.map(() => -1);
-  const sticky = (j: number): number => (previous[lanes[j]!.id] === undefined ? 1 : 0);
-  for (const j of [...lanes.keys()].toSorted((a, b) => sticky(a) - sticky(b))) {
-    if (lanes[j]!.kind === 'other') { out[j] = OTHER_COLOR; continue; }
-    const taken = new Set([...near[j]!].map((n) => out[n]));
-    const prefs = [previous[lanes[j]!.id] ?? -1, ...Array.from({ length: 8 }, (_, h) => (j + h) % 8)];
-    out[j] = prefs.find((h) => h >= 0 && h < OTHER_COLOR && !taken.has(h)) ?? j % 8;
-  }
-  return out;
 }

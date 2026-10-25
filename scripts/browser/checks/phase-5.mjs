@@ -1,8 +1,89 @@
-// Phase 5: the river chart in the "survey map" identity (docs/PLAN.md phase 5, docs/viz/rivers.md S1–S7).
+// Phase 5: the river chart (docs/PLAN.md phase 5, docs/viz/rivers.md S1–S7), in the Cyanotype design and its motion
+// (docs/redesign/DESIGN.md §4–§6).
 import { DESKTOP, MOBILE, assert, shoot, shootCvd, tabTo } from '../lib.mjs';
 
 const CHART = '[data-testid="river-chart"]';
-const REVEAL_MS = 800;
+const REVEAL_MS = 1000; // the arrive reveal is 900 ms (DESIGN §6)
+
+/** Records every Web Animations call (id, duration, easing) in `window.rrAnimated`, from the first script on. */
+const recordAnimations = () => {
+  window.rrAnimated = [];
+  const animate = Element.prototype.animate;
+  Element.prototype.animate = function (frames, options) {
+    window.rrAnimated.push({ id: options?.id ?? '', ms: options?.duration, easing: options?.easing ?? 'linear', ghost: this.closest('.rr-ghost') !== null });
+    return animate.call(this, frames, options);
+  };
+};
+const animated = (page) => page.evaluate(() => window.rrAnimated.splice(0));
+const count = (log, id) => log.filter((a) => a.id === id).length;
+
+/**
+ * R7 / DESIGN §6: the arrive reveal (900 ms ease-out, with the era fade) runs once per load and again after a
+ * sample is chosen, never on a view switch (that crossfades in 250 ms), a theme switch, a resize or focus; focus
+ * runs the river's moved-files dashes forward once (600 ms), not again while moving between its quarters.
+ */
+async function expectMotion(page, baseURL) {
+  await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
+  let log = await animated(page);
+  assert(count(log, 'rr-arrive') === 1 && count(log, 'rr-arrive-eras') === 1, `the arrive reveal runs once on load (${JSON.stringify(log)})`);
+  const reveal = log.find((a) => a.id === 'rr-arrive');
+  assert(reveal.ms === 900 && reveal.easing === 'ease-out', `the reveal is 900 ms ease-out (${JSON.stringify(reveal)})`);
+  await page.waitForTimeout(REVEAL_MS);
+
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  await page.locator(`${CHART} path[data-river^="p:"]`).first().waitFor();
+  log = await animated(page);
+  assert(count(log, 'rr-arrive') === 0 && count(log, 'rr-crossfade-in') === 1 && log.filter((a) => a.id.startsWith('rr-crossfade')).every((a) => a.ms === 250),
+    `switching to Contributors crossfades in 250 ms, without the reveal (${JSON.stringify(log)})`);
+  await page.waitForTimeout(400);
+  assert((await page.locator('.rr-ghost').count()) === 0, 'the crossfade removes its fading copy');
+  await page.locator('.rr-seg label', { hasText: 'Modules' }).click();
+  await page.waitForTimeout(400);
+  const theme = page.locator('header .rr-icon');
+  await theme.click();
+  await theme.click();
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.setViewportSize(MOBILE);
+  await page.locator(`${CHART}[data-phone]`).waitFor();
+  await page.setViewportSize(DESKTOP);
+  await page.locator(`${CHART}:not([data-phone])`).waitFor();
+  await page.waitForTimeout(400);
+  log = await animated(page);
+  assert(count(log, 'rr-arrive') === 0 && log.every((a) => a.id.startsWith('rr-crossfade')), `theme switches and resizes never replay the reveal (${JSON.stringify(log)})`);
+
+  await page.locator('.rr-plot').focus(); // focus-in: the largest river, which moved files in (Svelte: packages)
+  await page.waitForTimeout(50);
+  log = await animated(page);
+  const dash = log.filter((a) => a.id === 'rr-dash');
+  assert(dash.length > 0 && dash.every((a) => a.ms === 600) && count(log, 'rr-arrive') === 0, `focus runs the river's dashes once, 600 ms (${JSON.stringify(log)})`);
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(50);
+  assert((await animated(page)).length === 0, 'moving between quarters of the same river runs nothing');
+  // R7 review: with a river pinned, a view switch animates only the live drawing; the fading copy is not the drawing.
+  await page.keyboard.press('Enter');
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  const during = await page.evaluate(() => ({
+    reveal: [...document.querySelectorAll('.rr-reveal')].map((g) => g.classList.contains('rr-ghost')),
+    ghost: [...document.querySelectorAll('.rr-ghost')].map((g) => g.getAttribute('class')),
+  }));
+  assert(during.reveal.length === 1 && !during.reveal[0] && during.ghost.every((c) => !/rr-reveal|rr-focusing/.test(c)), `only the live drawing is .rr-reveal during a crossfade (${JSON.stringify(during)})`);
+  await page.waitForTimeout(400);
+  log = await animated(page);
+  assert(log.filter((a) => a.id === 'rr-dash').every((a) => !a.ghost), `dash runs never land on the fading copy (${JSON.stringify(log)})`);
+  await page.locator('.rr-seg label', { hasText: 'Modules' }).click();
+  await page.waitForTimeout(400);
+  await animated(page);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Vite' }).click();
+  await page.locator(`${CHART}[aria-label*="vitejs/vite"]`).waitFor({ state: 'visible' });
+  await page.waitForTimeout(50);
+  log = await animated(page);
+  assert(count(log, 'rr-arrive') === 1, `choosing a sample replays the reveal once (${JSON.stringify(log)})`);
+  await page.waitForTimeout(REVEAL_MS);
+}
 
 async function open(page, url, repo) {
   await page.goto(url, { waitUntil: 'load' });
@@ -40,9 +121,10 @@ async function expectTransfer(page, key) {
     dash: getComputedStyle(el).strokeDasharray,
     width: Number.parseFloat(getComputedStyle(el).strokeWidth),
     head: Number(el.parentElement.querySelector('path.rr-arrow')?.dataset.arrow ?? 0),
+    casing: el.parentElement.querySelector('path.rr-halo') !== null,
   }));
-  // Arrowhead length max(7, 2·width + 2) keeps the head visible on wide transfers.
-  assert(style.dash !== 'none' && style.head >= Math.max(7, 2 * style.width + 2) - 0.01, `transfer ${key} is dashed with an arrowhead`);
+  // DESIGN §4: a ground casing, a `6 3` dash at most 3.5 px wide and a 7 px arrowhead (twice the widest dash).
+  assert(style.dash === '6px, 3px' && style.width <= 3.5 && style.head === 7 && style.casing, `transfer ${key} is dashed with an arrowhead (${JSON.stringify(style)})`);
 }
 
 const lum = (rgb) => rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
@@ -52,7 +134,34 @@ function contrast(a, b) {
 }
 const rgb = (css) => css.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
 
+/** Cumulative layout shift of a fresh load of `url` at `viewport` (no input), after the chart and 1.5 s. */
+async function cls(page, url, viewport) {
+  await page.setViewportSize(viewport);
+  await page.goto(url, { waitUntil: 'load' });
+  await page.locator(CHART).waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(1500);
+  return page.evaluate(() => window.rrShift);
+}
+
 export default async function phase5({ page, baseURL }) {
+  // R7 review: loading the page moves nothing (the fonts above the fold are preloaded; the chart head and the chart
+  // keep their heights while the sample arrives, and the footer stays below the fold): CLS < 0.05.
+  await page.addInitScript(() => {
+    window.rrShift = 0;
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries()) if (!e.hadRecentInput) window.rrShift += e.value;
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+  // 768: the head's controls row must not depend on the meta line; 1440×1600: the frame's bottom and the footer
+  // are on screen while the sample loads (Svelte also needs the room for its clipped column's label).
+  for (const [q, viewport] of [['', { width: 1440, height: 900 }], ['', { width: 768, height: 1024 }], ['', MOBILE], ['?sample=svelte', { width: 1440, height: 1600 }]]) {
+    const shift = await cls(page, `${baseURL}${q}`, viewport);
+    const where = `${q || '/'} at ${viewport.width}×${viewport.height}`;
+    assert(shift < 0.05, `CLS on ${where} is < 0.05 (got ${shift.toFixed(4)})`);
+    console.log(`  CLS on ${where}: ${shift.toFixed(4)}`);
+  }
+  await page.setViewportSize(DESKTOP);
+
   // AC4 + reveal: with motion allowed, the mark fires < 1500 ms after navigation and the clip-path reveal runs.
   await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'light' });
   await open(page, baseURL, 'vitejs/vite');
@@ -60,10 +169,11 @@ export default async function phase5({ page, baseURL }) {
   const rendered = await page.evaluate(() => performance.getEntriesByName('rivers-rendered')[0]?.startTime);
   assert(rendered !== undefined && rendered < 1500, `rivers-rendered at ${rendered?.toFixed(0)} ms (< 1500)`);
   console.log(`  rivers-rendered at ${rendered.toFixed(0)} ms after navigation`);
-  const anim = await page.locator('.rr-reveal').evaluate((g) => getComputedStyle(g).animationName);
-  assert(anim === 'rr-reveal', `reveal animation runs with motion allowed (got ${anim})`);
-  const fonts = await page.evaluate(async () => (await document.fonts.ready, [...document.fonts].filter((f) => f.family.includes('Fraunces')).map((f) => f.status)));
-  assert(fonts.includes('loaded'), `self-hosted Fraunces loaded (${fonts})`);
+  const fonts = await page.evaluate(async () => (await document.fonts.ready, [...document.fonts].filter((f) => f.family.includes('Alegreya Sans')).map((f) => f.status)));
+  assert(fonts.includes('loaded'), `self-hosted Alegreya Sans loaded (${fonts})`);
+  await page.addInitScript(recordAnimations);
+  await expectMotion(page, baseURL);
+  await open(page, baseURL, 'vitejs/vite');
   await page.waitForTimeout(REVEAL_MS);
 
   // AC2 / S1 / S3: Vite labels and transfers; focus ring contrast on a chip (>= 3:1).
@@ -99,46 +209,104 @@ export default async function phase5({ page, baseURL }) {
   await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
   assert((await page.getByRole('button', { name: 'Svelte' }).getAttribute('aria-pressed')) === 'true', '?sample=svelte selects the Svelte chip');
 
-  // AC6 / S7: dark theme with the dark palette, estimated rule and partial marker.
+  // AC6 / S7: dark theme with the dark waters (no hue: Radix blue 12 and 11), estimated rule and partial marker.
   await page.emulateMedia({ colorScheme: 'dark' });
   await open(page, baseURL, 'vitejs/vite');
   await page.waitForTimeout(REVEAL_MS);
   const dark = await page.evaluate(() => ({
     bg: getComputedStyle(document.body).backgroundColor,
-    fill: getComputedStyle(document.querySelector('path[data-river]')).fill,
+    fills: [...new Set([...document.querySelectorAll('path[data-river]:not(.rr-other)')].map((p) => getComputedStyle(p).fill))],
     estimated: document.querySelectorAll('[data-estimated]').length,
     partial: document.querySelectorAll('[data-partial]').length,
   }));
-  assert(dark.bg === 'rgb(16, 22, 31)', `dark background (${dark.bg})`);
-  assert(['rgb(224, 174, 96)', 'rgb(151, 213, 251)', 'rgb(60, 196, 148)', 'rgb(228, 213, 12)', 'rgb(6, 152, 244)', 'rgb(227, 106, 28)', 'rgb(210, 127, 173)', 'rgb(70, 142, 140)'].includes(dark.fill), `dark river fill (${dark.fill})`);
+  assert(dark.bg === 'rgb(17, 25, 39)', `dark background is Radix blue 2 (${dark.bg})`);
+  assert(dark.fills.toSorted().join() === 'rgb(112, 184, 255),rgb(194, 230, 255)', `dark river fills are water A and B (${dark.fills})`);
   assert(dark.estimated > 0 && dark.partial === 1, 'estimated rule and partial marker present');
   await shoot(page, '05-dark-desktop', DESKTOP);
   await page.emulateMedia({ colorScheme: 'light' });
 
-  // AC5 / S6: reduced motion draws everything on first paint.
+  // AC5 / S6 / DESIGN §6: reduced motion draws everything on first paint, and nothing animates: no reveal, no
+  // crossfade, no dash run, no fade.
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(baseURL, { waitUntil: 'commit' });
+  await page.goto(`${baseURL}?sample=svelte`, { waitUntil: 'commit' });
   await page.locator('path[data-river]').first().waitFor({ state: 'attached', timeout: 5000 });
   await page.waitForTimeout(50);
   const still = await page.locator('.rr-reveal').evaluate((g) => [getComputedStyle(g).animationName, getComputedStyle(g).clipPath]);
   assert(still[0] === 'none' && still[1] === 'none', `no reveal under reduced motion (${still})`);
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  await page.locator('.rr-seg label', { hasText: 'Modules' }).click();
+  await page.locator('.rr-plot').focus();
+  await page.keyboard.press('ArrowDown');
+  const quiet = await page.evaluate(() => ({ called: window.rrAnimated.splice(0), running: document.getAnimations().map((a) => a.id || a.animationName || a.transitionProperty) }));
+  assert(quiet.called.length === 0 && quiet.running.length === 0, `nothing animates under reduced motion (${JSON.stringify(quiet)})`);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await open(page, baseURL, 'vitejs/vite');
   await shoot(page, '06-reduced-motion-desktop', DESKTOP);
 
-  // S4 / mobile: labelled, focusable scroll region; >= 12 px labels; >= 2 labels in the first view and per full 360 px window.
+  // R6 / DESIGN §5: the phone chart runs down the page (time top to bottom), no horizontal scroll anywhere; names
+  // only inside a run, reading downward; a tap focuses a river and docks the readout, Escape releases it.
   await page.setViewportSize(MOBILE);
-  const region = page.locator('[role="region"][aria-label][tabindex="0"]');
-  await region.waitFor({ state: 'visible' });
-  assert(await region.evaluate((el) => el.scrollWidth > el.clientWidth), 'the chart region scrolls sideways');
-  assert(await page.getByText('Scroll for later years').isVisible(), 'scroll caption visible');
-  const labels = await expectLabels(page, 'vite mobile');
-  const view = await region.evaluate((el) => el.getBoundingClientRect().width);
-  assert(labels.filter((l) => l.id && l.sx + l.sw <= view).length >= 2, '>= 2 labels in the first mobile viewport');
-  const { width } = await readChart(page);
-  for (let lo = 0; lo + 360 <= width; lo += 360) {
-    const n = labels.filter((l) => l.id && l.sx >= lo && l.sx + l.sw <= lo + 360).length;
-    assert(n >= 2, `>= 2 labels in mobile window ${lo}-${lo + 360} (got ${n})`);
-  }
-  await tabTo(page, '[role="region"]');
+  await page.locator(`${CHART}[data-phone]`).waitFor({ state: 'visible' });
+  const phone = await page.evaluate((sel) => {
+    const svg = document.querySelector(sel);
+    const r = svg.getBoundingClientRect();
+    return {
+      scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      region: document.querySelectorAll('[role="region"]').length + document.querySelectorAll('.rr-caption').length,
+      w: r.width, h: r.height, left: r.left,
+      names: [...svg.querySelectorAll('text[data-label-for]')].map((t) => t.getAttribute('transform') ?? ''),
+    };
+  }, CHART);
+  assert(phone.scroll <= 0 && phone.region === 0, `phone: no horizontal scroll and no scroll region (overflow ${phone.scroll}, regions ${phone.region})`);
+  assert(phone.h > phone.w && phone.left === 16 && phone.w === MOBILE.width - 32, `phone: the chart is the column's width and taller than wide (${phone.w}x${phone.h} at ${phone.left})`);
+  assert(phone.names.length >= 1 && phone.names.every((t) => t.startsWith('rotate(90.0')), `phone: names read downward (${phone.names})`);
+  const phoneLabels = (await readChart(page)).labels.filter((l) => l.id);
+  const crossed = phoneLabels.flatMap((a, k) => phoneLabels.slice(k + 1).filter((b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
+  assert(crossed.length === 0 && phoneLabels.every((l) => l.size >= 12), 'phone: names do not overlap and are >= 12 px');
+  const docked = () => page.locator('[data-testid="readout"]').evaluate((r) => ({ on: r.dataset.docked === 'true', pos: getComputedStyle(r).position, bottom: Math.round(r.getBoundingClientRect().bottom), h: r.getBoundingClientRect().height, pad: parseFloat(getComputedStyle(document.body).paddingBottom) }));
+  const big = (await readChart(page)).rivers.toSorted((a, b) => b.total - a.total)[0].id;
+  await page.evaluate((sel) => scrollTo(0, document.querySelector(sel).getBoundingClientRect().top + scrollY - 100), CHART);
+  // A point on the largest river inside the viewport (the overlays let pointers through to the drawing).
+  const box = await page.evaluate(({ sel, id }) => {
+    const L = document.querySelector(sel).getBoundingClientRect();
+    for (let y = Math.max(L.top, 0) + 40; y < innerHeight - 120; y += 6) {
+      for (let x = L.left + 40; x < L.right - 30; x += 3) if (document.elementFromPoint(x, y)?.dataset?.river === id) return { x, y };
+    }
+    return null;
+  }, { sel: CHART, id: big });
+  assert(box, `phone: found a point on ${big}`);
+  // A plain hover never docks; docking keeps the readout's slot, so nothing below it moves.
+  await page.mouse.move(box.x, box.y);
+  await page.mouse.move(box.x + 1, box.y + 1);
+  assert(!(await docked()).on, 'phone: a hover alone does not dock the readout');
+  const legendY = () => page.locator('.rr-legend').evaluate((l) => l.getBoundingClientRect().top + scrollY);
+  const before = await legendY();
+  await page.mouse.click(box.x, box.y);
+  await page.waitForFunction(() => document.querySelector('[data-testid="readout"]').dataset.docked === 'true', null, { timeout: 2000 });
+  const on = await docked();
+  assert(on.pos === 'fixed' && on.bottom === MOBILE.height && on.h >= 72 && on.pad >= on.h, `phone: a tap docks the readout to the viewport bottom and pads the page (${JSON.stringify(on)})`);
+  assert(Math.abs((await legendY()) - before) < 0.5, 'phone: docking does not move the content below the readout');
+  const glyphs = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.rr-legend li[data-legend] svg')].map((g) => [g.closest('li').dataset.legend, Number(g.getAttribute('width')) < Number(g.getAttribute('height')) ? 'vertical' : 'horizontal'])));
+  assert(glyphs.estimated === 'vertical' && glyphs.partial === 'horizontal', `phone: legend glyphs turn with the chart (${JSON.stringify(glyphs)})`);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('[data-testid="readout"]').dataset.docked, null, { timeout: 2000 });
+  const off = await docked();
+  assert(off.pos !== 'fixed' && off.pad === 0, `phone: Escape releases the river and the readout returns to the page (${JSON.stringify(off)})`);
   await shoot(page, '02-vite-mobile', MOBILE);
+  // R4 review: switching dimension on the phone leaves no name behind (every name belongs to a drawn river).
+  await open(page, `${baseURL}?sample=express`, 'expressjs/express');
+  await page.locator('.rr-seg label', { hasText: 'Contributors' }).click();
+  await page.locator(`${CHART} path[data-river^="p:"]`).first().waitFor();
+  const stale = await page.evaluate((sel) => {
+    const svg = document.querySelector(sel);
+    const rivers = new Set([...svg.querySelectorAll('path[data-river]')].map((p) => p.dataset.river));
+    return [...svg.querySelectorAll('[data-label-for]')].map((t) => t.dataset.labelFor).filter((id) => !rivers.has(id));
+  }, CHART);
+  assert(stale.length === 0, `mobile Express contributors: every name has its river (stale ${stale.join(', ')})`);
+  await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
+  const clip = await page.locator(`${CHART} text.rr-clip-label`).allTextContents();
+  assert(clip.length === 1 && clip[0] === '← 224K', `phone: the clipped Svelte column's label points left, where it is cut (${clip})`);
   await page.setViewportSize(DESKTOP);
 }
