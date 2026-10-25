@@ -139,25 +139,25 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-sec h2.rr-at-head { margin-top: -6px; }
 .rr-sec h2.rr-at-row { margin-top: 13px; }
 .rr-index { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: lining-nums tabular-nums; }
-.rr-index th, .rr-index td { padding: 0; font-weight: 400; text-align: right; }
+.rr-index th, .rr-index td { padding: 0; font-weight: 400; text-align: right; white-space: nowrap; }
 .rr-index thead th { padding-bottom: 10px; border-bottom: 0.5px solid var(--line); font-size: 13px; line-height: 20px; color: var(--muted); }
 .rr-index tbody th, .rr-index tbody td { box-sizing: border-box; height: 48px; border-bottom: 0.5px solid var(--hair); }
 .rr-index .rr-c-name, .rr-index .rr-c-spark, .rr-index tbody th { text-align: left; }
-/* Columns 240 / 380 / 120 / 80 / 100 of 920. */
+/* Columns 240 / 380 / 120 / 80 / 100 at 920; narrower, the numbers keep their widths and the name (240/920 of the
+   table, as the era ranges) and the sparkline (the rest) give way. */
 .rr-index thead .rr-c-name { width: 26.087%; }
-.rr-index thead .rr-c-spark { width: 41.304%; }
-.rr-index thead .rr-c-amount { width: 13.043%; }
-.rr-index thead .rr-c-share { width: 8.696%; }
-.rr-index thead .rr-c-span { width: 10.87%; }
+.rr-index thead .rr-c-amount { width: 120px; }
+.rr-index thead .rr-c-share { width: 80px; }
+.rr-index thead .rr-c-span { width: 100px; }
 .rr-index td.rr-c-span { color: var(--muted); }
 .rr-index tr.rr-on > * { background: var(--band); }
 .rr-narrow { display: none; }
 /* The name's button covers its row, so a click anywhere on the row picks the river; its ring rings the row. */
 .rr-index tbody tr { position: relative; }
-.rr-pick { position: static; padding: 0; overflow-wrap: anywhere; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.rr-pick { position: static; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .rr-pick::after { content: ''; position: absolute; inset: 0; }
 .rr-pick:focus-visible { outline: none; }
-.rr-pick:focus-visible::after { outline: 2px solid var(--focus); outline-offset: -2px; }
+.rr-pick:focus-visible::after { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rr-rname { font-style: italic; font-weight: 500; }
 .rr-index svg { display: block; width: calc(100% - 20px); height: 24px; }
 .rr-spark { fill: var(--water-a); }
@@ -172,6 +172,11 @@ a { color: inherit; text-underline-offset: 3px; }
 @media (max-width: 1024px) {
   .rr-sec { display: block; }
   .rr-sec h2.rr-at-head, .rr-sec h2.rr-at-row { margin: 0 0 12px; }
+}
+/* Where the sparkline column is too narrow for its long head. */
+@media (max-width: 800px) {
+  .rr-wide { display: none; }
+  .rr-narrow { display: inline; }
 }
 /* Loading and error panels, source popover, notices (DESIGN §7): 0.5-bordered, radius 6, no shadow. */
 .rr-state { box-sizing: border-box; max-width: 580px; padding: 24px; border: 0.5px solid var(--line); border-radius: 6px; }
@@ -230,13 +235,13 @@ a { color: inherit; text-underline-offset: 3px; }
   .rr-controls { justify-content: space-between; margin-top: 16px; }
   /* Rivers keeps name | sparkline 100×20 | share; eras put the range above the title. */
   .rr-sec { margin-top: 80px; }
-  .rr-index .rr-c-amount, .rr-index .rr-c-span, .rr-wide { display: none; }
-  .rr-narrow { display: inline; }
+  .rr-index .rr-c-amount, .rr-index .rr-c-span { display: none; }
   .rr-index thead .rr-c-name { width: auto; }
   .rr-index thead .rr-c-spark { width: 110px; }
   .rr-index thead .rr-c-share { width: 56px; }
   .rr-index svg { width: 100px; height: 20px; }
-  .rr-era-list li { display: block; }
+  .rr-era-list li { grid-template-columns: 104px 1fr; }
+  .rr-era-when { padding-right: 12px; }
 }
 /* ?embed=social (phase 11): a fixed 1280×640 card for the social preview and gallery. */
 .rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 28px 48px 0; overflow: hidden; }
