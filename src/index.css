@@ -233,7 +233,7 @@ a { color: inherit; text-underline-offset: 3px; }
   .rr-card { margin-top: 64px; }
   .rr-card-head { display: block; }
   .rr-controls { justify-content: space-between; margin-top: 16px; }
-  /* Rivers keeps name | sparkline 100×20 | share; eras put the range above the title. */
+  /* Rivers keeps name | sparkline 100×20 | share; eras keep a 104px range column. */
   .rr-sec { margin-top: 80px; }
   .rr-index .rr-c-amount, .rr-index .rr-c-span { display: none; }
   .rr-index thead .rr-c-name { width: auto; }
