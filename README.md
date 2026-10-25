@@ -14,9 +14,9 @@ pnpm dev:worker   # optional, in a second terminal: the API for pasting any publ
 
 No account and no API key. The built-in samples (Vite, Svelte, Express) render offline. Pasting `owner/name` or a GitHub URL also works without the Worker: the browser then reads GitHub directly, against your own rate limit.
 
-<picture><source media="(prefers-reduced-motion: reduce)" srcset="docs/images/hero.png"><img src="docs/hero.gif" width="720" alt="The Vite sample: rivers of modules from 2020 to 2026 sweep in from the left, with packages/vite as the widest river, dashed arrows where files moved between folders, and three named eras above the chart. The pointer then follows packages/vite and docs/.vitepress, dimming the other rivers while the readout gives each quarter's lines changed."></picture>
+<img src="docs/images/hero.webp" width="720" alt="The Repo Rivers page with the Vite sample: the headline “A repository’s history, drawn as rivers”, a field for a GitHub repository with a Draw button and the samples Vite, Svelte and Express, then vitejs/vite drawn as rivers of folders from 2020 to 2026 in two blues, with packages/vite as the widest river, a hatched “other”, dashed arrows where files moved between folders, three named eras above the chart and a readout under it.">
 
-More examples, with the story each sample tells: [the gallery](examples/README.md). Without motion: [Still image](docs/images/hero.png).
+More examples, with the story each sample tells: [the gallery](examples/README.md).
 
 ## What you can read from it
 
@@ -33,7 +33,7 @@ More examples, with the story each sample tells: [the gallery](examples/README.m
 4. **Bucket by time.** The smallest of week, month, quarter or year that gives at most 24 buckets (48 with a token; the Vite and Svelte samples were built with one, hence their 27 and 41 quarters).
 5. **Draw flows.** A pure layout function turns the buckets into ribbons, transfers and direct labels in SVG. Runtime dependencies are `react` and `react-dom` only.
 
-**Sampling and rate limits.** Unauthenticated GitHub access allows 60 requests per hour. Small repositories are read commit by commit. Larger ones are sampled with one comparison per bucket, which caps a fetch at 55 requests. A "sampled" badge says what was estimated. Results are cached in the Worker (Cloudflare KV) and in your browser: fresh for 24 h, kept up to 30 days and revalidated.
+**Sampling and rate limits.** Unauthenticated GitHub access allows 60 requests per hour. Small repositories are read commit by commit. Larger ones are sampled with one comparison per bucket, which caps a fetch at 55 requests. The chart head says what was read ("Estimated from 6,310 of 9,799 commits") and opens the source notes. Results are cached in the Worker (Cloudflare KV) and in your browser: fresh for 24 h, kept up to 30 days and revalidated.
 
 **The move-finder.** GitHub lists at most 300 files per comparison, which can hide a large reorganisation. When a folder first appears in such a bucket, repo-rivers finds the commit that created it and reads its renames, at about 3 to 6 extra requests per folder.
 
@@ -43,11 +43,11 @@ More detail: [docs/EXTENDING.md](docs/EXTENDING.md) (public API, adapters, themi
 
 ## Accessibility
 
-- Meaning never relies on colour alone: rivers have direct labels and a stable order, "other" is hatched, transfers are dashed with arrowheads.
-- The palette is based on Okabe-Ito and is tested in code: every pair of colours stays distinguishable (CIEDE2000 ΔE ≥ 8) under protanopia, deuteranopia and tritanopia simulation, in light and dark themes.
-- The chart is keyboard-operable: arrow keys move between rivers and time buckets, Home/End jump to the ends, Enter pins and Escape clears.
+- Meaning never relies on colour alone: rivers carry no hue, only two blues of different lightness so neighbours differ; rivers are named on the chart (or in the Rivers table) and keep a stable order; "other" is hatched, bots have a dotted edge and moved files are dashed arrows.
+- The colours are Radix Colors blue and slate, light and dark, and are tested in code: both river blues have at least 3:1 contrast against the background and differ in lightness under protanopia, deuteranopia and tritanopia simulation, and text has at least 4.5:1.
+- The chart is keyboard-operable: arrow keys move between rivers and time buckets (on a phone, where time runs down the page, Up and Down move through time), Home/End jump to the ends, Enter pins and Escape clears. Rows of the Rivers table and the eras are buttons too.
 - Screen readers get a prose summary, a live readout of the focused river, and the Rivers table: every river with its total, share and active years.
-- `prefers-reduced-motion` turns off every animation. The browser checks run axe on the sample, loading and error states.
+- `prefers-reduced-motion` turns off every animation: the chart is drawn at once, with no reveal, fades or crossfades. The browser checks run axe on the sample, loading and error states.
 
 Found a barrier? Please [open an issue](https://github.com/geekplux/repo-rivers/issues/new/choose).
 
@@ -64,8 +64,7 @@ The app and its API are one Cloudflare Worker. Prerequisites, the exact command 
 
 ## Roadmap
 
-- A hosted demo on Cloudflare.
-- Export as SVG or PNG; a vertical layout for phones.
+- Export as SVG or PNG.
 - Co-authored-by attribution.
 - More sources: GitLab and local `git log` adapters.
 - `src/core` as an npm package.
@@ -79,7 +78,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md
 ## Credits
 
 - [geekplux/timeline-sankey](https://github.com/geekplux/timeline-sankey) (BSD-3-Clause): the inspiration for the ribbon shape, the dashed cross-links and hover dimming. repo-rivers is a rewrite; no code was copied.
-- The [Okabe-Ito](https://jfly.uni-koeln.de/color/) colour-blind-safe palette, from which the river hues are derived.
+- [Radix Colors](https://www.radix-ui.com/colors) (MIT): the blue and slate scales of the light and dark themes.
 - [Alegreya Sans](https://github.com/huertatipografica/Alegreya-Sans) by Huerta Tipográfica, under the [SIL Open Font License](public/fonts/OFL.txt).
 
 ## License

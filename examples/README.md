@@ -1,20 +1,20 @@
 # Gallery
 
-The three built-in samples, as `pnpm gallery` renders them. Each one opens instantly and offline, with no key: use the links below (or run `pnpm dev` and open the same `?sample=` paths on localhost). Every image is the chart card at 1280 px wide; hover, tap or Tab into the live chart for exact numbers.
+The three built-in samples, as `pnpm gallery` renders them. Each one opens instantly and offline, with no key: use the links below (or run `pnpm dev` and open the same `?sample=` paths on localhost). Every image is the chart card of the page at 1440 px wide; hover, tap or Tab into the live chart for exact numbers.
 
-To regenerate these images, the social preview and the README GIF: `pnpm build && pnpm gallery`.
+To regenerate these images, the social preview, the README image and the launch GIF: `pnpm build && pnpm gallery`.
 
 ## Vite: from `src/node` to `packages/vite`
 
 [Open: `?sample=vite`](https://reporivers.geekplux.com/?sample=vite)
 
-![The Vite sample in the light theme: rivers of folders from 2020 to 2026. packages/vite starts in late 2020 and is the widest river from then on; three era brackets sit above the chart.](vite-light.png)
+![The Vite sample in the light theme: rivers of folders from 2020 to 2026. packages/vite starts in late 2020 and is the widest river from then on; three named eras sit above the chart.](vite-light.png)
 
 In spring 2020 Vite's code lived in `src/node` and a top-level `playground`. In Q4 2020 the repository took its monorepo layout: `packages/vite` appears and is the main river, and dashed arrows show `playground` moving into `packages/playground`. The era names follow the data: *From src/node to packages/vite*, *The move to packages/create-vite* (122 files moved in Q3 2021), then *More packages/vite*. The late bulge labelled `docs/.vitepress` is busy in Q4 2024 and Q1 2026.
 
 | Dark theme | Contributors |
 | --- | --- |
-| ![The Vite sample in the dark theme: the same rivers on a dark background with lighter hues.](vite-dark.png) | ![The Vite sample by contributor: yyx990803 carries the first year, then sapphi-red, patak-cat and bluwy carry most of the later history.](vite-contributors.png) |
+| ![The Vite sample in the dark theme: the same rivers on a dark background in lighter blues.](vite-dark.png) | ![The Vite sample by contributor: yyx990803 carries the first year, then sapphi-red, patak-cat and bluwy carry most of the later history.](vite-contributors.png) |
 
 ## Svelte: the Svelte 3 spike and the 2023 monorepo move
 
@@ -42,4 +42,4 @@ From 2009 to 2026, one bucket per year. The early years are the busiest: `spec` 
 
 ## Social preview
 
-[`?embed=social`](https://reporivers.geekplux.com/?embed=social) is a minimal 1280×640 card (wordmark, pitch, chart). It accepts `&sample=`, and it is the source of [`docs/social-preview.png`](../docs/social-preview.png).
+[`?embed=social`](https://reporivers.geekplux.com/?embed=social) is a minimal 1280×640 card (logo, headline, chart). It accepts `&sample=`, and it is the source of [`docs/social-preview.png`](../docs/social-preview.png).
