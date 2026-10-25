@@ -237,6 +237,16 @@ describe('layout against the spec numbers', () => {
     expect(gutter.every((p) => p.x >= 1060 && p.x + p.width <= 1200)).toBe(true);
   });
 
+  it('labels a bot river "bot" unless its name already ends in [bot]', () => {
+    const view = selectView(AGG.svelte!, { dimension: 'contributors', includeBots: true });
+    const bot = view.rivers.find((r) => r.bot)!;
+    expect(bot.label).toMatch(/\[bot\]$/);
+    const text = (v: RiverView) => layoutRivers(v, { width: W, height: H }).labels.placed.find((p) => p.id === bot.id)?.text;
+    expect(text(view)).toBe(bot.label);
+    const renamed = { ...view, rivers: view.rivers.map((r) => (r.id === bot.id ? { ...r, label: 'release-helper' } : r)) };
+    expect(text(renamed)).toBe('release-helper bot');
+  });
+
   it('L11 the partial-bucket marker sits inside the last bucket; estimated runs follow truncatedBuckets', () => {
     for (const name of SAMPLES) {
       const L = get(name, 'modules');

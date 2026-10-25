@@ -1,5 +1,6 @@
 /** `layoutRivers`: pure timeline-sankey geometry for a {@link RiverView} (docs/viz/rivers.md §3–§5). */
 import { tones, type Tone } from '../tones.ts';
+import { tagsBot } from '../summary.ts';
 import type { RiverView } from '../view.ts';
 import { LABEL_HEIGHT, placeLabels, type Box, type PlacedLabel } from './labels.ts';
 import { laneOrder } from './order.ts';
@@ -180,7 +181,7 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
 
   const labels = placeLabels({
     bands: lanes.map((r, j) => ({
-      id: r.id, text: r.bot ? `${r.label} bot` : r.label, total: r.total, other: r.kind === 'other',
+      id: r.id, text: tagsBot(r) ? `${r.label} bot` : r.label, total: r.total, other: r.kind === 'other',
       values: r.values, top: extend(tops[j]!), bottom: extend(bots[j]!),
     })),
     xs, plot, bucketWidth: w, measure, gutter: !mobile, gutterRoom: gutter, window: mobile ? 360 : Infinity,

@@ -15,7 +15,7 @@ const ARROW = 7;
 export interface RiverChartProps {
   aggregate: RepoAggregate;
   view: RiverView;
-  /** Laid out with `top: ERA_BAND` when `eras` are drawn: the band sits in the first 84 px of the SVG. */
+  /** Laid out with `top: ERA_BAND + 8` when `eras` are drawn: the band sits in the first 84 px of the SVG. */
   layout: RiverLayout;
   mobile: boolean;
   /** The active river and bucket (from `useRiverFocus`). */
@@ -172,7 +172,7 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
             </g>
           ))}
         </g>
-        {L.partial && <line x1={L.partial.x} x2={L.partial.x} y1={top} y2={axisY} className="rr-survey" data-partial />}
+        {L.partial && <line x1={L.partial.x} x2={L.partial.x} y1={banded ? ERA_BAND : top - 8} y2={axisY} className="rr-survey" data-partial />}
       </svg>
       {interactive && (
         // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- role="application": the chart's one tab stop (arrow keys)
@@ -203,7 +203,7 @@ function EraButtons({ eras, marks, active, onActive, width }: { eras: readonly E
         return (
           <button key={`${e.start}-${e.end}`} type="button" className="rr-era" data-era={i} data-source={e.source} data-active={i === active || undefined}
             aria-label={`${e.title}, ${m.range}${e.source === 'ai' ? ', named by AI' : ''}`} aria-describedby={`${id}-${i}`}
-            style={{ left: m.x0 - 4, width: m.x1 - m.x0 }} onFocus={() => setFocused(i)} onBlur={() => setFocused(null)}
+            style={{ left: m.x0 - 4, width: Math.max(8, m.x1 - m.x0 - 8) }} onFocus={() => setFocused(i)} onBlur={() => setFocused(null)}
             onPointerEnter={() => setHovered(i)} onPointerLeave={() => setHovered(null)}>
             <span className="rr-sr" id={`${id}-${i}`}>{eraNote(e.note)}</span>
           </button>

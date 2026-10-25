@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { layoutRivers } from './layout/layout.ts';
 import { parseAggregate, type RepoAggregate } from './schema.ts';
-import { amount, caveats, columnTotals, describeView, eraNote, eraRange, focusReadout, idleReadout, legendItems, plain, share } from './summary.ts';
+import { amount, caveats, columnTotals, describeView, eraNote, eraRange, focusReadout, idleReadout, legendItems, plain, readoutCaveats, share, tagsBot } from './summary.ts';
 import { selectView } from './view.ts';
 import express from '../samples/express.json';
 import svelte from '../samples/svelte.json';
@@ -48,12 +48,16 @@ describe('focusReadout', () => {
     expect(rich).toContainEqual({ b: new Intl.NumberFormat('en').format(r.values[i]!) });
     expect(c.estimated).toContain(i);
     expect(plain(rich)).toBe(`packages/vite, ${view.buckets[i]!.label}: ${new Intl.NumberFormat('en').format(r.values[i]!)} lines changed, `
-      + `${Math.round((100 * r.values[i]!) / totals[i]!)}% of the quarter. This quarter is estimated.`);
+      + `${Math.round((100 * r.values[i]!) / totals[i]!)}% of the quarter.`);
+    expect(readoutCaveats(view, c, i)).toBe(' This quarter is estimated.');
   });
 
-  it('reads zero values as "no changes" and adds the partial bucket on the last one', () => {
+  it('reads zero values as "no changes"; the partial bucket is spoken only', () => {
     const r = view.rivers.find((x) => x.values.at(-1) === 0)!;
-    expect(line(r.id, view.buckets.length - 1)).toBe(`${r.label}, ${view.buckets.at(-1)!.label}: no lines changed this quarter. Quarter in progress, to 20 Oct.`);
+    const last = view.buckets.length - 1;
+    expect(line(r.id, last)).toBe(`${r.label}, ${view.buckets.at(-1)!.label}: no lines changed this quarter.`);
+    expect(readoutCaveats(view, c, last)).toContain(' Quarter in progress, to 20 Oct.');
+    expect(readoutCaveats(view, c, 0)).toBe(c.estimated.includes(0) ? ' This quarter is estimated.' : '');
   });
 
   it('lists transfers in and out of the river', () => {
@@ -76,13 +80,27 @@ describe('focusReadout', () => {
     const sv = selectView(SVELTE, { dimension: 'modules' });
     const L = layoutRivers(sv, { width: 1104 });
     const sc = caveats(SVELTE, sv, L.clipped);
-    expect(line(sv.rivers[0]!.id, 9, sv, sc)).toContain(' Column drawn at 23% scale.');
+    expect(line(sv.rivers[0]!.id, 9, sv, sc)).not.toContain('scale');
+    expect(readoutCaveats(sv, sc, 9)).toContain(' Column drawn at 23% scale.');
     expect(line(null, 9, sv, sc)).toMatch(/^Q1 2019: [\d,]+ lines changed across \d+ rivers\./);
     const people = selectView(SVELTE, { dimension: 'contributors', includeBots: true });
     const bot = people.rivers.find((r) => r.bot)!;
     const rich = focusReadout(people, caveats(SVELTE, people), bot.id, bot.values.indexOf(bot.peak));
-    expect(rich.slice(0, 3)).toEqual([{ i: bot.label }, ' ', { m: 'bot' }]);
+    expect(bot.label).toMatch(/\[bot\]$/);
+    expect(rich[0]).toEqual({ i: bot.label });
+    expect(rich).not.toContainEqual({ m: 'bot' });
     expect(plain(rich)).toMatch(/ commits?, /);
+    const plainBot = { ...bot, label: 'release-helper' };
+    const relabelled = { ...people, rivers: people.rivers.map((r) => (r.id === bot.id ? plainBot : r)) };
+    const tagged = focusReadout(relabelled, caveats(SVELTE, relabelled), bot.id, bot.values.indexOf(bot.peak));
+    expect(tagged.slice(0, 3)).toEqual([{ i: 'release-helper' }, ' ', { m: 'bot' }]);
+  });
+
+  it('tags a bot only when its label does not already say [bot]', () => {
+    expect(tagsBot({ bot: true, label: 'renovate[bot]' })).toBe(false);
+    expect(tagsBot({ bot: true, label: 'Dependabot[BOT]' })).toBe(false);
+    expect(tagsBot({ bot: true, label: 'release-helper' })).toBe(true);
+    expect(tagsBot({ bot: false, label: 'someone' })).toBe(false);
   });
 
   it('names every river, never with a middle dot', () => {

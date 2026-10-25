@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
 import { ERA_BAND, MOUTH_ROOM, riverNameWidth } from './core/layout/guides.ts';
-import { caveats, describeEras, describeView, eraLine, focusReadout, idleReadout, legendItems, plain, type Rich } from './core/summary.ts';
+import { caveats, describeEras, describeView, eraLine, focusReadout, idleReadout, legendItems, plain, readoutCaveats, type Rich } from './core/summary.ts';
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
 import { Controls, type ControlValue } from './ui/Controls.tsx';
@@ -77,7 +77,7 @@ export function App() {
     const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
     // Desktop (DESIGN §4): the plot flush with the column's left edge, a fixed room right of it for river names.
     const desk = mobile ? {} : { inset: 0, labelRoom: MOUTH_ROOM };
-    return layoutRivers(view, { width, mobile, gap: 2, top: banded ? ERA_BAND : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets, ...desk });
+    return layoutRivers(view, { width, mobile, gap: 2, top: banded ? ERA_BAND + 8 : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets, ...desk });
   }, [agg, view, width, mobile, banded]);
   const [era, setEra] = useState<number | null>(null);
   const eraOn = era === null ? undefined : eras[era];
@@ -124,7 +124,9 @@ export function App() {
     : failed ? failed.title // the visible readout names the error; the live region (below) speaks it in full
     : view && eraOn ? eraLine(view, eraOn)
     : view && notes && active.bucket !== null ? focusReadout(view, notes, active.river, active.bucket) : idle;
-  const text = typeof readout === 'string' ? readout : plain(readout);
+  const focused = !failed && rs.status !== 'loading' && !eraOn && view && notes && active.bucket !== null;
+  // The caveats the chart draws as marks (estimate, partial bucket, clipped column) are spoken, not shown.
+  const text = typeof readout === 'string' ? readout : plain(readout) + (focused ? readoutCaveats(view, notes, active.bucket!) : '');
   // After a sample switch or a drawn repo, the live region names it until the first movement in the new chart.
   const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;

@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import type { Era } from '../core/schema.ts';
+import { tagsBot } from '../core/summary.ts';
 import type { RiverView } from '../core/view.ts';
 
 const num = new Intl.NumberFormat('en');
@@ -24,7 +25,7 @@ export function DataTable({ view, caption, eras = [] }: { view: RiverView; capti
           <tbody>
             {view.rivers.map((r) => (
               <tr key={r.id}>
-                <th scope="row">{r.label}{r.bot && <> <span className="rr-muted">bot</span></>}</th>
+                <th scope="row">{r.label}{tagsBot(r) && <> <span className="rr-muted">bot</span></>}</th>
                 {r.values.map((v, i) => <td key={i}>{num.format(v)}</td>)}
                 <td>{num.format(r.total)}</td>
               </tr>

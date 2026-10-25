@@ -14,7 +14,7 @@ async function open(page, url, repo) {
 const state = (page) => page.locator(PLOT).evaluate((g) => ({ river: g.dataset.active, bucket: g.dataset.bucket, pinned: g.dataset.pinned === 'true' }));
 const readout = (page) => page.locator('[data-testid="readout"] p[aria-hidden]').first().innerText();
 const announced = async (page) => (await sleep(250), page.locator('[data-testid="readout"] [aria-live="polite"]').innerText());
-/** The river named by a focus readout (`*name*, Q2 2023: …`; a bot reads `name bot`). */
+/** The river named by a focus readout (`*name*, Q2 2023: …`; a bot without a [bot] suffix reads `name bot`). */
 const nameOf = (text) => text.split(', ')[0];
 
 /** A viewport point inside river `id` (centre of its inside label, checked with isPointInFill), or of any river. */
@@ -162,6 +162,8 @@ export default async function phase6({ page, baseURL }) {
   assert((await state(page)).bucket === '0', 'Home jumps to the first bucket');
   await page.keyboard.press('End');
   assert((await state(page)).bucket === '26', 'End jumps to the last bucket');
+  const [shown, spoken] = [await readout(page), await announced(page)];
+  assert(!/in progress|estimated|% scale/.test(shown) && spoken.startsWith(shown) && / in progress, to /.test(spoken), `bucket caveats are spoken, not shown (${shown} | ${spoken})`);
   await page.keyboard.press('ArrowLeft');
   assert((await state(page)).bucket === '25', 'Left moves back one bucket');
   const lanes = await page.evaluate(() => [...document.querySelectorAll('path[data-river]')].map((p) => p.dataset.river));
@@ -179,7 +181,7 @@ export default async function phase6({ page, baseURL }) {
   s = await state(page);
   const label = nameOf(await readout(page));
   await expectReadout(page, label, Number(s.bucket), 'quarter');
-  assert((await announced(page)) === (await readout(page)), 'the readout is announced through the polite live region');
+  assert((await announced(page)).startsWith(await readout(page)), 'the readout is announced through the polite live region');
   await page.keyboard.press('Enter');
   assert((await state(page)).pinned, 'Enter pins');
   assert((await announced(page)).endsWith('. Pinned'), 'pinning is announced');
@@ -210,20 +212,21 @@ export default async function phase6({ page, baseURL }) {
   await frameCard(page);
   await shoot(page, '04-contributors-desktop', DESKTOP);
 
-  // AC4: Include bots toggles the bot rivers, their dotted outline and "bot" after the name.
+  // AC4: Include bots toggles the bot rivers, their dotted outline and "bot" after a name that does not already end in [bot].
   assert((await page.locator('path.rr-bot').count()) === 0, 'bots hidden by default');
   await page.getByRole('checkbox', { name: 'Include bots' }).check();
   const bot = page.locator('path.rr-bot').first();
   await bot.waitFor();
   const dots = await bot.evaluate((p) => [getComputedStyle(p).strokeDasharray, getComputedStyle(p).stroke]);
   assert(dots[0] !== 'none' && dots[1] !== 'none', `bot river has a dotted outline (${dots})`);
-  assert(await page.locator('.rr-table tbody th .rr-muted', { hasText: /^bot$/ }).count() > 0, 'bot rivers carry "bot"');
+  const botRows = await page.evaluate(() => [...document.querySelectorAll('.rr-table tbody th')].map((th) => th.textContent.trim()));
+  assert(botRows.some((t) => /\[bot\]$/i.test(t)) && !botRows.some((t) => /\[bot\]\s+bot$/i.test(t)), `bot rows say bot once (${botRows.filter((t) => /bot/i.test(t))})`);
   assert((await page.locator('.rr-legend').innerText()).includes('bot'), 'the legend explains the dotted outline');
   await runAxe(page, 'contributors with bots');
   const botId = await bot.getAttribute('data-river');
   await page.locator(PLOT).focus();
   for (let i = 0; i < 12 && (await state(page)).river !== botId; i++) await page.keyboard.press('ArrowDown');
-  assert((await state(page)).river === botId && / bot, /.test(await readout(page)), `the bot river reads "bot" after its name (${await readout(page)})`);
+  assert((await state(page)).river === botId && /^\S+\[bot\], /.test(await readout(page)), `the bot river reads its [bot] name once (${await readout(page)})`);
   await frameCard(page);
   await shoot(page, '06-bots-on-desktop', DESKTOP);
   await shootCvd(page, '10-bots', DESKTOP, ['deuteranopia']);

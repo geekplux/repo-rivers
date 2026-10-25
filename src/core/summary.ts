@@ -54,8 +54,11 @@ export type Rich = readonly (string | { i: string } | { b: string } | { m: strin
 /** The text of a {@link Rich} line, for the live region and tests. */
 export const plain = (r: Rich): string => r.map((s) => (typeof s === 'string' ? s : 'i' in s ? s.i : 'b' in s ? s.b : s.m)).join('');
 
-/** A river's name for the readout: italic, with "bot" muted after a bot's name. */
-const riverName = (r: Pick<River, 'label' | 'bot'>): Rich => (r.bot ? [{ i: r.label }, ' ', { m: 'bot' }] : [{ i: r.label }]);
+/** True when a bot's name needs "bot" after it: not when the name already says so (`renovate[bot]`). */
+export const tagsBot = (r: Pick<River, 'label' | 'bot'>): boolean => r.bot && !/\[bot\]$/i.test(r.label);
+
+/** A river's name for the readout: italic, with "bot" muted after a bot's name unless it ends in `[bot]`. */
+const riverName = (r: Pick<River, 'label' | 'bot'>): Rich => (tagsBot(r) ? [{ i: r.label }, ' ', { m: 'bot' }] : [{ i: r.label }]);
 
 /**
  * The idle readout (DESIGN §4): `*packages/vite* carries 46% of all lines changed, and 167 files moved between
@@ -72,9 +75,9 @@ export function idleReadout(view: RiverView): Rich {
 }
 
 /**
- * The readout for river `riverId` (or the whole column when null) at `bucket` (DESIGN §4):
- * `*packages*, Q2 2023: **7,732** lines changed, 21% of the quarter. 952 files moved in from *test*.`
- * then, as short sentences, moves out, the estimate, the partial bucket and a clipped column.
+ * The visible readout for river `riverId` (or the whole column when null) at `bucket` (DESIGN §4): the board
+ * sentence `*packages*, Q2 2023: **7,732** lines changed, 21% of the quarter.` and the files moved in and out.
+ * The caveats the chart draws (estimate, partial bucket, clipped column) are spoken only: {@link readoutCaveats}.
  */
 export function focusReadout(view: RiverView, c: Caveats, riverId: string | null, bucket: number): Rich {
   const b = view.buckets[bucket];
@@ -93,11 +96,20 @@ export function focusReadout(view: RiverView, c: Caveats, riverId: string | null
     out.push(...moves(view, here.filter((t) => t.to === river.id).map((t) => [t.files, t.from]), 'in from'));
     out.push(...moves(view, here.filter((t) => t.from === river.id).map((t) => [t.files, t.to]), 'out to'));
   }
-  if (c.estimated.includes(bucket)) out.push(` This ${c.unit} is estimated.`);
-  if (c.asOf !== null && bucket === view.buckets.length - 1) out.push(` ${cap(c.unit)} in progress, to ${dayMonth.format(c.asOf)}.`);
-  const f = c.clipped.get(bucket);
-  if (f !== undefined) out.push(` Column drawn at ${Math.round(100 * f)}% scale.`);
   return out;
+}
+
+/**
+ * What the chart shows about `bucket` by marks alone (the dotted axis, the dashed partial line, the break mark),
+ * as sentences for the live region: ` This quarter is estimated. Quarter in progress, to 20 Oct.`
+ */
+export function readoutCaveats(view: RiverView, c: Caveats, bucket: number): string {
+  const out: string[] = [];
+  if (c.estimated.includes(bucket)) out.push(`This ${c.unit} is estimated.`);
+  if (c.asOf !== null && bucket === view.buckets.length - 1) out.push(`${cap(c.unit)} in progress, to ${dayMonth.format(c.asOf)}.`);
+  const f = c.clipped.get(bucket);
+  if (f !== undefined) out.push(`Column drawn at ${Math.round(100 * f)}% scale.`);
+  return out.map((s) => ` ${s}`).join('');
 }
 
 /**

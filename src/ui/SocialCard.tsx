@@ -27,7 +27,7 @@ export function SocialCard() {
   const view = useMemo(() => agg && selectView(agg, OPTIONS), [agg]);
   const eras = agg?.eras ?? [];
   const layout = useMemo(() => agg && view && layoutRivers(view, {
-    width: WIDTH, height: HEIGHT, gap: 2, top: agg.eras?.length ? ERA_BAND : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets,
+    width: WIDTH, height: HEIGHT, gap: 2, top: agg.eras?.length ? ERA_BAND + 8 : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets,
   }), [agg, view]);
   const summaryId = useId();
   const years = view ? `${view.buckets[0]?.label.slice(-4)}–${view.buckets.at(-1)?.label.slice(-4)}` : '';
