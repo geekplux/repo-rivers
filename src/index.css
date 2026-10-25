@@ -111,13 +111,13 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-controls { display: flex; align-items: center; gap: 16px; }
 .rr-sel { display: flex; align-items: center; gap: 6px; height: 36px; color: var(--muted); }
 .rr-sel-box { position: relative; display: flex; align-items: center; margin-right: -4px; color: var(--ink); }
-.rr-sel select { appearance: none; field-sizing: content; height: 44px; margin: -4px 0; padding: 0 20px 0 4px; border: 0; border-radius: 3px; background: none; color: inherit; font: 500 16px/24px var(--rr-font); cursor: pointer; }
+.rr-sel select { appearance: none; field-sizing: content; height: 44px; margin: -4px 0; padding: 0 20px 0 0; border: 0; border-radius: 3px; background: none; color: inherit; font: 500 16px/24px var(--rr-font); cursor: pointer; }
 .rr-sel svg { position: absolute; right: 4px; pointer-events: none; }
-.rr-sel select:focus-visible { outline-offset: 0; }
-.rr-check { position: relative; display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--muted); cursor: pointer; }
-.rr-check input { appearance: none; flex: none; width: 16px; height: 16px; margin: 0; border: 0.75px solid currentColor; border-radius: 3px; background: var(--field); cursor: inherit; }
+.rr-check { position: relative; display: flex; align-items: center; gap: 6px; height: 36px; color: var(--muted); cursor: pointer; }
+.rr-check::after { content: ''; position: absolute; inset: -4px 0; }
+.rr-check input { position: relative; z-index: 1; appearance: none; flex: none; width: 16px; height: 16px; margin: 0; border: 0.75px solid currentColor; border-radius: 3px; background: var(--field); cursor: inherit; }
 .rr-check input:checked { border-color: var(--solid); background: var(--solid); }
-.rr-check svg { position: absolute; left: 0; color: var(--on-solid); pointer-events: none; visibility: hidden; }
+.rr-check svg { position: absolute; z-index: 2; left: 0; color: var(--on-solid); pointer-events: none; visibility: hidden; }
 .rr-check input:checked + svg { visibility: visible; }
 .rr-check:has(:checked) { color: var(--ink); }
 /* Segmented control: 36 tall, 6 outside, 3 inside the 3 px padding; each radio's hit area reaches 44 tall. */

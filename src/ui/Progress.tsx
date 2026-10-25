@@ -3,7 +3,7 @@ import { FallbackNotice } from './SourceNote.tsx';
 import { progressLine } from './states/copy.ts';
 
 /**
- * Loading state (docs/redesign/DESIGN.md §7): a 0.5-bordered panel titled with the current step, "Reading
+ * Loading state (docs/redesign/DESIGN.md §7): a 0.5-bordered panel titled "Loading", "Reading
  * owner/name: n of m requests", a 2 px ink progress line on a 0.5 track, and Cancel.
  */
 export function Progress({ repo, progress, fellBack, onCancel }: { repo: string; progress: LoadProgress | null; fellBack: boolean; onCancel: () => void }) {
@@ -13,7 +13,7 @@ export function Progress({ repo, progress, fellBack, onCancel }: { repo: string;
   return (
     <div className="rr-state rr-progress" data-testid="progress">
       {fellBack && <FallbackNotice automatic />}
-      <p className="rr-state-title">{progress?.label || 'Connecting'}</p>
+      <p className="rr-state-title">Loading</p>
       <p className="rr-progress-line">{progressLine(repo, progress)}</p>
       <div role="progressbar" aria-label={`Reading the history of ${repo}`} aria-valuemin={0} aria-valuemax={total || 1} aria-valuenow={done} aria-valuetext={text} className="rr-bar">
         <svg width="100%" height="10" aria-hidden="true">

@@ -14,6 +14,7 @@ describe.each(samples.map((s) => s.id))('built-in sample %s', (id) => {
   it('is valid and at most 50 KB', () => {
     expect(new TextEncoder().encode(raw).length).toBeLessThanOrEqual(MAX_BYTES);
     expect(agg.repo.name).toBe(id);
+    expect(`${agg.repo.owner}/${agg.repo.name}`).toBe(samples.find((s) => s.id === id)!.repo);
   });
 
   it('ships heuristic eras offline, matching the deterministic segments (pnpm eras:build)', () => {

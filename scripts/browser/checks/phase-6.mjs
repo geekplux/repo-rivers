@@ -95,11 +95,9 @@ export default async function phase6({ page, baseURL }) {
   await runAxe(page, 'vite sample view');
   assert((await announced(page)) === '', 'nothing is announced on page load');
   assert((await page.locator(PLOT).getAttribute('role')) === 'application', 'the chart is role="application"');
-  // Depth and Include bots live under the "More options" disclosure (calm layout); open it once, it stays open.
-  assert(!(await page.getByRole('checkbox', { name: 'Include bots' }).isVisible()), 'fine-tuning controls start folded');
-  await page.locator('.rr-options summary').click();
-  const botsHint = await page.getByRole('checkbox', { name: 'Include bots' }).evaluate((c) => document.getElementById(c.getAttribute('aria-describedby'))?.textContent);
-  assert(botsHint === '(contributors only)', `disabled Include bots explains itself (${botsHint})`);
+  // The chart head shows the one control that applies: Folder depth for Modules, Include bots for Contributors.
+  assert(await page.getByLabel('Folder depth').isVisible(), 'Modules shows Folder depth');
+  assert((await page.getByRole('checkbox', { name: 'Include bots' }).count()) === 0, 'Modules shows no Include bots');
   const key = await page.locator('.rr-key').innerText();
   assert(key.includes('estimated from sampled commits') && key.includes('partial'), `text key under the chart (${key})`);
   const idle = await readout(page);
@@ -200,8 +198,8 @@ export default async function phase6({ page, baseURL }) {
   requests.length = 0;
   await page.getByRole('radio', { name: 'Contributors' }).check();
   await page.locator('path[data-river^="p:"]').first().waitFor();
-  const depthHint = await page.locator('fieldset:has(legend:text-is("Depth"))').evaluate((f) => document.getElementById(f.getAttribute('aria-describedby'))?.textContent);
-  assert(depthHint === '(modules only)', `disabled Depth explains itself (${depthHint})`);
+  assert(await page.getByRole('checkbox', { name: 'Include bots' }).isVisible(), 'Contributors shows Include bots');
+  assert((await page.getByLabel('Folder depth').count()) === 0, 'Contributors shows no Folder depth');
   assert((await state(page)).bucket === kept, `contributors keep the focused bucket (${kept})`);
   assert(requests.length === 0, `no refetch on dimension change (${requests})`);
   assert((await readout(page)).includes(' commit'), 'readout switches to commits');
@@ -238,7 +236,7 @@ export default async function phase6({ page, baseURL }) {
   await page.keyboard.press('ArrowRight');
   const rivers1 = await page.evaluate(() => [...document.querySelectorAll('path[data-river]')].map((p) => p.dataset.river).join());
   requests.length = 0;
-  await page.getByRole('radio', { name: '2' }).check();
+  await page.getByLabel('Folder depth').selectOption('2');
   const rivers2 = await page.evaluate(() => [...document.querySelectorAll('path[data-river]')].map((p) => p.dataset.river).join());
   assert(rivers1 !== rivers2 && requests.length === 0, `depth 2 re-lays out without a refetch (${requests})`);
   assert((await state(page)).bucket === '1', 'depth change keeps the focused bucket');

@@ -4,14 +4,16 @@ import { parseAggregate, type RepoAggregate } from '../core/schema.ts';
 export interface SampleEntry {
   id: string;
   title: string;
+  /** The sample's repository as owner/name, so the chart head can name it before the JSON has loaded. */
+  repo: string;
   load(): Promise<RepoAggregate>;
 }
 
 /** Built-in samples, in the order they are offered; the first is the default. Each JSON file is a lazy chunk. */
 export const samples: readonly SampleEntry[] = [
-  { id: 'vite', title: 'Vite', load: async () => parseAggregate((await import('./vite.json')).default) },
-  { id: 'svelte', title: 'Svelte', load: async () => parseAggregate((await import('./svelte.json')).default) },
-  { id: 'express', title: 'Express', load: async () => parseAggregate((await import('./express.json')).default) },
+  { id: 'vite', title: 'Vite', repo: 'vitejs/vite', load: async () => parseAggregate((await import('./vite.json')).default) },
+  { id: 'svelte', title: 'Svelte', repo: 'sveltejs/svelte', load: async () => parseAggregate((await import('./svelte.json')).default) },
+  { id: 'express', title: 'Express', repo: 'expressjs/express', load: async () => parseAggregate((await import('./express.json')).default) },
 ];
 
 /** Looks up a sample by id. */

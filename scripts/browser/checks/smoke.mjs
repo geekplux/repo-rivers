@@ -5,7 +5,7 @@ export default async function smoke({ page, baseURL }) {
   await page.goto(baseURL, { waitUntil: 'load' });
   await page.locator('[data-testid="river-chart"]').waitFor({ state: 'visible', timeout: 10_000 });
   const title = await page.title();
-  assert(title === 'Vite, Repo Rivers', `document title is "Vite, Repo Rivers" for the default sample (got "${title}")`);
+  assert(title === 'vitejs/vite, Repo Rivers', `document title is "vitejs/vite, Repo Rivers" for the default sample (got "${title}")`);
   assert((await page.locator('h1').count()) === 1, 'exactly one h1');
   // The harness's request routing stops Chrome from fetching icons itself, so check the icon explicitly.
   const icon = await page.locator('link[rel~="icon"]').first().getAttribute('href', { timeout: 1000 }).catch(() => null);

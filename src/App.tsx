@@ -86,9 +86,10 @@ export function App() {
     setActed(true);
   };
   const focus = useRiverFocus(layout, view?.rivers ?? [], current?.id ?? '');
-  const title = repoName || (findSample(loaded?.id ?? '') ?? sample).title;
-  // The chart head names the repository as owner/name, for samples too (the sample's title until it has loaded).
-  const heading = repoName || (agg ? `${agg.repo.owner}/${agg.repo.name}` : title);
+  const shownSample = findSample(loaded?.id ?? '') ?? sample;
+  const title = repoName || shownSample.title;
+  // The chart head names the repository as owner/name, for samples too (from the registry, before the JSON loads).
+  const heading = repoName || shownSample.repo;
   useEffect(() => void (document.title = `${heading}, Repo Rivers`), [heading]);
   const [status, setStatus] = useState(rs.status);
   if (status !== rs.status) {
