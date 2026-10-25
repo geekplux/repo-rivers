@@ -71,7 +71,10 @@ const holdArrive = () => {
   const animate = Element.prototype.animate;
   Element.prototype.animate = function (frames, options) {
     const a = animate.call(this, frames, options);
-    if (String(options?.id).startsWith('rr-arrive')) (a.pause(), window.rrHeld.push(a));
+    if (String(options?.id).startsWith('rr-arrive')) {
+      a.pause();
+      window.rrHeld.push(a);
+    }
     return a;
   };
 };
