@@ -1,4 +1,4 @@
-import { useId, useRef, type MouseEvent } from 'react';
+import { useEffect, useId, useRef, type MouseEvent } from 'react';
 import { PHONE, phoneGuides } from '../core/layout/guides.ts';
 import { flipMatrix, flipName, toPage, type Flip } from '../core/layout/transpose.ts';
 import { eraRange } from '../core/summary.ts';
@@ -34,6 +34,18 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
   const { repo, time } = aggregate;
   const pointer = svg && { ...svg, onClick: (e: MouseEvent<Element>) => (ref.current?.focus({ preventScroll: true, focusVisible: false }), svg.onClick(e)) };
   const dot = col && shape && bucket !== null ? toPage(flip, [col.x, (shape.edges.top[bucket]! + shape.edges.bottom[bucket]!) / 2]) : null;
+  const ruleY = col ? flip.dy + col.x : null;
+  // On focus, every key move and after a tap (the chart then has focus), keep the rule and dot on screen above the
+  // docked readout: the page scrolls by the least amount, instantly under reduced motion.
+  useEffect(() => {
+    const plot = ref.current;
+    if (ruleY === null || !plot || document.activeElement !== plot) return;
+    const y = plot.parentElement!.getBoundingClientRect().top + ruleY;
+    const dock = document.querySelector('[data-docked]')?.getBoundingClientRect().top ?? innerHeight;
+    const [lo, hi] = [y - 24, y + 24];
+    const by = lo < 0 ? lo : hi > dock ? hi - dock : 0;
+    if (by) scrollBy({ top: by, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }, [ruleY]);
   return (
     <div className="rr-stack" style={{ width }}>
       <svg data-testid="river-chart" data-phone width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rr-chart" role="img"
@@ -50,7 +62,8 @@ export function PhoneChart({ aggregate, view, layout: L, width, flip, active, ch
           </g>
           {L.clipped.map(({ index, x, text }) => {
             const [px, py] = toPage(flip, [x, L.columns[index]!.top + 20]);
-            return <text key={index} x={px} y={py} className="rr-label rr-clip-label">{text}</text>;
+            // The column is cut at its left on the phone, so its arrow points left.
+            return <text key={index} x={px} y={py} className="rr-label rr-clip-label">{text.replace('↑', '←')}</text>;
           })}
           <Names L={L} names={L.labels.names.map((n) => flipName(flip, n))} on={on} />
         </g>

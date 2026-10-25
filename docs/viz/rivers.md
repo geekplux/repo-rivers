@@ -68,7 +68,7 @@ PLAN's "other = ink at 30%" measures only 1.6:1 on paper, which fails, hence the
 **Assignment.** Rivers are coloured greedily in lane order. The preferred hue is `lane mod 8`. Skip any hue already used by a river that is **co-adjacent** to this one: consecutive among the non-zero lanes in any column. Sticky rule: on re-layout (dimension, depth or bots change), a surviving river id keeps its previous hue if that causes no co-adjacency conflict. "other" is always grey.
 
 ## 5. Layout algorithm (`layoutRivers`)
-**5.1 Size.** Desktop: `W` = card width. The right gutter is `min(180, widest gutter label + 24)`, or 0 if there are no gutter labels. Bottom axis 28 px, top 8 px. Plot height `H = clamp(320, 0.45·W, 480)`. Mobile (viewport ≤ 640 px): `W = max(720, 28·B)` inside a focusable horizontal-scroll region, `H = 360`.
+**5.1 Size.** Desktop: `W` = card width. The right gutter is `min(180, widest gutter label + 24)`, or 0 if there are no gutter labels. Bottom axis 28 px, top 8 px. Plot height `H = clamp(320, 0.45·W, 480)`. Phone (viewport ≤ 640 px, redesign R6): the layout is transposed, not scrolled sideways. `layoutRivers` runs with the time axis as `W = 56·B` and the cross axis as `H` = column width − 58 (300 at a 390 page), `inset: 0`, `labelRoom: 0`, `top: 0`, and the phone draws it with time running down the page (`transpose.ts`; docs/redesign/DESIGN.md §5).
 
 **5.2 Lane order.** Stable and deterministic:
 1. Sort by onset (first `i` with `v > 0`), then total descending, then id.
@@ -207,7 +207,7 @@ Keyboard state survives the pointer leaving the chart.
   - Each inside label lies within its band with 2 px padding at 2 px samples.
   - placed ∪ `dropped` = all rivers, and they are disjoint.
   - Desktop: the top 3 rivers by total are labelled in every sample, and ≥ 5 rivers are labelled for each sample in the modules dimension.
-  - Mobile (`W = 720`): every label window holds ≥ 2 labels.
+  - Phone (transposed, R6): names only where a smoothed run holds them (`placeRiverNames` with `phone`), straight along time so they read downward; the rest are named by the Rivers table.
 - **L10** Colour:
   - No two consecutive non-zero lanes in any column share a hue.
   - `other` is grey.

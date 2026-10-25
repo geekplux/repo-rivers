@@ -300,7 +300,7 @@ export default async function phase6({ page, baseURL }) {
   await tabTo(page, PLOT);
   const first = await state(page);
   assert(first.river && first.bucket !== '', `phone: Tab focuses the chart at the start spot (${JSON.stringify(first)})`);
-  const ruleY = () => page.locator('.rr-cursor').evaluate((l) => l.getBoundingClientRect().y);
+  const ruleY = () => page.locator('.rr-cursor').evaluate((l) => l.getBoundingClientRect().y + scrollY); // page y: the page may scroll to keep it in view
   const y0 = await ruleY();
   await page.keyboard.press('ArrowDown');
   const down = await state(page);
@@ -311,12 +311,38 @@ export default async function phase6({ page, baseURL }) {
   assert(dock[0] === 'true' && dock[1] === 'fixed' && dock[2] === MOBILE.height, `phone: the readout docks while a river is focused (${dock})`);
   await page.keyboard.press('Enter');
   assert((await state(page)).pinned, 'phone: Enter pins');
+  // R6 review: the focused bucket stays on screen above the dock (Svelte's start spot is deep in the chart).
+  const inView = () => page.evaluate(async () => {
+    await new Promise((r) => setTimeout(r, 700)); // a smooth scroll settles
+    const dot = document.querySelector('.rr-dot')?.getBoundingClientRect();
+    const edge = document.querySelector('[data-docked]')?.getBoundingClientRect().top ?? innerHeight;
+    return dot ? { top: Math.round(dot.top), bottom: Math.round(dot.bottom), dock: Math.round(edge), ok: dot.top >= 0 && dot.bottom <= edge } : { ok: false };
+  });
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
+  await page.evaluate(() => scrollTo(0, 0));
+  await tabTo(page, PLOT);
+  let seen = await inView();
+  assert(seen.ok, `phone: Tab brings the focused bucket into view above the dock (${JSON.stringify(seen)})`);
+  for (let k = 0; k < 6; k++) await page.keyboard.press('ArrowDown');
+  seen = await inView();
+  assert(seen.ok, `phone: ArrowDown keeps the dot in view (${JSON.stringify(seen)})`);
+  await page.keyboard.press('End');
+  seen = await inView();
+  assert(seen.ok, `phone: End keeps the dot in view (${JSON.stringify(seen)})`);
+  await page.keyboard.press('Home');
+  seen = await inView();
+  assert(seen.ok, `phone: Home keeps the dot in view (${JSON.stringify(seen)})`);
+  await page.keyboard.press('Enter');
   await runAxe(page, 'mobile');
   await shoot(page, '08-mobile-focus', MOBILE);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   assert((await state(page)).river === '' && !(await page.locator('[data-testid="readout"]').evaluate((r) => r.dataset.docked)), 'phone: Escape clears and undocks');
   await page.setViewportSize(DESKTOP);
+  await page.locator(`${CHART}:not([data-phone])`).waitFor({ state: 'visible' }); // the desktop chart replaces the phone one
+  await sleep(100);
 
   // A5 / DESIGN §6: with motion allowed the fade is 250 ms ease-out; reduced motion makes it instant.
   await page.emulateMedia({ reducedMotion: 'no-preference' });

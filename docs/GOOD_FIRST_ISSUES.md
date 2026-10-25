@@ -19,10 +19,10 @@ Switching Modules/Contributors or the depth swaps the chart instantly.
 - **Files:** `src/ui/RiverChart.tsx`, `src/index.css`.
 - **Done when:** the old and new rivers cross-fade over 180 ms; nothing animates under `prefers-reduced-motion: reduce`; keyboard focus stays on the chart.
 
-### 4. Vertical orientation on phones
-On narrow screens the chart scrolls sideways inside a 720 px region.
-- **Files:** `src/core/layout/layout.ts` (a new `orientation` option), `src/ui/RiverChart.tsx`, `src/core/layout/guides.ts` (era band and axis).
-- **Done when:** below 640 px the time axis can run top to bottom with rivers side by side; arrow keys follow the new axes; layout tests cover both orientations.
+### 4. Phone river names that follow the river's curve
+On phones (time runs down the page) river names are straight text rotated 90°, so a name sits only where the river stays straight for its length.
+- **Files:** `src/core/layout/riverNames.ts` (the `phone` pass), `src/core/layout/transpose.ts`, `src/ui/PhoneChart.tsx`.
+- **Done when:** a name may follow the 5-bucket smoothed centreline on an SVG `textPath` (as `phoneChart()` in docs/redesign/target/gen.mjs does), a containment test keeps every glyph inside its river, and names still never overlap.
 
 ### 5. Export as SVG or PNG
 - **Files:** a new `src/ui/exportChart.ts`, `src/ui/Controls.tsx`.

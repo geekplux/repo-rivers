@@ -139,5 +139,7 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
     pick: (r: Pick<River, 'id' | 'values' | 'peak'>) => (setHover(null), setState(pickRiver(active, r))),
     clear: () => (setHover(null), setState(EMPTY)),
   };
-  return { active, chart, svg, table };
+  /** A river held by a pin or by keyboard focus (not a plain hover): the phone docks the readout only then. */
+  const held = kept.river !== null;
+  return { active, held, chart, svg, table };
 }

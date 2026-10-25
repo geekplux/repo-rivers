@@ -103,7 +103,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-era { position: absolute; top: 4px; bottom: 4px; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 3px; background: none; pointer-events: auto; cursor: default; }
 /* The under row: the live readout left, the legend right. */
 .rr-under { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 24px; margin-top: 4px; }
-.rr-readout { flex: 1 1 520px; min-height: 24px; }
+.rr-readout-slot { flex: 1 1 520px; min-height: 24px; }
 .rr-readout p { margin: 0; font-size: 16px; line-height: 24px; }
 .rr-readout b { font-weight: 500; font-variant-numeric: lining-nums tabular-nums; }
 .rr-readout .rr-note { font-size: 13px; line-height: 20px; color: var(--muted); }

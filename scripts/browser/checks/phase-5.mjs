@@ -157,10 +157,19 @@ export default async function phase5({ page, baseURL }) {
     return null;
   }, { sel: CHART, id: big });
   assert(box, `phone: found a point on ${big}`);
+  // A plain hover never docks; docking keeps the readout's slot, so nothing below it moves.
+  await page.mouse.move(box.x, box.y);
+  await page.mouse.move(box.x + 1, box.y + 1);
+  assert(!(await docked()).on, 'phone: a hover alone does not dock the readout');
+  const legendY = () => page.locator('.rr-legend').evaluate((l) => l.getBoundingClientRect().top + scrollY);
+  const before = await legendY();
   await page.mouse.click(box.x, box.y);
   await page.waitForFunction(() => document.querySelector('[data-testid="readout"]').dataset.docked === 'true', null, { timeout: 2000 });
   const on = await docked();
   assert(on.pos === 'fixed' && on.bottom === MOBILE.height && on.h >= 72 && on.pad >= on.h, `phone: a tap docks the readout to the viewport bottom and pads the page (${JSON.stringify(on)})`);
+  assert(Math.abs((await legendY()) - before) < 0.5, 'phone: docking does not move the content below the readout');
+  const glyphs = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.rr-legend li[data-legend] svg')].map((g) => [g.closest('li').dataset.legend, Number(g.getAttribute('width')) < Number(g.getAttribute('height')) ? 'vertical' : 'horizontal'])));
+  assert(glyphs.estimated === 'vertical' && glyphs.partial === 'horizontal', `phone: legend glyphs turn with the chart (${JSON.stringify(glyphs)})`);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('[data-testid="readout"]').dataset.docked, null, { timeout: 2000 });
@@ -177,5 +186,8 @@ export default async function phase5({ page, baseURL }) {
     return [...svg.querySelectorAll('[data-label-for]')].map((t) => t.dataset.labelFor).filter((id) => !rivers.has(id));
   }, CHART);
   assert(stale.length === 0, `mobile Express contributors: every name has its river (stale ${stale.join(', ')})`);
+  await open(page, `${baseURL}?sample=svelte`, 'sveltejs/svelte');
+  const clip = await page.locator(`${CHART} text.rr-clip-label`).allTextContents();
+  assert(clip.length === 1 && clip[0] === '← 224K', `phone: the clipped Svelte column's label points left, where it is cut (${clip})`);
   await page.setViewportSize(DESKTOP);
 }

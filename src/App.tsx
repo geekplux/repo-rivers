@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
 import { ERA_BAND, MOUTH_ROOM, PHONE, phoneSize } from './core/layout/guides.ts';
@@ -82,6 +82,8 @@ export function App() {
   }, [agg, view, width, mobile, banded, measure]);
   const flip = useMemo(() => (mobile && layout ? flipOf(layout, PHONE.left, PHONE.top) : null), [mobile, layout]);
   const [era, setEra] = useState<number | null>(null);
+  const [eraHeld, setEraHeld] = useState(false); // an era button with keyboard focus (not a hover)
+  const onEra = useCallback((e: number | null, held: boolean) => (setEra(e), setEraHeld(held)), []);
   const eraOn = era === null ? undefined : eras[era];
   const [acted, setActed] = useState(false); // the live readout stays quiet until the first user action
   const change = (next: ControlValue) => {
@@ -134,8 +136,9 @@ export function App() {
   const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;
   const drawn = !busy && agg && view && layout && view.rivers.length > 0;
-  // Phone: while a river (or an era) is focused, the readout docks to the bottom of the viewport (DESIGN §5).
-  const docked = Boolean(mobile && drawn && (active.river !== null || eraOn));
+  // Phone: while a river (or an era) is pinned or has keyboard focus, the readout docks to the bottom of the viewport
+  // (DESIGN §5); a plain hover never docks it.
+  const docked = Boolean(mobile && drawn && ((eraOn && eraHeld) || focus.held));
   return (
     <>
       <header className="rr-header">
@@ -174,10 +177,10 @@ export function App() {
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {drawn && (flip ? (
               <PhoneChart aggregate={agg} view={view} layout={layout} width={width} flip={flip} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
-                eras={eras} activeEra={era} onEra={setEra} />
+                eras={eras} activeEra={era} onEra={onEra} />
             ) : (
               <RiverChart aggregate={agg} view={view} layout={layout} active={shown} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
-                eras={eras} activeEra={era} onEra={setEra} />
+                eras={eras} activeEra={era} onEra={onEra} />
             ))}
             {!busy && view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
           </div>
@@ -187,7 +190,7 @@ export function App() {
               <Legend items={legendItems({
                 unit, estimated: layout.estimated.length > 0, partial: layout.partial !== null, moved: layout.transfers.length > 0,
                 bots: view.rivers.some((r) => r.bot), ai: eras.some((e) => e.source === 'ai'),
-              })} />
+              })} turned={mobile} />
             )}
           </div>
           {/* Never shown: the chart's aria-describedby reads it (hidden text counts for descriptions). */}

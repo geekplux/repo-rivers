@@ -29,8 +29,8 @@ export interface RiverChartProps {
   /** Eras: a rule and a name each in the band above the plot; the selected one gets a band behind its span. */
   eras?: readonly Era[];
   activeEra?: number | null;
-  /** Hover or focus of an era button (or null when it ends). */
-  onEra?: (era: number | null) => void;
+  /** Hover or focus of an era button (or null when it ends); `held` when it is keyboard focus, not a plain hover. */
+  onEra?: (era: number | null, held: boolean) => void;
   /**
    * `false` draws a static picture (the `?embed=social` card): no tab stops and no pointer or key handlers.
    * Default `true`.
@@ -213,12 +213,12 @@ export function RiverChart({ aggregate, view, layout: L, active, chart, svg, des
  * name is the title, range and provenance, the description the note. `place` positions each button in the layer.
  */
 export function EraButtons({ eras, ranges, active, onActive, style, place }: {
-  eras: readonly Era[]; ranges: readonly string[]; active: number | null; onActive?: (era: number | null) => void; style: CSSProperties; place: readonly CSSProperties[];
+  eras: readonly Era[]; ranges: readonly string[]; active: number | null; onActive?: (era: number | null, held: boolean) => void; style: CSSProperties; place: readonly CSSProperties[];
 }) {
   const id = useId();
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
-  useLayoutEffect(() => onActive?.(hovered ?? focused), [hovered, focused, onActive]); // before paint: no frame without the readout
+  useLayoutEffect(() => onActive?.(hovered ?? focused, focused !== null && (hovered ?? focused) === focused), [hovered, focused, onActive]); // before paint: no frame without the readout
   return (
     <div className="rr-eras" style={style} role="group" aria-label="Eras" data-testid="era-track">
       {eras.map((e, i) => {
