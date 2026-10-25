@@ -98,7 +98,7 @@ The data shows this behaves as intended: Vite `packages/vite` ← `src/node`, `p
   4. **Dropped.** The id goes into `labels.dropped`.
 - Gutter labels are then dodged: sort by desired y, sweep with a 16 px minimum pitch inside `[top, top + H]`. If they still overflow, drop the lowest-total gutter label and repeat.
 - Every placed box is disjoint from every other box, the break-mark labels and the partial label, with a 2 px margin.
-- **Mobile (≤ 640 px):** no gutter. Inside labels **repeat once per 360 px window** where they fit, like river names on a map, so any 390 px viewport shows names. Above the region there is a caption: `Scroll for later years →`.
+- **Mobile (≤ 640 px):** superseded by the redesign (docs/redesign/DESIGN.md §5, R6): the phone chart is this layout transposed, time running down the page, with names only where a smoothed run fits them (`placeRiverNames` with `phone`).
 
 **5.7 Axis.**
 - Year graticule lines (1 px, graticule colour, full plot height) at year starts, at `left + j·w`.

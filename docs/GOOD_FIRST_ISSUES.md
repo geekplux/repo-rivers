@@ -6,7 +6,7 @@ Scoped tasks for new contributors. Each one lists the files to start from and wh
 
 ### 1. Start-edge labels for big unlabelled rivers
 A large river whose shape cannot hold an inside label at its peak (for example Vite's `src/node` early on) gets no label on screen.
-- **Files:** `src/core/layout/labels.ts`, `src/core/layout/layout.ts`, `docs/viz/rivers.md` (label rules).
+- **Files:** `src/core/layout/riverNames.ts`, `src/core/layout/layout.ts`, `docs/viz/rivers.md` (label rules).
 - **Done when:** a river among the top 5 by total that would otherwise be dropped gets a label at its first non-zero column, outside the stack with a leader line; no label overlaps another; a layout test covers it.
 
 ### 2. Adaptive gaps for very thin rivers
