@@ -7,7 +7,7 @@ import { parseAggregate, type RepoAggregate } from '../schema.ts';
 import { selectView, type River, type RiverView, type ViewOptions } from '../view.ts';
 import { LABEL_HEIGHT, hits } from './labels.ts';
 import { layoutRivers, type LayoutOptions, type RiverLayout } from './layout.ts';
-import { edgeAt, extend } from './ribbons.ts';
+import type { Box } from './riverNames.ts';
 import { clipDomain } from './scale.ts';
 
 // Acceptance criteria L1–L13 of docs/viz/rivers.md §10. Each check collects violations and asserts the list is empty.
@@ -28,6 +28,7 @@ const get = (name: string, dimension: string): RiverLayout => CASES.find((c) => 
 const viewOf = (name: string, dimension: (typeof DIMS)[number]): Map<string, River> =>
   new Map(selectView(AGG[name]!, { dimension }).rivers.map((r) => [r.id, r]));
 const ids = (L: RiverLayout): string[] => L.rivers.map((r) => r.id);
+const touch = (a: Box, b: Box) => a.x <= b.x + b.width && b.x <= a.x + a.width && a.y <= b.y + b.height && b.y <= a.y + a.height;
 const below = (L: RiverLayout, parent: string): string => ids(L)[ids(L).indexOf(parent) + 1]!;
 const shown = (L: RiverLayout): string[] => L.transfers.filter((t) => t.alwaysVisible).map((t) => `${t.from}→${t.to} ${t.files}`);
 
@@ -110,22 +111,24 @@ describe.each(CASES)('$name $dimension at 1104×440', ({ name, dimension, L }) =
     expect(L.transfers.every((t) => t.width === 1 + 5 * Math.sqrt(Math.min(t.files, 100) / 100))).toBe(true);
   });
 
-  it('L9 labels: 2 px apart, inside labels within their band with 2 px padding, placed ∪ dropped = rivers', () => {
-    const { placed, dropped } = L.labels;
-    const others = [...L.clipped.flatMap((c) => [c.box, c.mark]), ...(L.partial ? [L.partial.box] : [])];
-    expect(placed.flatMap((a, i) => [...placed.slice(i + 1), ...others].filter((b) => hits(a, b)))).toEqual([]);
-    const xs = [left, ...L.columns.map((c) => c.x), right];
-    const cramped = placed.filter((p) => p.kind === 'inside').filter((p) => {
-      const r = L.rivers.find((river) => river.id === p.id)!;
-      const samples = Array.from({ length: Math.floor(p.width / 2) + 1 }, (_, k) => p.x + 2 * k).concat(p.x + p.width);
-      return samples.some((x) => p.y - edgeAt(xs, extend(r.edges.top), x) < 2 - 1e-6
-        || edgeAt(xs, extend(r.edges.bottom), x) - (p.y + LABEL_HEIGHT) < 2 - 1e-6);
+  it('L9 names: no two boxes overlap, nor a name and a transfer or the break mark; names ∪ dropped = rivers', () => {
+    const { names, dropped } = L.labels;
+    const xfer = L.transfers.filter((t) => t.alwaysVisible).map(({ start: a, end: b }) =>
+      ({ x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]) }));
+    const others = [...L.clipped.flatMap((c) => [c.box, c.mark]), ...xfer];
+    expect(names.flatMap((a, i) => [...names.slice(i + 1).map((n) => n.box), ...others].filter((b) => touch(a.box, b)).map(() => a.id))).toEqual([]);
+    // Names inside a river: the band holds the text's centre line ±8 px at every bucket centre under it.
+    const cramped = names.filter((n) => n.kind === 'course' || n.kind === 'level').filter((n) => {
+      const r = L.rivers.find((river) => river.id === n.id)!;
+      const slope = Math.tan((n.angle * Math.PI) / 180);
+      return L.columns.some((c, i) => c.x >= n.box.x && c.x <= n.box.x + n.box.width
+        && (r.edges.top[i]! > n.y + slope * (n.box.x - n.x + c.x - n.box.x) - 8 + 1e-6 || r.edges.bottom[i]! < n.y + slope * (c.x - n.x) + 8 - 1e-6));
     });
-    expect(cramped).toEqual([]);
-    const labelled = new Set(placed.map((p) => p.id));
-    expect(dropped.filter((id) => labelled.has(id))).toEqual([]);
-    expect([...labelled, ...dropped].toSorted()).toEqual(ids(L).toSorted());
-    expect(placed.filter((p) => p.x < 0 || p.x + p.width > L.width)).toEqual([]);
+    expect(cramped.map((n) => n.id)).toEqual([]);
+    const named = new Set(names.map((n) => n.id));
+    expect(dropped.filter((id) => named.has(id))).toEqual([]);
+    expect([...named, ...dropped].toSorted()).toEqual(ids(L).toSorted());
+    expect(names.filter((n) => n.box.x < 0 || n.box.x + n.box.width > L.width || Math.abs(n.angle) > 19.3 + 1e-9)).toEqual([]);
   });
 
   it('L10 two tones: at most half of the touching columns share a tone; "other" is tone 1 (hatched)', () => {
@@ -178,27 +181,28 @@ describe('layout against the spec numbers', () => {
     ]);
   });
 
-  it('L9 desktop labels the top 3 rivers by total (peak callout fallback), and ≥ 5 rivers per sample in modules', () => {
+  it('L9 desktop names the top 3 rivers by total, and ≥ 5 rivers per sample in modules', () => {
     const missing = CASES.filter((c) => c.name !== 'demo').flatMap(({ name, dimension, L }) => {
-      const labelled = new Set(L.labels.placed.map((p) => p.id));
+      const named = new Set(L.labels.names.map((n) => n.id));
       const top3 = [...viewOf(name, dimension).values()].toSorted((a, b) => b.total - a.total).slice(0, 3);
-      const few = dimension === 'modules' && labelled.size < 5 ? [`${name}: only ${labelled.size}`] : [];
-      return [...few, ...top3.filter((r) => !labelled.has(r.id)).map((r) => `${name} ${dimension} ${r.id}`)];
+      const few = dimension === 'modules' && named.size < 5 ? [`${name}: only ${named.size}`] : [];
+      return [...few, ...top3.filter((r) => !named.has(r.id)).map((r) => `${name} ${dimension} ${r.id}`)];
     });
     expect(missing).toEqual([]);
-    const vp = get('vite', 'modules').labels.placed.find((p) => p.id === 'm:docs/.vitepress')!;
-    expect([vp.kind, vp.leader?.length]).toEqual(['callout', 4]);
   });
 
   it('L9 (amended) mobile: every full 360 px window holds ≥ 2 whole labels; callout leaders miss other labels', () => {
     const thin = CASES.filter((c) => c.name !== 'demo').flatMap(({ name, dimension }) => {
       const agg = AGG[name]!;
       const L = lay(name, { dimension }, { width: 358, height: undefined, mobile: true });
-      const placed = L.labels.placed;
-      const crossed = placed.filter((p) => p.kind === 'callout').flatMap((p) => placed.filter((q) => q !== p && [0, 0.25, 0.5, 0.75, 1]
-        .some((t) => hits({ x: p.leader![0] + t * (p.leader![2] - p.leader![0]), y: p.leader![1] + t * (p.leader![3] - p.leader![1]), width: 0, height: 0 }, q))));
+      const placed = L.labels.names;
+      const leader = (p: (typeof placed)[number]) => p.leader!.slice(1).split('L').flatMap((pt) => pt.split(',').map(Number));
+      const crossed = placed.filter((p) => p.leader).flatMap((p) => placed.filter((q) => q !== p && [0, 0.25, 0.5, 0.75, 1].some((t) => {
+        const [x1, y1, x2, y2] = leader(p) as [number, number, number, number];
+        return hits({ x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1), width: 0, height: 0 }, q.box);
+      })));
       const windows = Array.from({ length: Math.floor(L.plot.right / 360) }, (_, k) => k * 360);
-      const few = windows.filter((lo) => placed.filter((p) => p.x >= lo && p.x + p.width <= lo + 360).length < 2);
+      const few = windows.filter((lo) => placed.filter((p) => p.box.x >= lo && p.box.x + p.box.width <= lo + 360).length < 2);
       return [...few.map((lo) => `${agg.repo.name} ${dimension} window ${lo}`), ...crossed.map((q) => `${name} leader crosses ${q.id}`)];
     });
     expect(thin).toEqual([]);
@@ -212,10 +216,10 @@ describe('layout against the spec numbers', () => {
     expect(Math.max(...s.columns.filter((c) => c.factor === 1).map((c) => c.height))).toBeGreaterThan(s.domain * s.unit - 0.5);
   });
 
-  it('reserves a 4 px inset for the focus ring: plot, gutter labels and axis stay inside it', () => {
+  it('reserves a 4 px inset for the focus ring: plot, names and axis stay inside it', () => {
     const bad = [...CASES, ...CASES.map(({ name, dimension }) => ({ name: `${name} mobile`, dimension, L: lay(name, { dimension }, { width: 358, height: undefined, mobile: true }) }))]
       .flatMap(({ name, dimension, L }) => {
-        const out = L.labels.placed.filter((p) => p.x < 4 || p.x + p.width > L.width - 4).map((p) => p.id);
+        const out = L.labels.names.filter((p) => p.box.x < 4 || p.box.x + p.box.width > L.width - 4).map((p) => p.id);
         const ok = L.plot.left === 4 && L.plot.right <= L.width - 4 && L.height === L.plot.bottom + 30;
         return ok && out.length === 0 ? [] : [`${name} ${dimension}: ${JSON.stringify(L.plot)} ${out}`];
       });
@@ -233,15 +237,17 @@ describe('layout against the spec numbers', () => {
       return on.slice(1).map((r, k) => r.edges.top[i]! - on[k]!.edges.bottom[i]!);
     });
     expect(gaps.every((g) => Math.abs(g - 2) < 1e-6)).toBe(true);
-    const gutter = L.labels.placed.filter((p) => p.kind === 'gutter');
-    expect(gutter.every((p) => p.x >= 1060 && p.x + p.width <= 1200)).toBe(true);
+    const mouth = L.labels.names.filter((p) => p.kind === 'mouth');
+    expect(mouth.length).toBeGreaterThan(0);
+    expect(mouth.every((p) => p.x === 1076 && p.box.x + p.box.width <= 1200 && p.leader?.startsWith('M1061,'))).toBe(true);
+    expect(mouth.slice(1).every((p, i) => p.y - mouth[i]!.y >= 17 - 1e-9)).toBe(true);
   });
 
   it('labels a bot river "bot" unless its name already ends in [bot]', () => {
     const view = selectView(AGG.svelte!, { dimension: 'contributors', includeBots: true });
     const bot = view.rivers.find((r) => r.bot)!;
     expect(bot.label).toMatch(/\[bot\]$/);
-    const text = (v: RiverView) => layoutRivers(v, { width: W, height: H }).labels.placed.find((p) => p.id === bot.id)?.text;
+    const text = (v: RiverView) => layoutRivers(v, { width: 1600, height: 600 }).labels.names.find((p) => p.id === bot.id)?.text;
     expect(text(view)).toBe(bot.label);
     const renamed = { ...view, rivers: view.rivers.map((r) => (r.id === bot.id ? { ...r, label: 'release-helper' } : r)) };
     expect(text(renamed)).toBe('release-helper bot');

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { River } from '../view.ts';
-import { ellipsize, hits } from './labels.ts';
+import { hits } from './labels.ts';
 import { laneOrder } from './order.ts';
 import { edgeAt, link, ribbonPath } from './ribbons.ts';
 import { band, linear, quantile, sqrt } from './scale.ts';
@@ -73,13 +73,6 @@ describe('ribbons', () => {
 });
 
 describe('label helpers', () => {
-  it('middle-ellipsizes long text to 26 characters', () => {
-    expect(ellipsize('packages/create-vite')).toBe('packages/create-vite');
-    const long = ellipsize('packages/vite/src/node/server/middlewares');
-    expect(long).toHaveLength(26);
-    expect(long).toBe('packages/vite…/middlewares');
-  });
-
   it('treats boxes closer than 2 px as hitting', () => {
     const a = { x: 0, y: 0, width: 10, height: 14 };
     expect(hits(a, { ...a, x: 12 })).toBe(false);

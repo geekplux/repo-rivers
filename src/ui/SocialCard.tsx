@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { ERA_BAND, riverNameWidth } from '../core/layout/guides.ts';
+import { ERA_BAND } from '../core/layout/guides.ts';
 import { layoutRivers } from '../core/layout/layout.ts';
 import type { RepoAggregate } from '../core/schema.ts';
 import { caveats, describeEras, describeView } from '../core/summary.ts';
@@ -7,6 +7,7 @@ import { selectView } from '../core/view.ts';
 import { findSample, samples } from '../samples/index.ts';
 import { RiverChart } from './RiverChart.tsx';
 import { EMPTY } from './useRiverFocus.ts';
+import { useNameMeasure } from './useSize.ts';
 import { Wordmark } from './Wordmark.tsx';
 
 /** Chart width inside the 1280×640 card (48 px side padding) and plot height that leaves room for the pitch. */
@@ -26,9 +27,10 @@ export function SocialCard() {
   useEffect(() => void (document.title = `${sample.title}, Repo Rivers`), [sample]);
   const view = useMemo(() => agg && selectView(agg, OPTIONS), [agg]);
   const eras = agg?.eras ?? [];
+  const measure = useNameMeasure();
   const layout = useMemo(() => agg && view && layoutRivers(view, {
-    width: WIDTH, height: HEIGHT, gap: 2, top: agg.eras?.length ? ERA_BAND + 8 : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets,
-  }), [agg, view]);
+    width: WIDTH, height: HEIGHT, gap: 2, top: agg.eras?.length ? ERA_BAND + 8 : 8, measure, asOf: agg.generatedAt, truncatedBuckets: agg.source.truncatedBuckets,
+  }), [agg, view, measure]);
   const summaryId = useId();
   const years = view ? `${view.buckets[0]?.label.slice(-4)}–${view.buckets.at(-1)?.label.slice(-4)}` : '';
   return (

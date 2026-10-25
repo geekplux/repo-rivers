@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
-import { ERA_BAND, MOUTH_ROOM, riverNameWidth } from './core/layout/guides.ts';
+import { ERA_BAND, MOUTH_ROOM } from './core/layout/guides.ts';
 import { caveats, describeEras, describeView, eraLine, focusReadout, idleReadout, legendItems, plain, readoutCaveats, type Rich } from './core/summary.ts';
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
@@ -19,7 +19,7 @@ import { Legend, Readout } from './ui/Readout.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
 import { EMPTY, useRiverFocus } from './ui/useRiverFocus.ts';
-import { useMedia, useWidth } from './ui/useSize.ts';
+import { useMedia, useNameMeasure, useWidth } from './ui/useSize.ts';
 import { ThemeButton } from './ui/ThemeButton.tsx';
 import { Wordmark } from './ui/Wordmark.tsx';
 
@@ -48,6 +48,7 @@ export function App() {
   const [switched, setSwitched] = useState(false);
   const [frame, width] = useWidth<HTMLDivElement>();
   const mobile = useMedia('(max-width: 640px)');
+  const measure = useNameMeasure();
   const still = useMedia('(prefers-reduced-motion: reduce)');
   const summaryId = useId();
   const repo = useRepo();
@@ -77,8 +78,8 @@ export function App() {
     const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
     // Desktop (DESIGN §4): the plot flush with the column's left edge, a fixed room right of it for river names.
     const desk = mobile ? {} : { inset: 0, labelRoom: MOUTH_ROOM };
-    return layoutRivers(view, { width, mobile, gap: 2, top: banded ? ERA_BAND + 8 : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets, ...desk });
-  }, [agg, view, width, mobile, banded]);
+    return layoutRivers(view, { width, mobile, gap: 2, top: banded ? ERA_BAND + 8 : 8, measure, asOf: agg.generatedAt, truncatedBuckets, ...desk });
+  }, [agg, view, width, mobile, banded, measure]);
   const [era, setEra] = useState<number | null>(null);
   const eraOn = era === null ? undefined : eras[era];
   const [acted, setActed] = useState(false); // the live readout stays quiet until the first user action

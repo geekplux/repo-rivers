@@ -145,14 +145,14 @@ export function RiverChart({ aggregate, view, layout: L, mobile, active, chart, 
               </g>
             );
           })}
-          {L.labels.placed.map((p) => {
-            const r = L.rivers.find((x) => x.id === p.id);
-            const water = p.kind === 'inside' && r?.kind !== 'other';
+          {L.labels.names.map((n) => {
+            // Names inside a river are on water; "other" (hatched), mouth and peak names are ink with a ground halo.
+            const water = (n.kind === 'course' || n.kind === 'level') && L.rivers.find((x) => x.id === n.id)?.kind !== 'other';
             return (
-              <g key={`${p.id}${p.x}`} className={cls('rr-lab', p.id === on && 'rr-on')}>
-                {p.leader && <line x1={p.leader[0]} y1={p.leader[1]} x2={p.leader[2]} y2={p.leader[3]} className="rr-leader" />}
-                {p.kind === 'callout' && <circle cx={p.leader![0]} cy={p.leader![1]} r="2.5" className="rr-pin" />}
-                <text x={p.x} y={p.y + 7} className={cls('rr-label', water && 'rr-on-water')} data-label-for={p.id}>{label(p.id, p.text)}</text>
+              <g key={n.id} className={cls('rr-lab', n.id === on && 'rr-on')} data-name={n.kind}>
+                {n.leader && <path d={n.leader} className="rr-leader" />}
+                <text x={n.x} y={n.y} textAnchor={n.anchor === 'middle' ? 'middle' : undefined} transform={n.angle ? `rotate(${n.angle.toFixed(1)} ${n.x} ${n.y})` : undefined}
+                  className={cls('rr-label', water && 'rr-on-water', n.kind === 'peak' && 'rr-peak')} data-label-for={n.id}>{label(n.id, n.text)}</text>
               </g>
             );
           })}

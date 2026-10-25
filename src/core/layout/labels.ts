@@ -1,17 +1,18 @@
 /**
- * Greedy direct-label placement (docs/viz/rivers.md §5.6): inside → end gutter → stack edge → dropped, then a
- * peak callout for dropped top-3 rivers and, on mobile, callouts until every full window holds 2 labels (L9 a, b).
+ * The phone chart's label placement until R6 replaces that chart (docs/viz/rivers.md §5.6): inside (repeated per
+ * window) → stack edge → dropped, then a peak callout for dropped top-3 rivers and callouts until every full window
+ * holds 2 labels (L9 a, b). The desktop chart names its rivers with `placeRiverNames` (riverNames.ts).
  */
 import { edgeAt } from './ribbons.ts';
+import type { Box } from './riverNames.ts';
 
-/** An axis-aligned box in CSS px. */
-export interface Box { x: number; y: number; width: number; height: number }
+export type { Box } from './riverNames.ts';
 
-/** A placed label; `leader` is a gutter or callout label's `[x1, y1, x2, y2]` line back to its river. */
+/** A placed label; `leader` is a callout label's `[x1, y1, x2, y2]` line back to its river. */
 export interface PlacedLabel extends Box {
   id: string;
   text: string;
-  kind: 'inside' | 'gutter' | 'edge' | 'callout';
+  kind: 'inside' | 'edge' | 'callout';
   leader?: readonly [number, number, number, number];
 }
 
@@ -34,10 +35,7 @@ export interface LabelInput {
   bucketWidth: number;
   measure: (text: string) => number;
   minThickness: number;
-  gutter: boolean;
-  /** Width already reserved right of the plot (0 on the first pass, which only measures the request). */
-  gutterRoom: number;
-  /** Mobile: inside labels repeat once per window of this many px. */
+  /** Inside labels repeat once per window of this many px. */
   window: number;
   obstacles: readonly Box[];
 }
@@ -45,14 +43,6 @@ export interface LabelInput {
 /** Height of a label box in px (12 px mono text plus padding). */
 export const LABEL_HEIGHT = 14;
 const MARGIN = 2;
-const MAX_CHARS = 26;
-
-/** Middle ellipsis to at most `max` characters: `packages/compi…ate-vite`. */
-export function ellipsize(text: string, max = MAX_CHARS): string {
-  if (text.length <= max) return text;
-  const head = Math.ceil((max - 1) / 2);
-  return `${text.slice(0, head)}…${text.slice(text.length - (max - 1 - head))}`;
-}
 
 /** True if the boxes overlap or come closer than the 2 px margin. */
 export const hits = (a: Box, b: Box): boolean =>
@@ -64,21 +54,20 @@ function span(xs: readonly number[], ys: readonly number[], a: number, b: number
 }
 
 /**
- * Places labels for all bands, largest total first ("other" last). Returns placed boxes (mobile may repeat
- * an inside label per window), dropped ids, and the gutter width the labels asked for (0 if none).
+ * Places labels for all bands, largest total first ("other" last). Returns placed boxes (an inside label may
+ * repeat per window) and dropped ids.
  */
-export function placeLabels(input: LabelInput): { placed: PlacedLabel[]; dropped: string[]; gutterWidth: number } {
-  const { bands, xs, plot, bucketWidth: w, measure, gutter, window, obstacles } = input;
+export function placeLabels(input: LabelInput): { placed: PlacedLabel[]; dropped: string[] } {
+  const { bands, xs, plot, bucketWidth: w, measure, window, obstacles } = input;
   const pad = (input.minThickness - LABEL_HEIGHT) / 2;
   const placed: PlacedLabel[] = [];
   const dropped: string[] = [];
-  const queued: { band: LabelBand; cy: number }[] = [];
   const free = (box: Box): boolean => ![...obstacles, ...placed].some((o) => hits(box, o));
   const B = xs.length - 2;
   const order = bands.toSorted((a, b) => Number(a.other) - Number(b.other) || b.total - a.total);
 
   for (const band of order) {
-    const text = ellipsize(band.text);
+    const text = band.text;
     const width = measure(text);
     const peak = band.values.indexOf(Math.max(...band.values));
     let found = false;
@@ -100,35 +89,9 @@ export function placeLabels(input: LabelInput): { placed: PlacedLabel[]; dropped
       found ||= best !== undefined;
     }
     if (found) continue;
-    if (gutter && (band.values[B - 1] ?? 0) > 0) {
-      queued.push({ band, cy: (band.top[B]! + band.bottom[B]!) / 2 });
-      continue;
-    }
     const edge = stackEdge(input, band, peak, text, width);
     if (edge && free(edge)) placed.push(edge);
     else dropped.push(band.id);
-  }
-
-  const gutterWidth = queued.length ? Math.min(180, Math.max(...queued.map((q) => measure(ellipsize(q.band.text)))) + 24) : 0;
-  const half = LABEL_HEIGHT / 2;
-  for (let fit = queued; fit.length; ) {
-    const sorted = fit.toSorted((a, b) => a.cy - b.cy);
-    const ys = sorted.map((q) => q.cy);
-    ys.forEach((y, i) => (ys[i] = Math.max(y, plot.top + half, i ? ys[i - 1]! + 16 : -Infinity)));
-    for (let i = ys.length - 1; i >= 0; i--) ys[i] = Math.min(ys[i]!, plot.bottom - half, ys[i + 1] === undefined ? Infinity : ys[i + 1]! - 16);
-    if (ys[0]! >= plot.top + half - 1e-9) {
-      sorted.forEach(({ band, cy }, i) => {
-        let text = ellipsize(band.text);
-        for (let n = MAX_CHARS - 1; n > 3 && measure(text) > (input.gutterRoom || gutterWidth) - 12; n--) text = ellipsize(band.text, n);
-        const y = ys[i]!;
-        const leader = [plot.right, cy, plot.right + 6, y] as const;
-        placed.push({ x: plot.right + 8, y: y - half, width: measure(text), height: LABEL_HEIGHT, id: band.id, text, kind: 'gutter', leader });
-      });
-      break;
-    }
-    const smallest = fit.reduce((m, q) => (q.band.total < m.band.total ? q : m));
-    dropped.push(smallest.band.id);
-    fit = fit.filter((q) => q !== smallest);
   }
 
   const rescue = (band: LabelBand, lo: number, hi: number): boolean => {
@@ -146,7 +109,7 @@ export function placeLabels(input: LabelInput): { placed: PlacedLabel[]; dropped
       if (!placed.some((p) => p.id === band.id && inside(p))) rescue(band, lo, lo + window);
     }
   }
-  return { placed, dropped, gutterWidth };
+  return { placed, dropped };
 }
 
 /** Does the `[x1, y1, x2, y2]` segment pass through `box` (2 px margin)? Sampled every 2 px. */
@@ -162,7 +125,7 @@ function crosses([x1, y1, x2, y2]: readonly number[], box: Box): boolean {
  */
 function callout(input: LabelInput, band: LabelBand, lo: number, hi: number, taken: readonly (Box & { leader?: readonly number[] })[]): PlacedLabel | undefined {
   const { bands, xs, plot, bucketWidth: w, measure } = input;
-  const text = ellipsize(band.text);
+  const text = band.text;
   const width = measure(text);
   const cols = xs.slice(1, -1).flatMap((x, i) => (x >= lo && x < hi && (band.values[i] ?? 0) > 0 ? [i] : []));
   if (!cols.length) return undefined;

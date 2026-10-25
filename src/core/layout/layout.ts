@@ -2,9 +2,11 @@
 import { tones, type Tone } from '../tones.ts';
 import { tagsBot } from '../summary.ts';
 import type { RiverView } from '../view.ts';
-import { LABEL_HEIGHT, placeLabels, type Box, type PlacedLabel } from './labels.ts';
+import { MOUTH_ROOM, riverNameWidth } from './guides.ts';
+import { LABEL_HEIGHT, placeLabels, type PlacedLabel } from './labels.ts';
 import { laneOrder } from './order.ts';
 import { extend, link, ribbonPath, type Point } from './ribbons.ts';
+import { placeRiverNames, type Box, type RiverName } from './riverNames.ts';
 import { band, clipDomain, linear, sqrt } from './scale.ts';
 
 /** Default horizontal inset of the plot inside the SVG (room for a focus ring drawn at the SVG edge). */
@@ -25,22 +27,19 @@ export interface LayoutOptions {
   top?: number;
   /** Horizontal inset of the plot inside the SVG (4). */
   inset?: number;
-  /**
-   * A fixed room right of the plot for river names at the mouth (desktop). Without it the layout measures the
-   * gutter its labels ask for (up to 180 px) in a second pass.
-   */
+  /** Room right of the desktop plot for river names at the mouth (140, so the plot ends at 1180 of a 1440 page). */
   labelRoom?: number;
   /** `'linear'` (default, with outlier clipping) or `'sqrt'` of the column total (shares stay exact). */
   scale?: 'linear' | 'sqrt';
   /** Minimum band thickness for an inside label (18 = 14 px box + 2 px padding each side). */
   labelMinThickness?: number;
-  /** Phone layout: no gutter, inside labels repeat every 360 px. */
+  /** Phone layout (until R6): no mouth room, the phone label placement with inside labels every 360 px. */
   mobile?: boolean;
   /** When the data was read (`generatedAt`); marks a partial last bucket. */
   asOf?: string;
   /** Buckets whose values are estimates (`source.truncatedBuckets`). */
   truncatedBuckets?: readonly number[];
-  /** Label text width; default 7.4 px per character (12 px mono). */
+  /** River name width; default the 13 px italic estimate (6.3 px per character + 4). */
   measure?: (text: string) => number;
 }
 
@@ -84,7 +83,8 @@ export interface RiverLayout {
   columns: { x: number; total: number; top: number; height: number; factor: number }[];
   rivers: RiverShape[];
   transfers: TransferShape[];
-  labels: { placed: PlacedLabel[]; dropped: string[] };
+  /** River names (DESIGN §4) and the rivers left without one. */
+  labels: { names: RiverName[]; dropped: string[] };
   /** Outlier columns drawn at `factor` scale with a break mark (`mark`, near the stack top) and `text` (`↑ 224K`, in `box`). */
   clipped: { index: number; x: number; total: number; factor: number; text: string; box: Box; mark: Box }[];
   /** Survey line at `asOf` inside a partial last bucket, with its label. */
@@ -101,14 +101,9 @@ const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', y
  * linear thickness with outlier clipping, mid-x Bézier ribbons that taper to a point at zero, transfers,
  * two tones and greedy direct labels. Pure and deterministic (same input, same output).
  */
-export function layoutRivers(view: RiverView, options: LayoutOptions): RiverLayout {
-  if (options.labelRoom !== undefined && !options.mobile) return build(view, options, options.labelRoom - (options.inset ?? INSET)).layout;
-  const first = build(view, options, 0);
-  return options.mobile || first.gutter === 0 ? first.layout : build(view, options, first.gutter).layout;
-}
-
-function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: RiverLayout; gutter: number } {
-  const { gap = 3, mobile = false, measure = (t: string) => 7.4 * t.length, top: pad = 8, inset = INSET } = o;
+export function layoutRivers(view: RiverView, o: LayoutOptions): RiverLayout {
+  const { gap = 3, mobile = false, measure = riverNameWidth, top: pad = 8, inset = INSET } = o;
+  const gutter = mobile ? 0 : (o.labelRoom ?? MOUTH_ROOM) - inset;
   const lanes = laneOrder(view.rivers, view.transfers);
   const B = view.buckets.length;
   const width = mobile ? Math.max(o.width, 720, 28 * B) : o.width;
@@ -179,26 +174,40 @@ function build(view: RiverView, o: LayoutOptions, gutter: number): { layout: Riv
     return { from, to, x0: plot.left + from * w, x1: plot.left + (to + 1) * w };
   });
 
-  const labels = placeLabels({
-    bands: lanes.map((r, j) => ({
-      id: r.id, text: tagsBot(r) ? `${r.label} bot` : r.label, total: r.total, other: r.kind === 'other',
-      values: r.values, top: extend(tops[j]!), bottom: extend(bots[j]!),
-    })),
-    xs, plot, bucketWidth: w, measure, gutter: !mobile, gutterRoom: gutter, window: mobile ? 360 : Infinity,
-    minThickness: o.labelMinThickness ?? 18,
-    obstacles: [...markers.flatMap((m) => [m.box, m.mark]), ...(partial ? [partial.box] : [])],
-  });
+  const text = (r: (typeof lanes)[number]): string => (tagsBot(r) ? `${r.label} bot` : r.label);
+  const obstacles = markers.flatMap((m) => [m.box, m.mark]);
+  const labels = mobile
+    ? phoneLabels(placeLabels({
+      bands: lanes.map((r, j) => ({
+        id: r.id, text: text(r), total: r.total, other: r.kind === 'other', values: r.values, top: extend(tops[j]!), bottom: extend(bots[j]!),
+      })),
+      xs, plot, bucketWidth: w, measure, window: 360, minThickness: o.labelMinThickness ?? 18,
+      obstacles: [...obstacles, ...(partial ? [partial.box] : [])],
+    }))
+    : placeRiverNames({
+      rivers: lanes.map((r, j) => ({ id: r.id, text: text(r), top: tops[j]!, bottom: bots[j]!, thickness: thick[j]! })),
+      plot, bucketWidth: w, measure, limit: width - inset, transfers: transfers.filter((t) => t.alwaysVisible), obstacles,
+    });
   const tone = tones(lanes);
   const rivers = lanes.map((r, j): RiverShape => ({
     id: r.id, label: r.label, kind: r.kind, bot: r.bot, tone: tone[j]!,
     path: ribbonPath(xs, tops[j]!, bots[j]!, r.values),
     edges: { top: tops[j]!, bottom: bots[j]! }, thickness: thick[j]!,
   }));
-  const layout: RiverLayout = {
+  return {
     width, height: plot.bottom + 30, plot, bucketWidth: w, domain, unit, columns, rivers, transfers,
-    labels: { placed: labels.placed, dropped: labels.dropped }, clipped: markers, partial, estimated,
+    labels, clipped: markers, partial, estimated,
   };
-  return { layout, gutter: labels.gutterWidth };
+}
+
+/** The phone placement's labels as river names: inside labels are level, edge labels and callouts peak names. */
+function phoneLabels({ placed, dropped }: { placed: PlacedLabel[]; dropped: string[] }): RiverLayout['labels'] {
+  const names = placed.map((p): RiverName => ({
+    id: p.id, text: p.text, kind: p.kind === 'inside' ? 'level' : 'peak', x: p.x, y: p.y + LABEL_HEIGHT / 2, angle: 0, anchor: 'start',
+    box: { x: p.x, y: p.y, width: p.width, height: p.height },
+    ...(p.leader ? { leader: `M${p.leader[0]},${p.leader[1]}L${p.leader[2]},${p.leader[3]}` } : {}),
+  }));
+  return { names, dropped };
 }
 
 /** The `asOf` survey line when it falls inside the last bucket (the value there is not extrapolated). */

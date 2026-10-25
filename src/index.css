@@ -73,8 +73,8 @@ a { color: inherit; text-underline-offset: 3px; }
 .rr-on-water .rr-label-muted { fill: var(--on-water); }
 .rr-clip-label { font-style: normal; font-variant-numeric: lining-nums tabular-nums; }
 .rr-lab { transition: opacity 250ms ease-out; }
-.rr-leader { stroke: var(--line); stroke-width: 0.5; }
-.rr-pin { fill: var(--ink); stroke: var(--ground); stroke-width: 1.5; }
+.rr-label.rr-peak { stroke-width: 4px; }
+.rr-leader { fill: none; stroke: var(--line); stroke-width: 0.5; }
 .rr-halo { fill: none; stroke: var(--ground); }
 .rr-transfer { fill: none; stroke: var(--water-b); stroke-dasharray: 6 3; }
 .rr-arrow { fill: var(--water-b); }
@@ -89,7 +89,7 @@ a { color: inherit; text-underline-offset: 3px; }
    45 % in ink; a 0.5 ink rule marks the bucket and a dot the river's centre. 250 ms ease-out; instant when reduced. */
 .rr-focusing .rr-river:not(.rr-on), .rr-focusing .rr-xfer:not(.rr-on) { opacity: 0.18; }
 .rr-focusing .rr-lab:not(.rr-on) { opacity: 0.45; }
-.rr-focusing .rr-lab:not(.rr-on) .rr-label { fill: var(--ink); stroke: none; }
+.rr-focusing .rr-lab:not(.rr-on) .rr-on-water, .rr-focusing .rr-lab:not(.rr-on) .rr-label-muted { fill: var(--ink); }
 .rr-cursor { stroke: var(--ink); stroke-width: 0.5; pointer-events: none; }
 .rr-dot { fill: var(--ground); stroke: var(--ink); stroke-width: 1.5; }
 .rr-reveal { animation: rr-reveal 700ms var(--rr-ease) both; }
