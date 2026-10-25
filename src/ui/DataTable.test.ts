@@ -22,7 +22,7 @@ describe('DataTable', () => {
     expect(cells(head, 'th')).toEqual(['River', ...view.buckets.map((b) => b.label), 'Total']);
     expect(head.match(/scope="col"/g)).toHaveLength(view.buckets.length + 2);
     const rows = [...html.match(/<tbody>(.*)<\/tbody>/)![1]!.matchAll(/<tr>(.*?)<\/tr>/g)].map((m) => m[1]!);
-    expect(rows.map((r) => r.match(/<th scope="row">(.*?)<\/th>/)![1])).toEqual(view.rivers.map((r) => (r.bot ? `${r.label} · bot` : r.label)));
+    expect(rows.map((r) => r.match(/<th scope="row">(.*?)<\/th>/)![1])).toEqual(view.rivers.map((r) => (r.bot ? `${r.label} <span class="rr-muted">bot</span>` : r.label)));
     const values = rows.map((r) => cells(r, 'td').map((v) => Number(v.replaceAll(',', ''))));
     expect(values).toEqual(view.rivers.map((r) => [...r.values, r.total]));
   });

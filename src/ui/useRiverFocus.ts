@@ -68,7 +68,7 @@ export function hitTest(L: RiverLayout, x: number, y: number): Spot | null {
   return { river: best?.id ?? null, bucket };
 }
 
-const local = (e: MouseEvent<SVGSVGElement>): [number, number] => {
+const local = (e: MouseEvent<Element>): [number, number] => {
   const r = e.currentTarget.getBoundingClientRect();
   return [e.clientX - r.left, e.clientY - r.top];
 };
@@ -96,7 +96,7 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
 
   const chart = {
     onFocus: () => active.river === null && active.bucket === null && setState({ ...start, pinned: false }),
-    onKeyDown: (e: KeyboardEvent<SVGGElement>) => {
+    onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
       const next = stepFocus(active, e.key, lanes, B, start);
       if (!next) return;
       e.preventDefault();
@@ -105,9 +105,9 @@ export function useRiverFocus(L: RiverLayout | null, rivers: readonly River[], r
     },
   };
   const svg = {
-    onPointerMove: (e: MouseEvent<SVGSVGElement>) => L && !kept.pinned && setHover(hitTest(L, ...local(e))),
+    onPointerMove: (e: MouseEvent<Element>) => L && !kept.pinned && setHover(hitTest(L, ...local(e))),
     onPointerLeave: () => setHover(null),
-    onClick: (e: MouseEvent<SVGSVGElement>) => {
+    onClick: (e: MouseEvent<Element>) => {
       const hit = L && hitTest(L, ...local(e));
       setHover(null);
       if (!hit?.river || (kept.pinned && kept.river === hit.river)) setState(EMPTY);

@@ -1,18 +1,8 @@
-/** Pure geometry for the chart's overlays: the cursor's bucket tag and the floating label of a dropped river. */
+/** Pure geometry for the chart's overlay: the floating label of a dropped river while it is focused. */
 import { LABEL_HEIGHT, hits, type Box } from '../core/layout/labels.ts';
 import type { RiverLayout, RiverShape } from '../core/layout/layout.ts';
 
 const CHAR = 7.4; // 12 px mono
-
-/** The cursor's bucket tag under the axis, kept inside the plot; `avoid` is the x span year labels must clear. */
-export function cursorTag(text: string, x: number, left: number, right: number): { text: string; x: number; width: number; avoid: [number, number] } {
-  const width = CHAR * text.length + 10;
-  const cx = Math.min(Math.max(x, left + width / 2), right - width / 2);
-  return { text, x: cx, width, avoid: [cx - width / 2 - 4, cx + width / 2 + 4] };
-}
-
-/** True when the closed spans `[a0, a1]` and `[b0, b1]` overlap. */
-export const overlaps = ([a0, a1]: readonly [number, number], [b0, b1]: readonly [number, number]): boolean => a0 < b1 && b0 < a1;
 
 /**
  * Where to draw a dropped river's label while it is active: centred on the bucket (clamped 4 px inside the plot),

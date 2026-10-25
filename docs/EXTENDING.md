@@ -137,7 +137,7 @@ Put a new adapter under `src/core/<source>/`, inject `fetch` as `fetchRepoAggreg
 
 ## Theming
 
-Colours and fonts are CSS custom properties in [`src/ui/theme/tokens.css`](../src/ui/theme/tokens.css), with a dark block under `prefers-color-scheme: dark`. Fonts can be changed freely; label placement assumes 12 px mono text at about 7.4 px per character (see `measure` in `LayoutOptions`):
+Colours and fonts are CSS custom properties in [`src/ui/theme/tokens.css`](../src/ui/theme/tokens.css), with a dark block under `prefers-color-scheme: dark`. Fonts can be changed freely; label placement assumes 13 px italic river names at about 6.3 px per character (`riverNameWidth`, passed as `measure` in `LayoutOptions`):
 
 ```css
 :root {
@@ -146,4 +146,4 @@ Colours and fonts are CSS custom properties in [`src/ui/theme/tokens.css`](../sr
 }
 ```
 
-Background, text and river colours (`--rr-bg`, `--rr-ink`, `--rr-ink-2`, `--rr-grid`, `--rr-focus`, `--rr-river-0` to `--rr-river-8`) must also be changed in `PALETTES` in [`src/core/palette.ts`](../src/core/palette.ts); a test keeps the two equal. `pnpm test` then checks the new palette: every pair of river colours stays distinguishable (CIEDE2000 ΔE ≥ 8) under protanopia, deuteranopia and tritanopia simulation, rivers have at least 3:1 contrast against the background, and text has at least 4.5:1.
+Background and text colours (`--rr-bg`, `--rr-ink`, `--rr-ink-2`, `--rr-grid`, `--rr-focus`) must also be changed in `PALETTES` in [`src/core/palette.ts`](../src/core/palette.ts); a test keeps the two equal. Rivers carry no hue: each is `--water-a` or `--water-b` (a two-colouring in [`src/core/tones.ts`](../src/core/tones.ts)), and "other" is hatched. `pnpm test` checks that both waters have at least 3:1 contrast against `--ground`, that they differ in lightness under protanopia, deuteranopia and tritanopia simulation, and that text has at least 4.5:1.

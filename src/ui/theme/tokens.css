@@ -2,7 +2,7 @@
  * "Cyanotype" design tokens (docs/redesign/DESIGN.md §2): Radix Colors 3.0 blue and slate, light and dark, and the
  * semantic roles built on them. The dark set applies when the system is dark and no light choice is stored
  * (`data-theme` on <html>, set by public/theme.js before first paint) or when dark is chosen. Print is always light:
- * both dark blocks are screen-only. tokens.test.ts checks the scales, the roles and the --rr-* aliases.
+ * both dark blocks are screen-only. tokens.test.ts checks the scales, the roles, the --rr-* aliases and the river contrast.
  */
 @font-face {
   font-family: 'Alegreya Sans';
@@ -89,16 +89,6 @@
   --rr-ink-2: var(--muted);
   --rr-grid: var(--hair);
   --rr-focus: var(--focus);
-  /* River fills: the CVD-checked hues of PALETTES in src/core/palette.ts until the chart moves to water A/B (R3). */
-  --rr-river-0: #704c01;
-  --rr-river-1: #0390ce;
-  --rr-river-2: #048a5f;
-  --rr-river-3: #928a02;
-  --rr-river-4: #0b67ab;
-  --rr-river-5: #9e5d3e;
-  --rr-river-6: #be6c9a;
-  --rr-river-7: #00595c;
-  --rr-river-8: #6c7178;
 
   --rr-font: 'Alegreya Sans', ui-sans-serif, system-ui, sans-serif;
   --rr-display: var(--rr-font);
@@ -145,15 +135,6 @@
     --line: var(--blue-6);
     --hair: var(--blue-5);
     --field: var(--blue-1);
-    --rr-river-0: #e0ae60;
-    --rr-river-1: #97d5fb;
-    --rr-river-2: #3cc494;
-    --rr-river-3: #e4d50c;
-    --rr-river-4: #0698f4;
-    --rr-river-5: #e36a1c;
-    --rr-river-6: #d27fad;
-    --rr-river-7: #468e8c;
-    --rr-river-8: #61676d;
   }
 }
 
@@ -188,15 +169,6 @@
     --line: var(--blue-6);
     --hair: var(--blue-5);
     --field: var(--blue-1);
-    --rr-river-0: #e0ae60;
-    --rr-river-1: #97d5fb;
-    --rr-river-2: #3cc494;
-    --rr-river-3: #e4d50c;
-    --rr-river-4: #0698f4;
-    --rr-river-5: #e36a1c;
-    --rr-river-6: #d27fad;
-    --rr-river-7: #468e8c;
-    --rr-river-8: #61676d;
   }
 }
 

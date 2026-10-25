@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PALETTES, contrast, type Theme } from '../../core/palette.ts';
+import { PALETTES, contrast, deltaE2000, hexToLab, type Theme } from '../../core/palette.ts';
 import css from './tokens.css?raw';
 
 // Radix Colors 3.0 (radix-ui.com/colors), steps 1..12.
@@ -63,12 +63,25 @@ describe('theme tokens', () => {
     expect(Object.fromEntries(Object.keys(ROLES).map((role) => [role, resolve(theme, role)]))).toEqual(want);
   });
 
-  it.each(['light', 'dark'] as const)('%s: the --rr-* aliases and river fills equal PALETTES (CVD-checked in palette.test.ts)', (theme) => {
+  it.each(['light', 'dark'] as const)('%s: the --rr-* aliases equal PALETTES; no river hues are left', (theme) => {
     const p = PALETTES[theme];
     const want = { bg: p.background, ink: p.ink, 'ink-2': p.secondary, grid: p.graticule, focus: p.focus };
     const got = Object.fromEntries(Object.keys(want).map((k) => [k, resolve(theme, `rr-${k}`).toUpperCase()]));
     expect(got).toEqual(want);
-    expect(p.fills.map((_, i) => resolve(theme, `rr-river-${i}`).toUpperCase())).toEqual(p.fills);
+    expect(css).not.toMatch(/--rr-river/);
+  });
+
+  it.each(['light', 'dark'] as const)('%s: river fills (water A, water B, the hatch) ≥ 3:1 against ground', (theme) => {
+    for (const water of ['water-a', 'water-b']) expect(contrast(resolve(theme, water), resolve(theme, 'ground'))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(['light', 'dark'] as const)('%s: the two waters differ in lightness under normal and CVD vision, not in hue', (theme) => {
+    const [a, b] = [resolve(theme, 'water-a'), resolve(theme, 'water-b')];
+    for (const cvd of [undefined, 'protanopia', 'deuteranopia', 'tritanopia'] as const) {
+      const [la, lb] = [hexToLab(a, cvd), hexToLab(b, cvd)];
+      expect(Math.abs(la[0] - lb[0])).toBeGreaterThanOrEqual(15);
+      expect(deltaE2000(la, lb)).toBeGreaterThanOrEqual(10);
+    }
   });
 
   it.each(['light', 'dark'] as const)('%s: text contrast ≥ 4.5:1 on ground, band and field; focus ring ≥ 3:1', (theme) => {

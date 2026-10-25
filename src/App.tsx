@@ -1,12 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { layoutRivers } from './core/layout/layout.ts';
 import type { RepoAggregate } from './core/schema.ts';
-import { caveats, describeEras, describeView, eraLine, idleLine, readoutLine } from './core/summary.ts';
+import { ERA_BAND, MOUTH_ROOM, riverNameWidth } from './core/layout/guides.ts';
+import { caveats, describeEras, describeView, eraLine, focusReadout, idleReadout, legendItems, plain, type Rich } from './core/summary.ts';
 import { selectView } from './core/view.ts';
 import { findSample } from './samples/index.ts';
 import { Controls, type ControlValue } from './ui/Controls.tsx';
 import { DataTable } from './ui/DataTable.tsx';
-import { EraTrack } from './ui/EraTrack.tsx';
 import { Progress } from './ui/Progress.tsx';
 import { REPO_INPUT_ID, RepoInput } from './ui/RepoInput.tsx';
 import { metaLine } from './ui/headMeta.ts';
@@ -15,7 +15,7 @@ import { ErrorState } from './ui/states/ErrorState.tsx';
 import { errorCopy, loadingLine, type ErrorAction } from './ui/states/copy.ts';
 import { useEras } from './ui/useEras.ts';
 import { useRepo } from './ui/useRepo.ts';
-import { Readout } from './ui/Readout.tsx';
+import { Legend, Readout } from './ui/Readout.tsx';
 import { RiverChart } from './ui/RiverChart.tsx';
 import { SampleSwitcher, useSampleParam } from './ui/SampleSwitcher.tsx';
 import { EMPTY, useRiverFocus } from './ui/useRiverFocus.ts';
@@ -67,21 +67,22 @@ export function App() {
   const current: Loaded | null = rs.status === 'done' ? { id: `repo:${repoName}`, aggregate: rs.aggregate } : loaded;
   const agg = current && 'aggregate' in current ? current.aggregate : null;
   const view = useMemo(() => agg && selectView(agg, options), [agg, options]);
-  const [hues, setHues] = useState<Record<string, number>>({}); // sticky hues across control changes
-  const layout = useMemo(() => {
-    if (!agg || !view || width <= 0) return null;
-    const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
-    return layoutRivers(view, { width, mobile, asOf: agg.generatedAt, truncatedBuckets, previousColors: hues });
-  }, [agg, view, width, mobile, hues]);
   // Heuristic eras at once; AI names swap in later when the Worker served this repo (and are cached with it).
   const eras = useEras(agg, rs.status === 'done' && rs.via === 'worker', (named, a) => {
     if (rs.status === 'done' && rs.aggregate === a) repo.remember(rs.ref, { ...a, eras: named });
   });
+  const banded = eras.length > 0;
+  const layout = useMemo(() => {
+    if (!agg || !view || width <= 0) return null;
+    const truncatedBuckets = view.metric === 'lines changed' ? agg.source.truncatedBuckets : [];
+    // Desktop (DESIGN §4): the plot flush with the column's left edge, a fixed room right of it for river names.
+    const desk = mobile ? {} : { inset: 0, labelRoom: MOUTH_ROOM };
+    return layoutRivers(view, { width, mobile, gap: 2, top: banded ? ERA_BAND : 8, measure: riverNameWidth, asOf: agg.generatedAt, truncatedBuckets, ...desk });
+  }, [agg, view, width, mobile, banded]);
   const [era, setEra] = useState<number | null>(null);
   const eraOn = era === null ? undefined : eras[era];
   const [acted, setActed] = useState(false); // the live readout stays quiet until the first user action
   const change = (next: ControlValue) => {
-    if (layout) setHues(Object.fromEntries(layout.rivers.map((r) => [r.id, r.color])));
     setOptions(next);
     setActed(true);
   };
@@ -117,13 +118,15 @@ export function App() {
   const moved = active.bucket !== null && (rs.status === 'done' || loaded?.id === sample.id);
   if (moved && !acted) setActed(true);
   if (moved && switched) setSwitched(false); // "Showing …" only until the first movement in the new chart
-  // The idle line starts with owner/name, so a pasted repo (title = owner/name) is not named twice.
-  const idle = agg && view ? `${switched ? (repoName ? 'Showing ' : `Showing ${title}: `) : ''}${idleLine(agg, view)}` : '';
+  const idle: Rich = view ? idleReadout(view) : [];
   const failed = rs.status === 'error' ? errorCopy(rs.failure, repoName) : null;
-  const readout = rs.status === 'loading' ? loadingLine(repoName, rs.progress)
+  const readout: Rich | string = rs.status === 'loading' ? loadingLine(repoName, rs.progress)
     : failed ? failed.title // the visible readout names the error; the live region (below) speaks it in full
     : view && eraOn ? eraLine(view, eraOn)
-    : view && notes && active.bucket !== null ? readoutLine(view, notes, active.river, active.bucket) : idle;
+    : view && notes && active.bucket !== null ? focusReadout(view, notes, active.river, active.bucket) : idle;
+  const text = typeof readout === 'string' ? readout : plain(readout);
+  // After a sample switch or a drawn repo, the live region names it until the first movement in the new chart.
+  const spoken = failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : switched && readout === idle ? `Showing ${repoName ? heading : `${title}: ${heading}`}. ${text}` : text;
   const unit = agg?.time.unit;
   useEffect(() => {
     // On mobile, an era tapped or focused in the track shows its note in the readout: bring it on screen.
@@ -171,29 +174,20 @@ export function App() {
             {rs.status === 'loading' && <Progress repo={repoName} progress={rs.progress} fellBack={rs.fellBack} onCancel={() => (repo.cancel(), document.getElementById(REPO_INPUT_ID)?.focus())} />}
             {failed && <ErrorState copy={failed} onAction={onError} />}
             {!busy && agg && view && layout && view.rivers.length > 0 && (
-              <div className="rr-stack">
-                <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={eraOn && !active.pinned ? EMPTY : active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
-                  eras={eras} activeEra={era} />
-                {/* After the chart in tab order, drawn above it (CSS order). */}
-                <EraTrack eras={eras} layout={layout} buckets={view.buckets} active={era} onActive={setEra} />
-              </div>
+              <RiverChart aggregate={agg} view={view} layout={layout} mobile={mobile} active={eraOn && !active.pinned ? EMPTY : active} chart={focus.chart} svg={focus.svg} describedBy={summaryId}
+                eras={eras} activeEra={era} onEra={setEra} />
             )}
             {!busy && view?.rivers.length === 0 && <p className="rr-empty">No {view.metric} to draw for this selection.</p>}
           </div>
-          {!busy && layout && view && (
-            <p className="rr-key rr-muted">
-              {layout.estimated.length > 0 && (
-                <span><svg width="22" height="6" aria-hidden="true"><line x1="2" x2="20" y1="3" y2="3" className="rr-estimated" /></svg>estimated from sampled commits</span>
-              )}
-              {layout.partial && (
-                <span><svg width="8" height="14" aria-hidden="true"><line x1="4" x2="4" y1="0" y2="14" className="rr-survey" /></svg>last {unit} is partial, {layout.partial.text}</span>
-              )}
-              {view.rivers.some((r) => r.bot) && (
-                <span><svg width="18" height="12" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="9" className="rr-bot rr-key-bot" /></svg>dotted outline: bot</span>
-              )}
-            </p>
-          )}
-          <Readout text={readout} spoken={failed ? `${failed.title}. ${failed.body}` : eraOn ? '' : readout} pinned={active.pinned} live={acted} />
+          <div className="rr-under">
+            <Readout text={readout} spoken={spoken} pinned={active.pinned} live={acted} />
+            {!busy && layout && view && unit && (
+              <Legend items={legendItems({
+                unit, estimated: layout.estimated.length > 0, partial: layout.partial !== null, moved: layout.transfers.length > 0,
+                bots: view.rivers.some((r) => r.bot), ai: eras.some((e) => e.source === 'ai'),
+              })} />
+            )}
+          </div>
           {!busy && agg && view && notes && (
             <div className="rr-more">
               {/* Closed by default; the chart's aria-describedby still reads the summary (hidden text counts for descriptions). */}

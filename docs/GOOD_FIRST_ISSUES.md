@@ -21,7 +21,7 @@ Switching Modules/Contributors or the depth swaps the chart instantly.
 
 ### 4. Vertical orientation on phones
 On narrow screens the chart scrolls sideways inside a 720 px region.
-- **Files:** `src/core/layout/layout.ts` (a new `orientation` option), `src/ui/RiverChart.tsx`, `src/ui/Axis.tsx`.
+- **Files:** `src/core/layout/layout.ts` (a new `orientation` option), `src/ui/RiverChart.tsx`, `src/core/layout/guides.ts` (era band and axis).
 - **Done when:** below 640 px the time axis can run top to bottom with rivers side by side; arrow keys follow the new axes; layout tests cover both orientations.
 
 ### 5. Export as SVG or PNG
