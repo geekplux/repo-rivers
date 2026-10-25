@@ -24,6 +24,20 @@ repo-rivers is **shipped and live** at https://reporivers.geekplux.com. All 12 p
 | 11 | phase-11-gallery-launch | [#12](https://github.com/geekplux/repo-rivers/pull/12) | Merged |
 | 12 | phase-12-deploy-prep | [#13](https://github.com/geekplux/repo-rivers/pull/13) | Merged, deployed |
 
+## Redesign "Cyanotype" (R1 to R7)
+
+A stack of seven PRs that redesigns the whole page (spec: docs/redesign/DESIGN.md, plan: docs/redesign/PLAN.md, before and after: docs/screenshots/redesign/before and after). R1 to R6 have had their two review rounds and R7 is in review; all are open and wait for Sean's review. Nothing is merged or deployed.
+
+| Phase | Branch | PR | State |
+|---|---|---|---|
+| R1 Foundation | claude/project-thread-6b8r1b | [#19](https://github.com/geekplux/repo-rivers/pull/19) | Open, ready for review |
+| R2 Hero and chart head | claude/project-thread-6b8r1b-2-hero | [#20](https://github.com/geekplux/repo-rivers/pull/20) | Open, ready for review |
+| R3 Chart drawing | claude/project-thread-6b8r1b-3-chart | [#22](https://github.com/geekplux/repo-rivers/pull/22) | Open, ready for review |
+| R4 River names | claude/project-thread-6b8r1b-4-labels | [#23](https://github.com/geekplux/repo-rivers/pull/23) | Open, ready for review |
+| R5 Rivers and Eras | claude/project-thread-6b8r1b-5-index | [#24](https://github.com/geekplux/repo-rivers/pull/24) | Open, ready for review |
+| R6 Phone | claude/project-thread-6b8r1b-6-phone | [#25](https://github.com/geekplux/repo-rivers/pull/25) | Open, ready for review |
+| R7 Motion and polish | claude/project-thread-6b8r1b-7-polish | (this PR) | In review |
+
 ## Open items
 - Enable GitHub private vulnerability reporting in the repo settings (SECURITY.md and CODE_OF_CONDUCT.md link to it).
 - Review docs/LAUNCH.md drafts; nothing has been posted.
@@ -31,4 +45,4 @@ repo-rivers is **shipped and live** at https://reporivers.geekplux.com. All 12 p
 - Move ci/github-workflow.yml to .github/workflows/ (needs a token with `workflow` scope).
 - Smaller improvements are listed in docs/GOOD_FIRST_ISSUES.md.
 
-Last updated: 2026-10-21
+Last updated: 2026-10-25

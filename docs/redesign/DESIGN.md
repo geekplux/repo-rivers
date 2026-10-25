@@ -8,6 +8,8 @@ disagree, the boards win; where the boards and accessibility disagree, accessibi
 
 ## 1. Rules (owner's, binding)
 
+Implemented in: every phase, R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) to R7 (this PR).
+
 1. No middle dot `·` as a separator anywhere in UI copy, titles or meta. 2. No redundant explanatory text.
 3. Copy is clear, plain, no coined words. 4. All colours from Radix Colors (radix-ui.com/colors), 12-step usage
 (1-2 backgrounds, 3-5 component backgrounds, 6-8 borders, 9-10 solids, 11-12 text). 5. Optical alignment; nested
@@ -19,6 +21,8 @@ button switches and remembers (`repo-rivers:theme` in localStorage), choice clea
 first paint; print is always light.
 
 ## 2. Tokens
+
+Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (tokens, font, theme button); the R1 aliases were removed in R7 (this PR).
 
 Radix 3.0 `blue` and `slate`, light and dark scales (values in `target/gen.mjs`, object `R`).
 
@@ -46,6 +50,8 @@ Spacing steps used: 4 8 12 16 24 40 64 104 144 160. Radius: 6 outer (field, butt
 3 inner (segment inside 3px padding). Controls 36 (segmented, select) and 48 (field, button) tall; hit targets >= 44.
 
 ## 3. Page, top to bottom (desktop 1440; see V2Home)
+
+Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (header, footer), R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) (hero, chart head), R3 [#22](https://github.com/geekplux/repo-rivers/pull/22) (readout and legend row), R5 [#24](https://github.com/geekplux/repo-rivers/pull/24) (Rivers, Eras).
 
 - **Header** 72px: logo 28 + "Repo Rivers" (16/700) at x 120; right: "Source" link and the theme icon button (44px,
   glyph optically flush with 1320: nav `margin-right: -12px`).
@@ -81,6 +87,8 @@ Spacing steps used: 4 8 12 16 24 40 64 104 144 160. Radius: 6 outer (field, butt
 
 ## 4. The chart (desktop)
 
+Implemented in: R3 [#22](https://github.com/geekplux/repo-rivers/pull/22) (drawing, era band, axis, focus), R4 [#23](https://github.com/geekplux/repo-rivers/pull/23) (river names).
+
 - Geometry still comes from `layoutRivers` (pure; keep its tests passing, extend them). Plot spans x 120..1180 of the
   1440 page (the SVG may stay full container width; what matters is the plot's left edge on the column's left edge and
   mouth labels ending by 1320). Plot height 480; gap between rivers 2px (ground shows through).
@@ -115,6 +123,8 @@ Spacing steps used: 4 8 12 16 24 40 64 104 144 160. Radius: 6 outer (field, butt
 
 ## 5. Phone (390; see V2Phone, V2PhoneDark)
 
+Implemented in: R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) and R5 [#24](https://github.com/geekplux/repo-rivers/pull/24) (phone layout of the sections), R6 [#25](https://github.com/geekplux/repo-rivers/pull/25) (the chart down the page, docked readout).
+
 - Same order of sections; margins 16. h1 32/36. Field fills the row next to "Draw" (262 + 8 + button); the samples
   sentence wraps under. Chart head stacks: title, meta, then a row with folder depth left and the segmented control right.
 - **Time runs down the page.** The chart is the desktop layout transposed: cross axis (rivers side by side) spans
@@ -127,6 +137,8 @@ Spacing steps used: 4 8 12 16 24 40 64 104 144 160. Radius: 6 outer (field, butt
 
 ## 6. Motion (V2Motion)
 
+Implemented in: R7 (this PR): `src/ui/motion.ts`.
+
 Arrive: clip reveal left to right (top to bottom on the phone), 900 ms ease-out, once per load and after choosing a
 sample or drawing a repo; era names fade in over the last 250 ms. Focus: fades 250 ms ease-out; the readout changes at
 once. Files moved: on focus the dashes of the river's transfers run forward once (600 ms). Switching Modules and
@@ -134,6 +146,8 @@ Contributors: crossfade 250 ms. Theme: instant. While a repo loads, the axis lin
 `prefers-reduced-motion: reduce`: everything instant.
 
 ## 7. States and system (V2System)
+
+Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (logo, favicon, title), R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) (loading and error panels), R7 (this PR) (loading line motion, social card).
 
 Loading: panel with "Reading owner/name: 18 of 51 requests" and a 2px ink progress line on a 0.5 line track.
 Errors keep their existing copy and actions, restyled as 0.5-bordered panels with a solid primary and a 0.5-bordered
