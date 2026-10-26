@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format is based on 
 ## [Unreleased]
 
 ### Added
+- Page-view counts on reporivers.geekplux.com with Google Analytics: the path only, never the repository you look up. Self-hosted copies load no analytics.
 - Toolchain: pnpm, Vite, React and TypeScript, Vitest, oxlint, typecheck, and a headless-browser check harness that runs offline and cleans up after itself.
 - Aggregation core: commits to touched paths, modules (depth 1 to 3, auto for monorepos) and contributors, then week, month, quarter or year buckets and file-move transfers. Bots are flagged; merge commits are not counted.
 - GitHub client and fetch planner: a 3-request probe, then full or sampled mode within 55 unauthenticated requests, with progress and cancellation.

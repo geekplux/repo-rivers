@@ -50,7 +50,7 @@ it('deploy prep: real 32-hex KV id, observability, dry-run script only, security
   expect(Object.values(scripts).filter((v) => /wrangler (pages )?deploy/.test(v))).toEqual([scripts['check:deploy']]);
   const headers = readFileSync('public/_headers', 'utf8');
   expect(headers).toContain(
-    "Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'",
+    "Content-Security-Policy: default-src 'self'; script-src 'self' https://*.googletagmanager.com; connect-src 'self' https://api.github.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'",
   );
   expect(headers).toMatch(/\/assets\/\*\n {2}Cache-Control: public, max-age=31536000, immutable/);
   expect(headers).toContain('X-Content-Type-Options: nosniff');
