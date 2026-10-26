@@ -11,7 +11,7 @@
 
 export const ANALYTICS_HOST = 'reporivers.geekplux.com';
 /** The GA4 web stream for {@link ANALYTICS_HOST}; empty keeps analytics off. */
-export const MEASUREMENT_ID = '';
+export const MEASUREMENT_ID = 'G-R6XQ74FVGC';
 const PAGE_TITLE = 'Repo Rivers';
 const PATHS = new Set(['/']);
 
