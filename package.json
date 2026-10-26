@@ -4,6 +4,9 @@
   "private": true,
   "description": "See a GitHub repository's history as rivers of modules and contributors.",
   "license": "MIT",
+  "homepage": "https://reporivers.geekplux.com",
+  "repository": { "type": "git", "url": "git+https://github.com/geekplux/repo-rivers.git" },
+  "bugs": { "url": "https://github.com/geekplux/repo-rivers/issues" },
   "type": "module",
   "engines": {
     "node": ">=22.12"
