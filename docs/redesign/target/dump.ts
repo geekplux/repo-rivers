@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-const R = '/home/user/repo-rivers/src/';
+const R = new URL('../../../src/', import.meta.url).pathname;
 const { parseAggregate } = await import(R + 'core/schema.ts');
 const { selectView } = await import(R + 'core/view.ts');
 const { layoutRivers } = await import(R + 'core/layout/layout.ts');
