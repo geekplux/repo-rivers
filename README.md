@@ -53,7 +53,7 @@ Found a barrier? Please [open an issue](https://github.com/geekplux/repo-rivers/
 
 ## Privacy
 
-- No analytics, no tracking, no cookies. The display font is self-hosted.
+- The live site counts page views with Google Analytics: one per visit, with the page's path and nothing else, so the repository you look up and the chart's state never reach it. No events, no Google signals, no ad personalisation ([src/analytics.ts](src/analytics.ts)). A self-hosted copy loads no analytics. Google Analytics sets its own `_ga` cookies; the app sets none, and the display font is self-hosted.
 - Email addresses are never stored; they are only hashed in memory when a commit has no GitHub login.
 - Nothing about people is sent to the AI model.
 - Aggregates (counts per folder and per contributor name) are cached in Cloudflare KV and in your browser's `localStorage`.
