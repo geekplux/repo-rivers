@@ -22,7 +22,7 @@ Switching Modules/Contributors or the depth swaps the chart instantly.
 ### 4. Phone river names that follow the river's curve
 On phones (time runs down the page) river names are straight text rotated 90°, so a name sits only where the river stays straight for its length.
 - **Files:** `src/core/layout/riverNames.ts` (the `phone` pass), `src/core/layout/transpose.ts`, `src/ui/PhoneChart.tsx`.
-- **Done when:** a name may follow the 5-bucket smoothed centreline on an SVG `textPath` (as `phoneChart()` in docs/redesign/target/gen.mjs does), a containment test keeps every glyph inside its river, and names still never overlap.
+- **Done when:** a name may follow the 5-bucket smoothed centreline on an SVG `textPath`, a containment test keeps every glyph inside its river, and names still never overlap.
 
 ### 5. Export as SVG or PNG
 - **Files:** a new `src/ui/exportChart.ts`, `src/ui/Controls.tsx`.

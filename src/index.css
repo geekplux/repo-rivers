@@ -242,7 +242,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-nav a { padding: 0 8px; }
   .rr-made { gap: 8px 16px; margin-top: 6px; }
   .rr-footer .rr-wrap { display: block; }
-  /* V2Phone: "Made by GeekPlux" follows the last paragraph's 6 px. */
+  /* On the phone, "Made by GeekPlux" follows the last paragraph's 6 px. */
   .rr-footer .rr-wrap > div + div { margin-top: 0; }
   .rr-intro { padding-top: 40px; }
   .rr-hero { font-size: 32px; line-height: 36px; }

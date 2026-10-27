@@ -1,9 +1,8 @@
 /**
- * River names on the desktop chart (docs/redesign/DESIGN.md §4 "River names"), ported from the label pass of
- * `chart()` in docs/redesign/target/gen.mjs. Each river, in lane order, gets the first of: a straight name slanted
- * along its course, a level name inside its thickest buckets, a name at the mouth right of the plot (rivers that
- * reach the present), a name above its peak; or none. Every name is checked against the boxes already taken
- * (names, always-visible transfers, obstacles). Pure and deterministic.
+ * River names on the desktop chart (docs/redesign/DESIGN.md §4 "River names"). Each river, in lane order, gets the
+ * first of: a straight name slanted along its course, a level name inside its thickest buckets, a name at the mouth
+ * right of the plot (rivers that reach the present), a name above its peak; or none. Every name is checked against
+ * the boxes already taken (names, always-visible transfers, obstacles). Pure and deterministic.
  */
 import type { Point } from './ribbons.ts';
 
@@ -141,7 +140,7 @@ export function placeRiverNames(input: NameInput): { names: RiverName[]; dropped
   }
   /**
    * Does the river contain the line `y(x)` ±8 px along `[x0, x0 + w]`? The edges are linear between bucket
-   * centres, so checking the ends and the centres in between is exact (gen.mjs sampled 11 or 13 points).
+   * centres, so checking the ends and the centres in between is exact; no sampling is needed.
    */
   function contains(r: NameRiver, x0: number, w: number, y: (x: number) => number): boolean {
     const xs = [x0, x0 + w, ...r.thickness.map((_, i) => cx(i)).filter((x) => x > x0 && x < x0 + w)];

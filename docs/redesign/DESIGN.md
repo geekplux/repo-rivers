@@ -1,10 +1,7 @@
 # Redesign "Cyanotype": design spec
 
-The approved target is v2 on the design canvas (https://claude.ai/artifact/GLJMrUfmg9zjNanhmiajon, row "v2 Polish").
-Local copies: `target/preview/V2*.html` (open in a browser; they load Alegreya Sans from Google Fonts, the app self-hosts it),
-`target/shots/V2*.webp`, and the generator `target/gen.mjs` that drew them from the real samples (its algorithms for
-tones, labels, eras and the phone layout are the reference implementation to port). Where this text and the boards
-disagree, the boards win; where the boards and accessibility disagree, accessibility wins (record it in docs/DECISIONS.md).
+The visual design of the page and the chart, light and dark, on the desktop (1440 px) and on the phone (390 px).
+Where this spec and accessibility disagree, accessibility wins.
 
 ## 1. Rules (owner's, binding)
 
@@ -24,7 +21,7 @@ first paint; print is always light.
 
 Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (tokens, font, theme button); the R1 aliases were removed in R7 [#26](https://github.com/geekplux/repo-rivers/pull/26).
 
-Radix 3.0 `blue` and `slate`, light and dark scales (values in `target/gen.mjs`, object `R`).
+Radix 3.0 `blue` and `slate`, light and dark scales (values in `src/ui/theme/tokens.css`).
 
 | Role | Light | Dark |
 |---|---|---|
@@ -49,7 +46,7 @@ Layout: content column 1200px centred (x 120..1320 at 1440). Section grid: 280px
 Spacing steps used: 4 8 12 16 24 40 64 104 144 160. Radius: 6 outer (field, button, segmented, state panels),
 3 inner (segment inside 3px padding). Controls 36 (segmented, select) and 48 (field, button) tall; hit targets >= 44.
 
-## 3. Page, top to bottom (desktop 1440; see V2Home)
+## 3. Page, top to bottom (desktop 1440)
 
 Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (header, footer), R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) (hero, chart head), R3 [#22](https://github.com/geekplux/repo-rivers/pull/22) (readout and legend row), R5 [#24](https://github.com/geekplux/repo-rivers/pull/24) (Rivers, Eras).
 
@@ -97,7 +94,7 @@ Implemented in: R3 [#22](https://github.com/geekplux/repo-rivers/pull/22) (drawi
   minus 16 to at most two lines (20px line step), bottom-aligned; under it the range "Q2 2020 to Q1 2021" (13 muted). A
   selected era gets a `band` rect over its span (era band + plot). Eras stay keyboard operable (buttons) as today.
 - **Fills**: no hue. Each river gets water A or water B by a greedy two-colouring that minimises the number of columns
-  where two rivers of the same tone touch (`tones()` in gen.mjs). "other" is a 45° hatch (water B 1.6px lines every
+  where two rivers of the same tone touch (`tones()` in `src/core/tones.ts`). "other" is a 45° hatch (water B 1.6px lines every
   6px on ground) with a 0.5 water B outline. Bots keep a dotted outline.
 - **Transfers**: a ground-coloured casing (width + 2) then a dashed stroke (`6 3`, width min(w, 3.5), water B) with a
   7px arrowhead; when an end river is focused they turn ink, others fade with the rivers.
@@ -121,7 +118,7 @@ Implemented in: R3 [#22](https://github.com/geekplux/repo-rivers/pull/22) (drawi
 - Remove the old outside-label gutter logic only where it conflicts; `placeLabels` may be replaced by a new tested
   module.
 
-## 5. Phone (390; see V2Phone, V2PhoneDark)
+## 5. Phone (390)
 
 Implemented in: R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) and R5 [#24](https://github.com/geekplux/repo-rivers/pull/24) (phone layout of the sections), R6 [#25](https://github.com/geekplux/repo-rivers/pull/25) (the chart down the page, docked readout).
 
@@ -135,7 +132,7 @@ Implemented in: R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) and R5
 - Tapping a river focuses it; the readout docks to the bottom of the viewport (72px, ground, 0.5 top rule) while a
   river is focused. The Rivers table keeps name | sparkline 100x20 | share.
 
-## 6. Motion (V2Motion)
+## 6. Motion
 
 Implemented in: R7 [#26](https://github.com/geekplux/repo-rivers/pull/26): `src/ui/motion.ts`.
 
@@ -145,7 +142,7 @@ once. Files moved: on focus the dashes of the river's transfers run forward once
 Contributors: crossfade 250 ms. Theme: instant. While a repo loads, the axis line fills left to right with progress.
 `prefers-reduced-motion: reduce`: everything instant.
 
-## 7. States and system (V2System)
+## 7. States and system
 
 Implemented in: R1 [#19](https://github.com/geekplux/repo-rivers/pull/19) (logo, favicon, title), R2 [#20](https://github.com/geekplux/repo-rivers/pull/20) (loading and error panels), R7 [#26](https://github.com/geekplux/repo-rivers/pull/26) (loading line motion, social card).
 

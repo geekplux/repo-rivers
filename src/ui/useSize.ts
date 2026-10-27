@@ -33,8 +33,8 @@ const NAME_FONT = 'italic 500 13px "Alegreya Sans"';
 
 /**
  * Width of a river name (13 px Alegreya Sans italic 500) measured on a canvas once the face has loaded, plus 2 px
- * for the italic overhang; until then, and where there is no canvas (jsdom), the gen.mjs estimate. The function
- * changes once, when the font arrives, so a layout memoised on it is laid out again with real widths.
+ * for the italic overhang; until then, and where there is no canvas (jsdom), the `riverNameWidth` estimate. The
+ * function changes once, when the font arrives, so a layout memoised on it is laid out again with real widths.
  */
 export function useNameMeasure(): (text: string) => number {
   const [ready, setReady] = useState(false);
