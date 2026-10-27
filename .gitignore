@@ -31,6 +31,10 @@ playwright-report/
 test-results/
 blob-report/
 
+# browser-check screenshots (`pnpm check:browser`) and the animated preview `pnpm gallery` renders for sharing
+docs/screenshots/
+docs/hero.gif
+
 # logs
 *.log
 npm-debug.log*
