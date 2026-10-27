@@ -42,7 +42,6 @@ A stack of seven PRs that redesigns the whole page (spec: docs/redesign/DESIGN.m
 - Enable GitHub private vulnerability reporting in the repo settings (SECURITY.md and CODE_OF_CONDUCT.md link to it).
 - Review docs/LAUNCH.md drafts; nothing has been posted.
 - Optional: run `pnpm eras:build --ai` (CLOUDFLARE_ACCOUNT_ID + a Workers-AI-only WORKERS_AI_TOKEN) to replace heuristic sample era names with AI-written ones.
-- Move ci/github-workflow.yml to .github/workflows/ (needs a token with `workflow` scope).
 - Smaller improvements are listed in docs/GOOD_FIRST_ISSUES.md.
 
 Last updated: 2026-10-25
