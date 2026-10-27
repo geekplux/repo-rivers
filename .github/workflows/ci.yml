@@ -1,5 +1,4 @@
-# CI for repo-rivers. Lives in ci/ until a token with `workflow` scope can move it to
-# .github/workflows/ci.yml (see docs/STATUS.md follow-ups).
+# CI: lint, typecheck, tests, build and the checks below, on every push to main and every pull request.
 name: ci
 on:
   push:

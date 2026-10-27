@@ -65,5 +65,5 @@ Samples are public, well-known open-source projects with a few years of history.
 - One topic per pull request. Fill in the template: what and why, how you verified it, screenshots for UI changes.
 - New code comes with tests. Keep logic in pure modules under `src/core` and components thin.
 - Runtime dependencies are `react` and `react-dom` only. Discuss any new dev dependency in the issue first.
-- For now the CI definition lives in `ci/github-workflow.yml`; change it there rather than under `.github/workflows/`.
+- CI is defined in `.github/workflows/ci.yml` and runs the same checks on every pull request.
 - Add a line under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) for user-visible changes.
