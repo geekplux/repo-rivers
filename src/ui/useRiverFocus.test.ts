@@ -23,7 +23,7 @@ describe('startSpot', () => {
   });
 });
 
-describe('stepFocus (A3)', () => {
+describe('stepFocus', () => {
   it('enters from the empty state at the start spot', () => {
     expect(step(EMPTY, 'ArrowRight')).toEqual({ ...start, pinned: false });
   });

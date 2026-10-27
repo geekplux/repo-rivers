@@ -39,7 +39,7 @@ More examples, with the story each sample tells: [the gallery](examples/README.m
 
 **Where AI is used: one place, naming eras.** Era boundaries are computed deterministically (an optimal partition of the timeline by module shares and activity). A language model (Workers AI) only writes a short title and note for each era, from a summary of at most 2 KB with no person names, no commit messages and no repository owner. The result is cached. Without AI, eras get template names, and the chart works with no eras at all.
 
-More detail: [docs/EXTENDING.md](docs/EXTENDING.md) (public API, adapters, theming) and [docs/viz/rivers.md](docs/viz/rivers.md) (the visual encoding).
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (modules, data flow, design decisions), [docs/EXTENDING.md](docs/EXTENDING.md) (public API, adapters, theming) and [docs/viz/rivers.md](docs/viz/rivers.md) (the visual encoding).
 
 ## Accessibility
 

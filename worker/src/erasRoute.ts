@@ -12,7 +12,7 @@ export interface AiRunner {
   run(model: string, input: ReturnType<typeof eraRequest>): Promise<unknown>;
 }
 
-/** Bindings the route needs; without `AI` every answer is the heuristic (O3); without `RIVERS_KV` (PR Previews)
+/** Bindings the route needs; without `AI` every answer is the heuristic; without `RIVERS_KV` (PR Previews)
  * nothing is cached and, since there is nowhere to count the daily budget, no AI call is made either. */
 export interface ErasEnv {
   RIVERS_KV?: KvStore;

@@ -11,5 +11,5 @@
     "jsx-a11y/prefer-tag-over-role": "off"
   },
   "overrides": [{ "files": ["scripts/**/*.mjs", "scripts/**/*.ts", "vite.config.ts"], "env": { "node": true } }],
-  "ignorePatterns": ["dist", "node_modules", "docs/screenshots", "docs/redesign/target", ".wrangler"]
+  "ignorePatterns": ["dist", "node_modules", "docs/screenshots", ".wrangler"]
 }

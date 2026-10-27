@@ -3,7 +3,7 @@ import { FallbackNotice } from './SourceNote.tsx';
 import { progressLine } from './states/copy.ts';
 
 /**
- * Loading state (docs/redesign/DESIGN.md §7): a 0.5-bordered panel titled "Loading", "Reading
+ * Loading state (docs/DESIGN.md §7): a 0.5-bordered panel titled "Loading", "Reading
  * owner/name: n of m requests", a 2 px ink progress line on a 0.5 track that fills left to right with the
  * progress (eased; at once under reduced motion), and Cancel.
  */

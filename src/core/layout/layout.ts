@@ -20,7 +20,7 @@ export interface LayoutOptions {
   width: number;
   /** Plot height `H`; default `clamp(0.45·W, 320, 480)`. */
   height?: number;
-  /** Gap between consecutive non-zero rivers (3; the redesign draws 2). */
+  /** Gap between consecutive non-zero rivers (default 3; the page passes 2). */
   gap?: number;
   /** Space above the plot (8): the desktop chart reserves its era band here. */
   top?: number;

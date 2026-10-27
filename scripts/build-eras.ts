@@ -1,4 +1,4 @@
-// Writes era names into the built-in samples (docs/PLAN.md §4.6). Usage: pnpm eras:build [--ai]
+// Writes era names into the built-in samples. Usage: pnpm eras:build [--ai]
 // Default: deterministic heuristic names, offline, no key. `--ai` names them with one Workers AI REST call
 // per sample, and only with CLOUDFLARE_ACCOUNT_ID and WORKERS_AI_TOKEN set explicitly for this purpose
 // (a token scoped to Workers AI). Any other Cloudflare credential in the environment is never read.

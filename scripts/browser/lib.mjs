@@ -1,4 +1,4 @@
-// Shared helpers for headless-browser checks (see docs/PLAN.md §5).
+// Shared helpers for headless-browser checks.
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';

@@ -27,7 +27,7 @@ export function reconcile(s: FocusState, lanes: readonly string[], buckets: numb
 const PHONE_KEYS: Record<string, string> = { ArrowUp: 'ArrowLeft', ArrowDown: 'ArrowRight', ArrowLeft: 'ArrowUp', ArrowRight: 'ArrowDown' };
 
 /**
- * Keyboard map (A3); Enter/Space in the empty state pins the start spot. Returns the next state, or null when the
+ * Keyboard map (docs/viz/rivers.md §6); Enter/Space in the empty state pins the start spot. Returns the next state, or null when the
  * key is not the chart's. `transposed` (the phone chart) swaps the arrows' axes.
  */
 export function stepFocus(s: FocusState, input: string, lanes: readonly string[], buckets: number, start: Spot, transposed = false): FocusState | null {

@@ -7,8 +7,8 @@ import { parseAggregate, type RepoAggregate } from '../core/schema.ts';
 export type Via = 'worker' | 'browser';
 
 /**
- * Why loading failed, as the UI tells it (PLAN F10). `rate_limited` is GitHub's hourly API limit; `busy` is this
- * site's own per-IP limit; `unavailable`: neither the Worker nor GitHub answered.
+ * Why loading failed, as the UI tells it (copy in src/ui/states/copy.ts). `rate_limited` is GitHub's hourly API
+ * limit; `busy` is this site's own per-IP limit; `unavailable`: neither the Worker nor GitHub answered.
  */
 export type FailureCode = Exclude<RepoErrorCode, 'network'> | 'busy' | 'offline' | 'unavailable';
 

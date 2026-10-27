@@ -1,4 +1,4 @@
-// Cloudflare Worker: the /api/* routes plus the built SPA from ./dist (docs/PLAN.md §4.5).
+// Cloudflare Worker: the /api/* routes plus the built SPA from ./dist.
 // Deploy config; local dev (`pnpm build && pnpm dev:worker`) uses wrangler.dev.jsonc. Steps, the exact deploy
 // command and rollback: docs/DEPLOY.md. `pnpm run check:deploy` is a dry run that uploads nothing.
 {

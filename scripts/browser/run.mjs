@@ -1,4 +1,4 @@
-// Headless-browser check harness: `pnpm check:browser --phase <n>` (see docs/PLAN.md §5).
+// Headless-browser check harness: `pnpm check:browser --phase <n>`.
 // Starts `vite preview` in its own process group, drives ONE system Chrome offline, and always cleans up.
 // `--worker` (`pnpm check:fullstack`) serves dist/ + /api through `wrangler dev -c wrangler.dev.jsonc` instead,
 // with every CLOUDFLARE_*/CF_* variable removed so it can never reach Cloudflare.

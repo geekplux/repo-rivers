@@ -1,4 +1,4 @@
-// `pnpm size`: budgets for the built app (docs/PLAN.md phase 5). Run after `pnpm build`.
+// `pnpm size`: budgets for the built app. Run after `pnpm build`.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -15,7 +15,7 @@ const samples = ['vite', 'svelte', 'express'].map((id) => assets.find((f) => f.s
 const rows = [
   ['initial JS (gzip)', initial.reduce((s, f) => s + gz(f), 0), 100 * KB, initial.length > 0],
   ...fonts.map((f) => [`font ${f}`, statSync(join(DIST, 'fonts', f)).size, 40 * KB, true]),
-  // Alegreya Sans 400, 500, 700, italic 400 and italic 500 together (docs/redesign/DESIGN.md §2).
+  // Alegreya Sans 400, 500, 700, italic 400 and italic 500 together (docs/DESIGN.md §2).
   ['fonts, all files', fonts.reduce((s, f) => s + statSync(join(DIST, 'fonts', f)).size, 0), 120 * KB, fonts.length > 0],
   ...samples.map((f, i) => [`sample ${f ?? ['vite', 'svelte', 'express'][i]} (gzip)`, f ? gz(`assets/${f}`) : 0, 50 * KB, Boolean(f)]),
 ];

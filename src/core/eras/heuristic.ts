@@ -1,5 +1,5 @@
 /**
- * Template era names (docs/PLAN.md §4.6): used for the built-in samples, before AI names arrive, and whenever
+ * Template era names: used for the built-in samples, before AI names arrive, and whenever
  * the model is unavailable or answers badly. Deterministic, from the {@link EraSummary} alone.
  */
 import type { Era } from '../schema.ts';

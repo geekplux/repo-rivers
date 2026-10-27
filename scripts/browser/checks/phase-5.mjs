@@ -1,5 +1,5 @@
-// Phase 5: the river chart (docs/PLAN.md phase 5, docs/viz/rivers.md S1–S7), in the Cyanotype design and its motion
-// (docs/redesign/DESIGN.md §4–§6).
+// Phase 5: the river chart (docs/viz/rivers.md S1–S7), in the Cyanotype design and its motion
+// (docs/DESIGN.md §4–§6).
 import { DESKTOP, MOBILE, assert, shoot, shootCvd, tabTo } from '../lib.mjs';
 
 const CHART = '[data-testid="river-chart"]';

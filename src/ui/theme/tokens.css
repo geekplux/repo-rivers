@@ -1,5 +1,5 @@
 /*
- * "Cyanotype" design tokens (docs/redesign/DESIGN.md §2): Radix Colors 3.0 blue and slate, light and dark, and the
+ * "Cyanotype" design tokens (docs/DESIGN.md §2): Radix Colors 3.0 blue and slate, light and dark, and the
  * semantic roles built on them. The dark set applies when the system is dark and no light choice is stored
  * (`data-theme` on <html>, set by public/theme.js before first paint) or when dark is chosen. Print is always light:
  * both dark blocks are screen-only. tokens.test.ts checks the scales, the roles (against PALETTES) and the river contrast.

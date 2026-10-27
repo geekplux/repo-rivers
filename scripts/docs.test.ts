@@ -1,4 +1,4 @@
-// Documentation guards (PLAN phase 10): TSDoc on the public core API, relative links in Markdown, and
+// Documentation guards: TSDoc on the public core API, relative links in Markdown, and
 // EXTENDING.md examples that are verbatim copies of the type-checked files in docs/snippets/.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';

@@ -1,4 +1,4 @@
-/* Page layout and chart styling. Tokens live in ui/theme/tokens.css; the page follows docs/redesign/DESIGN.md. */
+/* Page layout and chart styling. Tokens live in ui/theme/tokens.css; the page follows docs/DESIGN.md. */
 body {
   margin: 0; background: var(--ground); color: var(--ink); font: 16px/24px var(--rr-font);
   font-variant-numeric: lining-nums; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
@@ -242,7 +242,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-nav a { padding: 0 8px; }
   .rr-made { gap: 8px 16px; margin-top: 6px; }
   .rr-footer .rr-wrap { display: block; }
-  /* V2Phone: "Made by GeekPlux" follows the last paragraph's 6 px. */
+  /* On the phone, "Made by GeekPlux" follows the last paragraph's 6 px. */
   .rr-footer .rr-wrap > div + div { margin-top: 0; }
   .rr-intro { padding-top: 40px; }
   .rr-hero { font-size: 32px; line-height: 36px; }
@@ -266,7 +266,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-era-list li { grid-template-columns: 104px 1fr; }
   .rr-era-when { padding-right: 12px; }
 }
-/* ?embed=social (phase 11, redesigned in R7): a fixed 1280×640 card; the hero's 56/60 headline, 16 and 13 below. */
+/* ?embed=social: a fixed 1280×640 card; the hero's 56/60 headline, 16 and 13 below. */
 .rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 36px 48px 0; overflow: hidden; background: var(--ground); }
 .rr-social .rr-header { height: 28px; }
 .rr-social main { margin-top: 32px; }

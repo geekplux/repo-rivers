@@ -1,6 +1,6 @@
 /**
  * RepoAggregate schema v1: the stored, time-bucketed summary of a repository's history.
- * Pure and isomorphic (browser, Worker, Node scripts). See docs/PLAN.md §4.2.
+ * Pure and isomorphic (browser, Worker, Node scripts).
  */
 
 /** Width of one time bucket. Weeks start on Monday; all dates are UTC. */

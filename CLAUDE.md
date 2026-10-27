@@ -1,95 +1,38 @@
-# CLAUDE.md: operating manual for the main agent (repo-rivers)
+# CLAUDE.md: maintainer guide for repo-rivers
 
-You are the **main agent** for `repo-rivers` (repo `geekplux/repo-rivers`). You are the product manager and orchestrator. Make reasonable decisions and record each one in `docs/DECISIONS.md` (date, decision, alternatives, why).
+repo-rivers draws a GitHub repository's history as rivers: modules or contributors flow across time in a timeline-sankey, widening when busy and merging or splitting as the code is reorganised, with a few short AI-written names for the key eras. Paste a repository URL or open a built-in sample. Live at https://reporivers.geekplux.com; Cloudflare Workers Builds deploys `main` on every merge.
 
-**Current state:** shipped and live at https://reporivers.geekplux.com. The 12-phase build in docs/PLAN.md is complete and merged. Cloudflare Workers Builds deploys `main` on every merge. Production has no `GITHUB_TOKEN` (by decision). New work is ordinary branches and PRs against `main`; the phase workflow below is how the project was built and still applies to larger, multi-PR changes.
+How it fits together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Public API and extension points: [docs/EXTENDING.md](docs/EXTENDING.md). Visual encoding: [docs/viz/rivers.md](docs/viz/rivers.md); visual design: [docs/DESIGN.md](docs/DESIGN.md). Deployment: [docs/DEPLOY.md](docs/DEPLOY.md).
 
-## Product
+## Stack and commands
 
-Paste a GitHub repository URL (or pick a sample) and see its history as rivers: modules and contributors flow across time in a timeline-sankey, widening when they get busy and merging or splitting as the code is reorganised, with a few short AI-written annotations that name the key eras. It builds on ideas from geekplux/timeline-sankey.
+React 19 + Vite + TypeScript, Vitest, oxlint, pnpm, one Cloudflare Worker (static assets plus `/api/*`, KV, Workers AI, a rate-limit binding). Runtime dependencies: `react` and `react-dom` only.
 
-Product specifics:
-- First view: 2-3 pre-aggregated sample repos (committed JSON) that render instantly and offline. Paste-a-URL is the only other input.
-- Data pipeline: commits -> touched paths -> top-level modules (configurable depth) and contributors -> time buckets (week/month auto-chosen) -> flows. Respect GitHub rate limits (unauthenticated 60 req/h): sample commits for large repos, show progress, cache aggregates.
-- Era annotations: one compact LLM call over a summarised aggregate (not raw commits), 3-6 short annotations anchored to time ranges; cached; the UI works without them.
-- Study geekplux/timeline-sankey first (clone it read-only to /tmp, read the code, note what to reuse vs. rewrite in docs/DECISIONS.md).
-- Flows distinguishable without color: direct labels, hover/focus highlighting, ordering; palette passes CVD simulation.
+```sh
+pnpm dev                 # Vite dev server (built-in samples work offline)
+pnpm dev:worker          # the Worker locally (wrangler.dev.jsonc, no AI binding)
+pnpm lint                # oxlint, warnings fail
+pnpm typecheck           # tsc --noEmit for app, Node scripts and Worker
+pnpm test                # Vitest once, single worker
+pnpm build && pnpm size  # production build, then bundle budgets
+pnpm check:browser --phase <n>  # headless Chrome checks against dist/ (CI runs --phase 1)
+pnpm check:worker        # Worker smoke test without Cloudflare credentials
+pnpm run check:deploy    # wrangler deploy --dry-run; must pass before every PR
+pnpm samples:build / pnpm eras:build   # regenerate the built-in samples and their era names
+```
 
-Initial stack: React + Vite + TypeScript, Vitest, oxlint; timeline-sankey rendering in SVG (learn from / reuse https://github.com/geekplux/timeline-sankey, check its license and API before reuse); a Cloudflare Worker that reads the GitHub REST/GraphQL API (unauthenticated by default, optional token as a Worker secret) and caches aggregates in KV/R2; Workers AI for era annotations; sample repos pre-aggregated and committed as JSON.
+Before a PR: `pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm size && pnpm run check:deploy`.
 
-## Your role
+## Rules
 
-- You **do not write feature code**. Delegate as much as possible to the sub-agents in `.claude/agents/`. You write only orchestration artefacts: `docs/STATUS.md`, `docs/DECISIONS.md`, PR descriptions, and small glue fixes if a sub-agent is unavailable (record that in DECISIONS.md).
-- Give each sub-agent a self-contained task message: the phase goal, the acceptance criteria, relevant file paths, and the rules from this file that matter for the task (sub-agents do load CLAUDE.md, but restate the critical ones).
-- Wait for each sub-agent's report before starting the next dependent step. Run at most one implementer and one verifier at a time (shared, RAM-tight machine).
-
-Sub-agents:
-- `planner`: writes `docs/PLAN.md`.
-- `implementer`: builds one phase.
-- `verifier`: checks one phase; never edits feature code.
-- `git-history-analyst`: Owns repo data: GitHub API access, rate-limit strategy, commit/path/contributor aggregation into time-bucketed flows, sample dataset generation. Use for any data-pipeline work.
-- `dataviz-designer`: Designs the timeline-sankey encoding (bucketing, ordering, labels, interaction, annotations layout) using geekplux/timeline-sankey as reference, and reviews rendered screenshots. Use before and after visualization work.
-- `a11y-reviewer`: Reviews UI for accessibility: keyboard, screen-reader summaries of flows, contrast, reduced motion, color-vision-deficiency safety. Use proactively on every UI phase before the verifier signs off.
-
-Models: `implementer` and `verifier` (and the other sub-agents) run on **Claude Opus 5.5 at high effort** (`model: claude-opus-5-5`, `effort: high` in their frontmatter). Do not override the model or effort when invoking them.
-
-## Workflow
-
-### Step 1: plan (done for the initial build)
-Have `planner` write `docs/PLAN.md`: product goal, acceptance criteria for the whole product, and the work split into **phases**. Each phase = **exactly one PR**, reviewable in about 20 minutes (roughly <= 400 changed lines excluding lockfiles/fixtures), with its own goal, acceptance criteria, and verification steps. Phase 1 sets up the toolchain (Vite + React + TS, Vitest, oxlint, typecheck, headless-browser check script) and the built-in sample path. The **final phase is deployment** to Cloudflare. Commit PLAN.md on `main` and push (`git push origin main`) before any phase starts. Update `docs/STATUS.md`.
-
-### Step 2: phases (stacked PRs with `gh stack`)
-- Before the first phase: `gh stack init <phase-1-branch>` (this initialises the stack on top of `main` and creates/checks out the phase-1 branch; passing the branch name keeps it non-interactive).
-- Every later phase: from the top of the stack, `gh stack add <branch>` creates the next branch stacked on the previous one. Branch names: `phase-<n>-<short-slug>`.
-- Per phase loop:
-  1. `implementer` builds the phase on the current branch and commits.
-  2. `verifier` checks: lint (oxlint), typecheck (`tsc --noEmit`), unit tests (Vitest), a **real headless-browser check of the UI with screenshots** (saved under `docs/screenshots/phase-<n>/` and committed), and every acceptance criterion of the phase. It returns PASS or FAIL with a list of problems.
-  3. On FAIL: `implementer` fixes exactly the listed problems, then `verifier` runs again. **At most 5 verify rounds per phase.** If still failing after round 5, stop the loop, and list the open problems in the PR description under "Known gaps".
-  4. `gh stack submit --auto --open` (non-interactive: pushes all branches and creates/updates the stacked PRs; each phase is its own PR based on the previous phase's branch).
-  5. Set the PR title and description with `gh pr edit <branch> --title "Phase <n>: <title>" --body-file <file>`. The description has: **What / why**, **How verified** (commands run, results, verify round count), **Screenshots** for UI (embed the committed images with `https://github.com/geekplux/repo-rivers/blob/<branch>/docs/screenshots/phase-<n>/<file>.png?raw=true`), **Known gaps**.
-  6. Update `docs/STATUS.md` (commit it on the current phase branch and include it in the push), then continue with the next phase.
-- If the stack needs re-syncing (e.g. a branch was updated), use `gh stack sync`; inspect with `gh stack view --short`.
-
-### Never merge
-**Never merge PRs** (no `gh pr merge`, no `gh stack merge`, no pushing phase work directly to `main`). Sean reviews and merges on GitHub. Only planning docs go to `main` before phase 1.
-
-### Progress file: `docs/STATUS.md`
-Keep it current so an outside monitor can read progress. **The first line is always `STATE: <state>`**, one of `PLANNING`, `IN-PROGRESS`, `BLOCKED`, `DONE`. Below it: current phase, a table of phases (branch, PR link, state, verify rounds), blockers, and last-updated time. When everything is done, the first line is `STATE: DONE`. If you cannot continue, first line `STATE: BLOCKED` and the reason right below. Push STATUS.md updates with each phase.
-
-## Hard rules: stack
-- Web UI = **pure React + Vite**. Use the VoidZero ecosystem: Vite, Vitest, Oxc/oxlint, Rolldown where sensible. **No Next.js, no Remix**, no other meta-framework.
-- Package manager: pnpm.
-- Anything deployed runs on **Cloudflare** (Workers / Pages, Workers AI, D1, R2, KV). Use `wrangler` for local dev.
-- **Deployment happens only through Workers Builds on merge to `main`.** Never run `wrangler deploy` (the dry run `pnpm run check:deploy`, i.e. `wrangler deploy --dry-run --outdir .wrangler/dry-run`, is fine and should pass before every PR). Merging is Sean's call, so a merged PR is a deploy. `.claude/settings.json` denies `wrangler deploy`, `wrangler pages deploy`, `pnpm run deploy`, `gh pr merge` and `gh stack merge` as a backstop; do not try to work around those rules, and do not edit `.claude/settings.json`.
-
-## Hard rules: resources (shared, RAM-tight machine: ~2 GB free, 8 cores, other agents running)
-- Never leave dev servers, preview servers, wrangler dev, or browsers running after a verify step. Start them in the background, record the PID, and kill them when done; check with `ps` that nothing you started is left.
-- Use **one headless browser at a time**. Prefer the system Chrome (`/usr/bin/google-chrome`) with Playwright (`playwright-core`, `channel`/`executablePath`) rather than downloading browsers.
-- Avoid parallel heavy builds; no watch modes left running; keep test runs single-process if memory is tight.
-
-## Hard rules: product (binding)
-- The first step must cost the user almost nothing: paste a URL, type, or pick a built-in sample. Built-in samples work offline and without any API key.
-- Lean AI: use the model only where it adds real value; deterministic code first; cache results; minimal calls.
-- Any agent skill must meet the wheresryan22/anatomy bar: SKILL.md + kit + references + audit scripts + evals.
-- Accessibility: never rely on color alone; palettes must pass color-vision-deficiency checks (protanopia, deuteranopia, tritanopia); keyboard-operable; reduced motion respected.
-- No decorative 3D.
-- Nothing finance-related (no prices, trading, crypto, payments features or sample data).
+- **Stack:** pure React + Vite with the VoidZero toolchain (Vite, Vitest, Oxc/oxlint, Rolldown where sensible). No Next.js, no Remix, no other meta-framework. pnpm only. Anything deployed runs on Cloudflare.
+- **Deployment happens only through Workers Builds on merge to `main`.** Never run `wrangler deploy`; the dry run `pnpm run check:deploy` is fine. `.claude/settings.json` denies `wrangler deploy`, `wrangler pages deploy`, `pnpm run deploy`, `gh pr merge` and `gh stack merge`; do not work around it or edit it.
+- **Never merge PRs.** Open them for review; the maintainer merges, and a merge is a deploy.
+- **Secrets:** never commit them. Local secrets go in `.dev.vars` (gitignored); deployed ones via `wrangler secret put`. Production runs without `GITHUB_TOKEN`.
+- **Built-in samples** (`src/samples/`) render instantly, offline and without any key. Keep it that way.
+- **Lean AI:** deterministic code first. The only model call names eras, from a person-free summary of at most 2 KB, cached in KV by hash, with template names as the fallback. A global cap bounds it: `DAILY_AI_CAP`, 200 calls per UTC day (`worker/src/budget.ts`). Respect GitHub's rate limits: plan requests within the budget and cache aggregates.
+- **Accessibility:** never rely on colour alone (labels, shape, order, line style carry meaning); palettes must pass protanopia, deuteranopia and tritanopia simulation (tested in `tokens.test.ts`); everything keyboard-operable; reduced motion respected.
+- **No decorative 3D.** Nothing finance-related (no prices, trading, crypto or payments features or sample data).
 - No company names in project content, samples, docs, commits or PRs, apart from tools, services and cited sources.
-
-## CI
-CI lives in `.github/workflows/ci.yml` and runs on every push to `main` and every pull request. Keep it in step with the checks contributors run locally.
-
-## Hard rules: secrets
-- Never commit secrets. Local secrets go in `.dev.vars` (gitignored); deployed secrets via `wrangler secret put`.
-- If an API key is needed, design so the built-in sample works without it, and note the missing key in `docs/STATUS.md`.
-
-## North star: a star-worthy open-source project (added by Sean, 2026-10-19)
-
-This project will be released as open source and is not meant to be commercialized. Build and package it to the standard of a top open-source project that people star, share, and recommend.
-
-- **User first.** Before features, write down who the user is, the moment they would reach for this, and the fastest path to their first "wow". Zero install for the web app, no account, no API key for the first run (built-in sample works offline). If there is a CLI or skill, one command to try it.
-- **Value, then convenience.** Every feature must answer: what does the user get, and how does this save them time or effort? Cut anything that doesn't.
-- **Its own design.** Beautiful, distinctive visual identity specific to this project (not a generic template, not a copy of Sean's other sites): a design-direction section in PLAN.md with type, color (color-vision-deficiency safe, never color alone), layout, motion, and a simple logo/wordmark. Polish empty, loading, and error states.
-- **Open-source packaging is part of the product,** planned as real phases: README that sells in 10 seconds (one-line pitch, hero GIF or screenshot, live demo link placeholder, quick start, how it works, roadmap), LICENSE (MIT), CONTRIBUTING.md, CODE_OF_CONDUCT.md, issue/PR templates, a CHANGELOG, good-first-issue candidates listed in docs, a social preview image, and an examples/ gallery.
-- **Quality signals:** tests and CI config (`.github/workflows/ci.yml`), typed public APIs, small dependency footprint, fast load, accessible (keyboard + screen reader), docs for extending it.
-- **Launch-ready:** include a short launch kit in docs/LAUNCH.md (Show HN / X post draft, 3 demo scenarios, comparison with alternatives). Do not post anything anywhere.
+- **CI** (`.github/workflows/ci.yml`) runs on every push to `main` and every PR. Keep it in step with the checks contributors run locally; `scripts/ci-workflow.test.ts` guards it.
+- Record a non-obvious design choice where the next reader will look: a code comment, or the relevant doc above.

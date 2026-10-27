@@ -6,7 +6,7 @@ import type { BucketUnit } from '../schema.ts';
 export const PROBE_REQUESTS = 3;
 /** Default budgets: 55 of the 60/h unauthenticated quota (5 kept as headroom), 600 with a token. */
 export const BUDGET = { unauthenticated: 55, token: 600 } as const;
-/** Default bucket caps (T7). */
+/** Default bucket caps: 24 unauthenticated, 48 with a token. */
 export const MAX_BUCKETS = { unauthenticated: 24, token: 48 } as const;
 /** At most this many commit details are read per truncated bucket. */
 export const DETAILS_PER_BUCKET = 10;

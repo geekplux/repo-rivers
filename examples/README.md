@@ -2,7 +2,7 @@
 
 The three built-in samples, as `pnpm gallery` renders them. Each one opens instantly and offline, with no key: use the links below (or run `pnpm dev` and open the same `?sample=` paths on localhost). Every image is the chart card of the page at 1440 px wide; hover, tap or Tab into the live chart for exact numbers.
 
-To regenerate these images, the social preview, the README image and the launch GIF: `pnpm build && pnpm gallery`.
+To regenerate these images, the social preview, the README image and the hero GIF: `pnpm build && pnpm gallery`.
 
 ## Vite: from `src/node` to `packages/vite`
 

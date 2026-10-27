@@ -1,7 +1,8 @@
-// `pnpm gallery` (docs/PLAN.md phase 11, Cyanotype since R7): renders the shareable assets with the harness's one
+// `pnpm gallery`: renders the shareable assets with the harness's one
 // browser at the design's 1440 px width. examples/<sample>-{light,dark,contributors}.png (the chart card),
 // docs/social-preview.png (1280×640), docs/images/hero.webp (the README's still: the page from the header to the
-// readout) and docs/hero.gif (the arrive reveal + a hover pass, ≤ 5 s, 3 plays). The WebP and the GIF need ffmpeg.
+// readout) and docs/hero.gif (the arrive reveal + a hover pass, ≤ 5 s, 3 plays; gitignored, for sharing). The WebP
+// and the GIF need ffmpeg.
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -181,7 +182,7 @@ export default async function gallery({ page, baseURL }) {
   assert(dims.width === 1280 && dims.height === 640 && bytes <= MB, `social preview 1280×640 ≤ 1 MB (got ${dims.width}×${dims.height}, ${bytes} B)`);
   console.log(`  wrote ${rel(social)} (1280×640, ${(bytes / 1024).toFixed(0)} KB)`);
 
-  // Hero still (README): the redesigned page at 1440, light, at rest; a WebP of at most 300 KB.
+  // Hero still (README): the page at 1440, light, at rest; a WebP of at most 300 KB.
   await page.setViewportSize(PAGE);
   await open(page, at('?sample=vite'));
   const dir = mkdtempSync(join(tmpdir(), 'rr-hero-'));
@@ -197,7 +198,7 @@ export default async function gallery({ page, baseURL }) {
     assert(kb <= 300, `docs/images/hero.webp ≤ 300 KB (got ${kb.toFixed(0)} KB)`);
     console.log(`  wrote docs/images/hero.webp (${pngSize(png).width}×${pngSize(png).height}, ${kb.toFixed(0)} KB)`);
 
-    // Hero GIF (docs/LAUNCH.md): frames → GIF (≤ 2 MB, ≤ 5 s, 3 plays).
+    // Hero GIF (gitignored, for sharing): frames → GIF (≤ 2 MB, ≤ 5 s, 3 plays).
     const { frames } = await heroFrames(page, at('?sample=vite'), dir);
     assert(frames / FPS <= MAX_SECONDS, `hero GIF ≤ ${MAX_SECONDS} s (got ${frames / FPS} s)`);
     if (!makeGif(dir, join(ROOT, 'docs/hero.gif'))) console.log(`  ${FFMPEG} not found: no GIF written`);

@@ -14,7 +14,7 @@ export default async function phase1({ page }) {
   }
   const title = (await page.locator('nav button[aria-pressed="true"]').textContent()) ?? '';
   assert(title === 'Vite', `the selected sample button is aria-pressed (${title})`);
-  // Since the redesign (R2) the chart head names the repository as owner/name.
+  // The chart head names the repository as owner/name.
   assert(await page.getByRole('heading', { name: 'vitejs/vite', exact: true }).isVisible(), 'sample headed "vitejs/vite"');
 
   await shoot(page, '01-sample-desktop', DESKTOP);

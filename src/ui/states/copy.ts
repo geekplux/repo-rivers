@@ -4,7 +4,7 @@ import type { FailureCode, Via } from '../../data/loadRepo.ts';
 /** What an error-state button does. */
 export type ErrorAction = 'edit' | 'sample' | 'browser' | 'retry';
 
-/** Plain-language copy for one error state (PLAN §3 States): a title, one sentence, 1–2 actions. */
+/** Plain-language copy for one error state: a title, one sentence, 1–2 actions. */
 export interface ErrorCopy {
   title: string;
   body: string;

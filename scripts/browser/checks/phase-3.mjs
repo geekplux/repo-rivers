@@ -2,7 +2,7 @@
 import { DESKTOP, MOBILE, assert, shoot } from '../lib.mjs';
 
 async function expectRivers(page, title, repo) {
-  // Since the redesign (R2) the chart head names the repository as owner/name.
+  // The chart head names the repository as owner/name.
   assert(await page.getByRole('heading', { name: repo, exact: true }).isVisible(), `sample heading "${repo}"`);
   const pressed = await page.getByRole('button', { name: title, exact: true }).getAttribute('aria-pressed');
   assert(pressed === 'true', `"${title}" button is aria-pressed`);

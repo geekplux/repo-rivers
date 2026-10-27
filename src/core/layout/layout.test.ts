@@ -174,7 +174,7 @@ describe('layout against the spec numbers', () => {
       'm:playground→m:packages/playground 16', 'other→m:packages/playground 3', 'other→m:packages/create-vite 122',
       'm:playground→m:packages/vite 11', 'other→m:docs/.vitepress 7',
     ]);
-    // Phase 7 move-finder: the Q2-2023 monorepo move (src, test → packages) is now in the Svelte data.
+    // The move-finder: the Q2-2023 monorepo move (src, test → packages) is now in the Svelte data.
     expect(shown(get('svelte', 'modules'))).toEqual([
       'm:site→m:documentation 736', 'm:src→m:packages 231', 'm:test→m:packages 952', 'm:packages→m:playgrounds 10',
     ]);

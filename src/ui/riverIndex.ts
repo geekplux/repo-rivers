@@ -5,7 +5,7 @@ const r1 = (n: number): number => Math.round(n * 10) / 10;
 
 /**
  * A sparkline as a closed area path in a `w`×`h` box: one point per bucket, spread evenly from x 0 to `w`, each
- * value scaled to the series' own peak (an all-zero series lies flat on the baseline). gen.mjs `spark()`.
+ * value scaled to the series' own peak (an all-zero series lies flat on the baseline).
  */
 export function sparkPath(values: readonly number[], w: number, h: number): string {
   const max = Math.max(0, ...values) || 1;

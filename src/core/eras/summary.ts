@@ -1,5 +1,5 @@
 /**
- * `EraSummary`: the only input the era-naming model sees (docs/PLAN.md §4.6). At most 2 KB, built from the
+ * `EraSummary`: the only input the era-naming model sees. At most 2 KB, built from the
  * modules view and contributor counts. It never contains a person's id, name or email, nor commit messages.
  */
 import { OTHERS_ID } from '../aggregate.ts';

@@ -1,4 +1,4 @@
-// Phase 11: the ?embed=social card (docs/PLAN.md phase 11, Cyanotype since R7): 1280×640, nothing cut off, legible, passes axe,
+// Phase 11: the ?embed=social card : 1280×640, nothing cut off, legible, passes axe,
 // a static picture (no tab stops: the chart is role="img" with a summary); screenshots 01-embed-social and its CVD
 // simulations.
 import { assert, runAxe, shoot, shootCvd } from '../lib.mjs';

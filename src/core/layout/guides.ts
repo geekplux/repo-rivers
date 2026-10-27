@@ -1,6 +1,6 @@
 /**
- * The chart's guides (docs/redesign/DESIGN.md §4): the era band above the plot and the year ticks of the axis
- * below it. Pure geometry and text fitting, ported from docs/redesign/target/gen.mjs `chart()` and `yearTicks()`.
+ * The chart's guides (docs/DESIGN.md §4): the era band above the plot and the year ticks of the axis
+ * below it. Pure geometry and text fitting.
  */
 import type { Era } from '../schema.ts';
 import { eraRange } from '../summary.ts';
@@ -11,7 +11,7 @@ export const ERA_BAND = 84;
 export const AXIS_ROOM = 44;
 /** Room right of the desktop plot for river names at the mouth: the plot ends at 1180 of a 1440 page. */
 export const MOUTH_ROOM = 140;
-/** River names: 13 px Alegreya Sans italic 500, about 6.3 px per character plus 4 (gen.mjs `charW`). */
+/** River names: 13 px Alegreya Sans italic 500, about 6.3 px per character plus 4 (used until the font loads, and in tests). */
 export const riverNameWidth = (s: string): number => 6.3 * s.length + 4;
 /** Era names: 16 px Alegreya Sans 500, about 7.7 px per character. */
 export const eraTitleWidth = (s: string): number => 7.7 * s.length;
@@ -68,7 +68,7 @@ export function yearTicks(buckets: readonly { start: string }[], left: number, b
 }
 
 /**
- * The phone chart's geometry (DESIGN §5, gen.mjs `phoneChart()` at 390): year labels at the column's left edge, the
+ * The phone chart's geometry (DESIGN §5, at 390): year labels at the column's left edge, the
  * cross axis from x 34 of the chart (page 50) to 24 short of its right edge (page 350 at 390), time from y 24 at
  * about 56 px per bucket, 24 px below the last bucket.
  */
