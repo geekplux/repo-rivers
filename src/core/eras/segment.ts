@@ -1,5 +1,5 @@
 /**
- * Deterministic era boundaries (docs/PLAN.md §4.6): an optimal partition of the buckets, by dynamic
+ * Deterministic era boundaries: an optimal partition of the buckets, by dynamic
  * programming, into k contiguous segments that minimises the within-segment variance of each module's share
  * of activity plus the activity level. The model never chooses boundaries.
  */

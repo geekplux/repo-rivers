@@ -1,4 +1,4 @@
-// Phase 6: interaction and accessibility (docs/PLAN.md phase 6, docs/viz/rivers.md §6 and S8).
+// Phase 6: interaction and accessibility (docs/viz/rivers.md §6 and S8).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DESKTOP, MOBILE, assert, runAxe, shoot, shootCvd, tabTo } from '../lib.mjs';
@@ -256,7 +256,7 @@ export default async function phase6({ page, baseURL }) {
   await frameCard(page);
   await shoot(page, '05-depth2-desktop', DESKTOP);
 
-  // AC5/A4 (redesign R5): the Rivers table replaces "View as table"; a row focuses its river in the chart.
+  // AC5/A4: the Rivers table replaces "View as table"; a row focuses its river in the chart.
   const index = page.locator('.rr-index');
   assert((await index.locator('caption').textContent()).startsWith('Every river of expressjs/express by lines changed'), 'the Rivers table has a caption');
   assert((await index.locator('tbody th[scope="row"]').count()) === (await page.locator('path[data-river]').count()), 'one table row per river');

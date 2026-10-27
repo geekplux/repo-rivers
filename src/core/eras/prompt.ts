@@ -1,4 +1,4 @@
-/** The one model call of repo-rivers (docs/PLAN.md §4.6), shared by the Worker and `scripts/build-eras.ts`. */
+/** The one model call of repo-rivers, shared by the Worker and `scripts/build-eras.ts`. */
 import type { EraSummary } from './summary.ts';
 import { NOTE_MAX, TITLE_MAX } from './validate.ts';
 

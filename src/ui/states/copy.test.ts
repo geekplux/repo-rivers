@@ -4,7 +4,7 @@ import { errorCopy, loadingLine, progressLine, resetTime } from './copy.ts';
 
 const CODES: FailureCode[] = ['not_found', 'rate_limited', 'busy', 'empty', 'too_little', 'offline', 'unavailable', 'upstream'];
 
-describe('error copy (PLAN §3, F10)', () => {
+describe('error copy', () => {
   it('gives every state a title, one sentence and 1–2 actions', () => {
     for (const code of CODES) {
       const c = errorCopy({ code, via: 'worker' }, 'o/n');

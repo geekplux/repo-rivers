@@ -266,7 +266,7 @@ html.rr-docked body { padding-bottom: var(--rr-dock, 72px); }
   .rr-era-list li { grid-template-columns: 104px 1fr; }
   .rr-era-when { padding-right: 12px; }
 }
-/* ?embed=social (phase 11, redesigned in R7): a fixed 1280×640 card; the hero's 56/60 headline, 16 and 13 below. */
+/* ?embed=social: a fixed 1280×640 card; the hero's 56/60 headline, 16 and 13 below. */
 .rr-social { box-sizing: border-box; width: 1280px; height: 640px; padding: 36px 48px 0; overflow: hidden; background: var(--ground); }
 .rr-social .rr-header { height: 28px; }
 .rr-social main { margin-top: 32px; }

@@ -1,4 +1,4 @@
-// Pre-aggregates the built-in samples into src/samples/<id>.json (docs/PLAN.md §4.7, Phase 3).
+// Pre-aggregates the built-in samples into src/samples/<id>.json.
 // Usage: pnpm samples:build [--only vite] [--budget 55]. GITHUB_TOKEN is read from the environment only.
 // Raw GitHub responses are cached (trimmed) in .cache/github/, so a run that hits the rate limit resumes
 // from the cache next time and a fully cached run makes no requests at all.

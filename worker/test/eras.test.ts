@@ -111,7 +111,7 @@ describe('POST /api/eras', () => {
     expect(ai.run).not.toHaveBeenCalled();
   });
 
-  it('a missing AI binding falls back to the heuristic (O3)', async () => {
+  it('a missing AI binding falls back to the heuristic', async () => {
     const { body } = await post({ RIVERS_KV: fakeKv() });
     expect(body).toEqual({ eras: heuristicEras(SUMMARY), source: 'heuristic' });
   });

@@ -1,4 +1,4 @@
-// Phase 9: era annotations (docs/PLAN.md phase 9, docs/viz/rivers.md §8 and S9). Offline: /api/repo and
+// Phase 9: era annotations (docs/viz/rivers.md §8 and S9). Offline: /api/repo and
 // /api/eras are mocked with page.route; the AI swap answers after a delay, the fallback answers 503.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

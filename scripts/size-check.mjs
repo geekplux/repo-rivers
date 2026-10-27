@@ -1,4 +1,4 @@
-// `pnpm size`: budgets for the built app (docs/PLAN.md phase 5). Run after `pnpm build`.
+// `pnpm size`: budgets for the built app. Run after `pnpm build`.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';

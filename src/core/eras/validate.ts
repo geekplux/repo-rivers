@@ -1,5 +1,5 @@
 /**
- * Strict checks at both ends of the model call (docs/PLAN.md §4.6): the {@link EraSummary} a client sends is
+ * Strict checks at both ends of the model call: the {@link EraSummary} a client sends is
  * rebuilt from a closed schema (identifiers only, no free text), and the model's titles and notes are
  * stripped of markup and clamped. Anything else is rejected, so the caller falls back to the heuristic.
  */

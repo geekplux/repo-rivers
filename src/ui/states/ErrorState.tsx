@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { ErrorAction, ErrorCopy } from './copy.ts';
 
-/** A failed load (PLAN F10): a plain title, one sentence and 1–2 actions; the first action is primary. */
+/** A failed load: a plain title, one sentence and 1–2 actions; the first action is primary. */
 export function ErrorState({ copy, onAction }: { copy: ErrorCopy; onAction: (a: ErrorAction) => void }) {
   const id = useId();
   return (

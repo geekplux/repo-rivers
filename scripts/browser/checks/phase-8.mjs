@@ -1,4 +1,4 @@
-// Phase 8: paste-a-URL flow, progress and states (docs/PLAN.md phase 8). Offline: /api/repo and api.github.com
+// Phase 8: paste-a-URL flow, progress and states. Offline: /api/repo and api.github.com
 // are mocked with page.route; streamed answers come from a local NDJSON server that this check starts and stops.
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -150,7 +150,7 @@ export default async function phase8({ page, baseURL }) {
     assert((await page.evaluate(() => location.search)) === '?repo=sveltejs/svelte', 'URL unchanged after cancel');
     assert(await page.evaluate(() => document.activeElement?.id === 'rr-repo'), 'focus returns to the field after cancel');
 
-    // AC3: every F10 state, with its copy and actions (Worker answers mocked).
+    // AC3: every error state, with its copy and actions (Worker answers mocked).
     await page.route('**/api/repo/nope/missing', (r) => r.fulfill(ndjson([{ type: 'error', code: 'not_found', message: 'x' }])));
     await page.route('**/api/repo/tiny/one', (r) => r.fulfill(ndjson([{ type: 'progress', done: 3, total: 3, label: 'x' }, { type: 'error', code: 'too_little', message: 'x' }])));
     await page.route('**/api/repo/blank/void', (r) => r.fulfill(ndjson([{ type: 'error', code: 'empty', message: 'x' }])));

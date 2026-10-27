@@ -32,7 +32,7 @@ const withUserAgent = (inner: typeof fetch): typeof fetch => (input, init) => {
   return inner(input, { ...init, headers });
 };
 
-/** True for names GitHub could host (PLAN §4.5); `.` and `..` are not repositories. */
+/** True for names GitHub could host; `.` and `..` are not repositories. */
 export const validRepo = (owner: string, name: string): boolean =>
   OWNER.test(owner) && NAME.test(name) && name !== '.' && name !== '..';
 

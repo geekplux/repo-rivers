@@ -3,7 +3,7 @@ import { parseRepoInput } from './repoRef.ts';
 
 const SVELTE = { owner: 'sveltejs', name: 'svelte' };
 
-describe('parseRepoInput (F3)', () => {
+describe('parseRepoInput', () => {
   it.each([
     'sveltejs/svelte',
     '  sveltejs/svelte  ',

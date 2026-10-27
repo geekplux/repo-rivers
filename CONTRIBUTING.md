@@ -38,7 +38,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm size
 pnpm check:browser --phase 9   # if you touched the UI
 ```
 
-`check:browser` uses the system Chrome at `/usr/bin/google-chrome` (override with `CHROME_PATH`) and port 4173 (override with `CHECK_PORT`). It fails on console errors, axe violations and any request that leaves `127.0.0.1`. If it rewrites screenshots you did not mean to change, restore them with `git checkout docs/screenshots`.
+`check:browser` uses the system Chrome at `/usr/bin/google-chrome` (override with `CHROME_PATH`) and port 4173 (override with `CHECK_PORT`). It fails on console errors, axe violations and any request that leaves `127.0.0.1`. Screenshots land in `docs/screenshots/`, which is gitignored.
 
 For UI changes, also try the keyboard path (Tab into the chart, arrow keys, Enter, Escape) and the page with `prefers-reduced-motion: reduce`.
 
