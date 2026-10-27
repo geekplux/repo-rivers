@@ -1,5 +1,5 @@
 /**
- * Motion (docs/redesign/DESIGN.md §6): minimal, ease-out, run with the Web Animations API so nothing is computed
+ * Motion (docs/DESIGN.md §6): minimal, ease-out, run with the Web Animations API so nothing is computed
  * per frame on the main thread. Arrive: a clip reveal (left to right, top to bottom on the phone), 900 ms, once per
  * load and after choosing a sample or drawing a repo, with the era rules and names fading in over the last 250 ms.
  * Focus: the river fades are CSS transitions (250 ms); the focused river's moved-files dashes run forward once

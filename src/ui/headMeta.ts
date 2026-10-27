@@ -5,7 +5,7 @@ const month = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric'
 const n = new Intl.NumberFormat('en-US');
 
 /**
- * The chart head's meta line (docs/redesign/DESIGN.md §3): the measure and bucket unit of the view, then the span
+ * The chart head's meta line (docs/DESIGN.md §3): the measure and bucket unit of the view, then the span
  * from the first bucket to the day the aggregate was read, e.g. "Lines changed per quarter, Apr 2020 to Oct 2026."
  */
 export function metaLine(agg: RepoAggregate, view: RiverView): string {

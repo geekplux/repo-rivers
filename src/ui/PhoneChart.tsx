@@ -12,7 +12,7 @@ export interface PhoneChartProps extends Omit<RiverChartProps, 'interactive'> {
 }
 
 /**
- * The phone chart (docs/redesign/DESIGN.md §5): the desktop layout transposed, so time runs down the page about
+ * The phone chart (docs/DESIGN.md §5): the desktop layout transposed, so time runs down the page about
  * 56 px per bucket and the page scrolls through history (no horizontal scrolling). Year labels in the left column,
  * a full-width rule at each era start with the era name right-aligned under it, river names only where a smoothed
  * run fits them, reading downward. The water is drawn in layout coordinates inside a transposing group; the

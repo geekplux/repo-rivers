@@ -8,7 +8,7 @@ const DIMENSIONS = [['modules', 'Modules'], ['contributors', 'Contributors']] as
 const DEPTHS = ['auto', 1, 2, 3] as const;
 
 /**
- * The chart head's controls (docs/redesign/DESIGN.md §3), all native inputs: "Folder depth" (a select, modules
+ * The chart head's controls (docs/DESIGN.md §3), all native inputs: "Folder depth" (a select, modules
  * only) or "Include bots" (a checkbox, contributors only), then Modules | Contributors as a radio group.
  * `disabled` turns them all off (while a repo loads or failed to load, when there is no chart to change).
  */

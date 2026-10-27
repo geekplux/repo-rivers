@@ -1,5 +1,5 @@
 /**
- * The chart's guides (docs/redesign/DESIGN.md §4): the era band above the plot and the year ticks of the axis
+ * The chart's guides (docs/DESIGN.md §4): the era band above the plot and the year ticks of the axis
  * below it. Pure geometry and text fitting.
  */
 import type { Era } from '../schema.ts';

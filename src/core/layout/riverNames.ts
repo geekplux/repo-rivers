@@ -1,5 +1,5 @@
 /**
- * River names on the desktop chart (docs/redesign/DESIGN.md §4 "River names"). Each river, in lane order, gets the
+ * River names on the desktop chart (docs/DESIGN.md §4 "River names"). Each river, in lane order, gets the
  * first of: a straight name slanted along its course, a level name inside its thickest buckets, a name at the mouth
  * right of the plot (rivers that reach the present), a name above its peak; or none. Every name is checked against
  * the boxes already taken (names, always-visible transfers, obstacles). Pure and deterministic.

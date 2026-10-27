@@ -179,7 +179,7 @@ export function Hatch({ id }: { id: string }) {
 }
 
 /**
- * The timeline-sankey (docs/redesign/DESIGN.md §4), drawn from `layoutRivers` at real CSS-pixel width: the era
+ * The timeline-sankey (docs/DESIGN.md §4), drawn from `layoutRivers` at real CSS-pixel width: the era
  * band, two-tone rivers with a hatched "other", dashed transfers, the axis, and the focus fade with its rule and
  * dot. The drawing is one `role="img"` SVG named by a sentence and described by the prose summary; the keyboard
  * target (`role="application"`) and the era buttons are HTML siblings laid over it, so no focusable element sits

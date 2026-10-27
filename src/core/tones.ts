@@ -1,5 +1,5 @@
 /**
- * Two-tone river fills (docs/redesign/DESIGN.md §4): every river is water A (0) or water B (1), two blues that
+ * Two-tone river fills (docs/DESIGN.md §4): every river is water A (0) or water B (1), two blues that
  * differ in lightness, never in hue. Rivers "touch" in a column when they are consecutive among the column's
  * non-zero lanes ("other" is hatched and takes no part). A greedy two-colouring, heaviest first, gives each river
  * the tone that its already-coloured neighbours use in fewer touching columns. Pure.

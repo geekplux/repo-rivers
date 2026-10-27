@@ -6,7 +6,7 @@ const MODE = { sampled: 'sampled', full: 'every commit', synthetic: 'synthetic' 
 
 /**
  * The source note (PLAN §3 Partial data): a dashed-underline disclosure button in the chart head's meta line,
- * "Estimated from n of m commits" (docs/redesign/DESIGN.md §3), whose panel lists the mode, the GitHub
+ * "Estimated from n of m commits" (docs/DESIGN.md §3), whose panel lists the mode, the GitHub
  * requests used, the buckets truncated by the 300-file compare cap, and the aggregate's notes. Escape, or focus
  * or a press outside it, closes it.
  */

@@ -1,4 +1,4 @@
-/* Page layout and chart styling. Tokens live in ui/theme/tokens.css; the page follows docs/redesign/DESIGN.md. */
+/* Page layout and chart styling. Tokens live in ui/theme/tokens.css; the page follows docs/DESIGN.md. */
 body {
   margin: 0; background: var(--ground); color: var(--ink); font: 16px/24px var(--rr-font);
   font-variant-numeric: lining-nums; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;

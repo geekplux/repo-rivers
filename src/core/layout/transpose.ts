@@ -1,5 +1,5 @@
 /**
- * The phone chart (docs/redesign/DESIGN.md §5) is the desktop layout transposed: `layoutRivers` lays the rivers out
+ * The phone chart (docs/DESIGN.md §5) is the desktop layout transposed: `layoutRivers` lays the rivers out
  * with time along x (about 56 px per bucket) and the rivers side by side along y, and the phone draws that geometry
  * with time running down the page. A {@link Flip} maps layout points to page points by swapping the axes and
  * shifting: layout `(x, y)` → page `(dx + y, dy + x)`. Pure: the drawing uses {@link flipMatrix} on a group for
