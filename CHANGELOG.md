@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+### Fixed
+- An unknown path answers 404 with a "Page not found" page (noindex) instead of the home page with 200, and the home page names its canonical URL.
+
 ### Added
 - Page-view counts on reporivers.geekplux.com with Google Analytics: the path only, never the repository you look up. Self-hosted copies load no analytics.
 - Toolchain: pnpm, Vite, React and TypeScript, Vitest, oxlint, typecheck, and a headless-browser check harness that runs offline and cleans up after itself.

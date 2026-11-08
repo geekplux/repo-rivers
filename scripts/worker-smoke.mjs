@@ -1,7 +1,8 @@
 // Worker smoke check: `pnpm check:worker` (run `pnpm build` first). Starts `pnpm dev:worker` (wrangler.dev.jsonc,
 // no AI binding) with every Cloudflare credential removed from the environment, so it can never open a remote
-// session. Expects /api/health to report `ai: false` and POST /api/eras to answer with the heuristic names, then
-// kills the whole process group and confirms nothing is left. Port: WORKER_PORT (default 8787).
+// session. Expects /api/health to report `ai: false`, POST /api/eras to answer with the heuristic names, the app shell
+// at `/` and the 404 page (status 404) at an unknown path, then kills the whole process group and confirms nothing is
+// left. Port: WORKER_PORT (default 8787).
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -17,6 +18,7 @@ const PORT = Number(process.env.WORKER_PORT ?? 8787);
 const BASE = `http://${HOST}:${PORT}`;
 const REMOTE_HINTS = /remote proxy|remote connection|remote resource|not supported/i;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const title = (html) => /<title>([^<]*)<\/title>/.exec(html)?.[1];
 
 let child;
 let log = '';
@@ -99,6 +101,20 @@ async function main() {
   const bad = await fetch(`${BASE}/api/eras`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"summary":{}}' });
   console.log(`POST /api/eras (invalid summary) -> ${bad.status}`);
   if (bad.status !== 400) throw new Error('expected 400 for an invalid summary');
+
+  // The app shell at its one route; any other path gets dist/404.html at 404 (`not_found_handling: "404-page"`).
+  for (const path of ['/', '/?repo=vitejs/vite']) {
+    const page = await fetch(`${BASE}${path}`);
+    const html = await page.text();
+    console.log(`GET ${path} -> ${page.status} "${title(html)}"`);
+    if (page.status !== 200 || title(html) !== 'Repo Rivers' || /noindex/.test(html)) throw new Error(`expected the app shell at ${path}`);
+  }
+  for (const path of ['/no/such/page', '/seo_audit_missing/']) {
+    const missing = await fetch(`${BASE}${path}`);
+    const html = await missing.text();
+    console.log(`GET ${path} -> ${missing.status} "${title(html)}"`);
+    if (missing.status !== 404 || title(html) === 'Repo Rivers' || !/name="robots" content="noindex"/.test(html)) throw new Error(`expected the 404 page at ${path}`);
+  }
   if (REMOTE_HINTS.test(log)) throw new Error('wrangler dev tried to go remote');
 }
 
