@@ -12,5 +12,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "scripts/build-samples.ts", "scripts/build-eras.ts", "scripts/docs.test.ts", "docs/snippets/*.ts"]
+  "include": ["vite.config.ts", "scripts/build-samples.ts", "scripts/build-eras.ts", "scripts/docs.test.ts", "scripts/not-found-page.ts", "scripts/not-found-page.test.ts", "docs/snippets/*.ts"]
 }
